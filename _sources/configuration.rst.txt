@@ -61,7 +61,6 @@ Possible parameters include:
 - <Class>RxThreadCpu (Integer): Rx thread CPU affinity
 - <Class>Interface (String): Network interface to be used
 - <Class>Destination (MAC Address): Destination MAC address
-- LogThreadPeriodNS (Integer): Log interval
 - LogThreadPriority (Integer): Log thread priority based on SCHED_FIFO
 - LogThreadCpu (Integer): Log thread CPU affinity
 - LogFile (String): Path to log file

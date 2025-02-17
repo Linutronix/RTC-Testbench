@@ -56,9 +56,6 @@ The parameters which affect the MQTT integration are presented in the table belo
    * - LogViaMQTTThreadPriority
      - Thread priority for the logging thread, usually low < 7
 
-   * - LogViaMQTTThreadPeriodNS
-     - Interval in which the Logging thread will read push data into MQTT, typically same value as StatsCollectionIntervalNS.
-
    * - LogViaMQTTBrokerIP
      - IP address where MQTT broker is running
 
