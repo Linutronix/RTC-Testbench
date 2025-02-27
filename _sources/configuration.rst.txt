@@ -1,6 +1,6 @@
 .. SPDX-License-Identifier: BSD-2-Clause
 ..
-.. Copyright (C) 2022-2024 Linutronix GmbH
+.. Copyright (C) 2022-2025 Linutronix GmbH
 .. Author Kurt Kanzenbach <kurt@linutronix.de>
 ..
 .. Testbench documentation configuration file.
@@ -14,62 +14,185 @@ Configuration
 Traffic configuration
 ^^^^^^^^^^^^^^^^^^^^^
 
-The applications itself are configurable. The configuration defines all required
-parameters such as how many frames are transmitted per cycle, which traffic
-classes are active, the period and clock, ...
+The applications itself are configurable. The configuration defines all required parameters such as
+how many frames are transmitted per cycle, which traffic classes are active, the cycle time, clock
+and many more.
 
-The configuration is based on YAML files and parsed at startup. Valid
-configurations have to be created before starting the simulation.
+The configuration is based on YAML files and parsed at startup. Valid configurations have to be
+created before starting the simulation.
 
 Possible parameters include:
 
-- ApplicationClockId (String): ``CLOCK_TAI`` or ``CLOCK_MONOTONIC``
-- ApplicationBaseStartTimeNS (Integer): Absolute start time of simulation (or nothing for
-  default value now + 30s)
-- ApplicationBaseCycleTimeNS (Integer): Application cycle time
-- ApplicationTxBaseOffsetNS (Integer): Execution offset of Tx threads within Application cycle time
-- ApplicationRxBaseOffsetNS (Integer): Execution offset of Rx threads within Application cycle time
-- ApplicationXdpProgram (String): Application specific XDP program
-- <Class>Enabled (Boolean): Selects whether this traffic is active or not
-- <Class>XdpEnabled (Boolean): Use XDP instead of RAW sockets
-- <Class>XdpSkbMode (Boolean): Use XDP skb mode (for testing XDP code or driver implementation)
-- <Class>XdpZcMode (Boolean): Use XDP zero copy mode
-- <Class>XdpWakeupMode (Boolean): Use XDP wakeup mode
-- <Class>XdpBusyPollMode (Boolean): Drive XDP socket in busy poll mode
-- <Class>TxTimeEnabled (Boolean): Use Tx Launch Time for all transmitted frames (requires ETF Qdisc and is not
-  compatible with XDP)
-- <Class>TxTimeOffsetNS (Integer): Optional Tx Launch Time offset relative to Qbv schedule and cycle time
-- <Class>IgnoreRxErrors (Boolean): By default, the applications perform consistency checks for all received frames. This
-  option disables these checks. Do not enable this. This is only useful for testing e.g., overload scenarios.
-- <Class>Vid (Integer): VLAN ID used for traffic generation
-- <Class>Pcp (Integer): VLAN PCP used for traffic generation
-- <Class>NumFramesPerCycle (Integer): Number of frames transmitted per cycle
-- <Class>PayloadPattern (String): Payload pattern for frame content. The payload is
-  a sequence of bytes. If the payload pattern is smaller than the frame size, zero
-  padding is added.
-- <Class>FrameLength (Integer): Length of frames excluding four bytes of FCS
-- <Class>SecurityMode (String): One of ``None``, ``AO`` (Authentication only), ``AE`` (Authentication and Encryption)
-- <Class>SecurityAlgorithm (String): One of ``AES256-GCM``, ``AES128-GCM``, ``CHACHA20-POLY1305``
-- <Class>SecurityKey (String): Key to be used for crypto functions either 16 or 32 bytes depending on selected algorithm
-- <Class>SecurityIvPrefix (String): Prefix of the IV which is 6 bytes in size
-- <Class>RxQueue (Integer): Receive queue
-- <Class>TxQueue (Integer): Transmit queue
-- <Class>SocketPriority (Integer): Socket priority
-- <Class>TxThreadPriority (Integer): Tx thread priority based on SCHED_FIFO
-- <Class>RxThreadPriority (Integer): Rx thread priority based on SCHED_FIFO
-- <Class>TxThreadCpu (Integer): Tx thread CPU affinity
-- <Class>RxThreadCpu (Integer): Rx thread CPU affinity
-- <Class>Interface (String): Network interface to be used
-- <Class>Destination (MAC Address): Destination MAC address
-- LogThreadPriority (Integer): Log thread priority based on SCHED_FIFO
-- LogThreadCpu (Integer): Log thread CPU affinity
-- LogFile (String): Path to log file
-- LogLevel (String): Log level, one of Debug, Info, Warning, Error
-- DebugStopTraceOnOutlier (Integer): Stop Linux kernel tracing if round trip or oneway time exceeds
-  expected value
-- DebugStopTraceOnError (Boolean): Stop Linux kernel tracing if error happened (e.g. transmission failure)
-- DebugMonitorMode (Boolean): Monitor mode for Fraunhofer FPGA measurement
-- DebugMonitorDestination (MAC Address): Destination address of first frame per burst
+.. list-table:: Configuration options
+   :widths: 50 100
+   :header-rows: 1
+
+   * - Option
+     - Description
+
+   * - ApplicationClockId (String)
+     - ``CLOCK_TAI`` or ``CLOCK_MONOTONIC``
+
+   * - ApplicationBaseStartTimeNS (Integer)
+     - Absolute start time of simulation (or nothing for default value now + 30s)
+
+   * - ApplicationBaseCycleTimeNS (Integer)
+     - Application cycle time
+
+   * - ApplicationTxBaseOffsetNS (Integer)
+     - Execution offset of Tx threads within Application cycle time
+
+   * - ApplicationRxBaseOffsetNS (Integer)
+     - Execution offset of Rx threads within Application cycle time
+
+   * - ApplicationXdpProgram (String)
+     - Application specific XDP program
+
+   * - <Class>Enabled (Boolean)
+     - Selects whether this traffic is active or not
+
+   * - <Class>XdpEnabled (Boolean)
+     - Use XDP instead of RAW sockets
+
+   * - <Class>XdpSkbMode (Boolean)
+     - Use XDP skb mode (for testing XDP code or driver implementation)
+
+   * - <Class>XdpZcMode (Boolean)
+     - Use XDP zero copy mode
+
+   * - <Class>XdpWakeupMode (Boolean)
+     - Use XDP wakeup mode
+
+   * - <Class>XdpBusyPollMode (Boolean)
+     - Drive XDP socket in busy poll mode
+
+   * - <Class>TxTimeEnabled (Boolean)
+     - Use Tx Launch Time for all transmitted frames (requires ETF Qdisc and is not compatible with
+       XDP)
+
+   * - <Class>TxTimeOffsetNS (Integer)
+     - Optional Tx Launch Time offset relative to Qbv schedule and cycle time
+
+   * - <Class>IgnoreRxErrors (Boolean)
+     - By default, the applications perform consistency checks for all received frames. This option
+       disables these checks. Do not enable this. This is only useful for testing e.g., overload
+       scenarios.
+
+   * - <Class>Vid (Integer)
+     - VLAN ID used for traffic generation
+
+   * - <Class>Pcp (Integer)
+     - VLAN PCP used for traffic generation
+
+   * - <Class>NumFramesPerCycle (Integer)
+     - Number of frames transmitted per cycle
+
+   * - <Class>PayloadPattern (String)
+     - Payload pattern for frame content. The payload is a sequence of bytes. If the payload pattern
+       is smaller than the frame size, zero padding is added.
+
+   * - <Class>FrameLength (Integer)
+     - Length of frames excluding four bytes of FCS
+
+   * - <Class>SecurityMode (String)
+     - One of ``None``, ``AO`` (Authentication only), ``AE`` (Authentication and Encryption)
+
+   * - <Class>SecurityAlgorithm (String)
+     - One of ``AES256-GCM``, ``AES128-GCM``, ``CHACHA20-POLY1305``
+
+   * - <Class>SecurityKey (String)
+     - Key to be used for crypto functions either 16 or 32 bytes depending on selected algorithm
+
+   * - <Class>SecurityIvPrefix (String)
+     - Prefix of the IV which is 6 bytes in size
+
+   * - <Class>RxQueue (Integer)
+     - Receive queue
+
+   * - <Class>TxQueue (Integer)
+     - Transmit queue. This is not used at the moment. Tx queue is determined via
+       ``SocketPriority``. For XDP the socket is bound to ``RxQueue``.
+
+   * - <Class>SocketPriority (Integer): Socket priority
+     - Socket priority. It used for QoS of the operating system.
+
+   * - <Class>TxThreadPriority (Integer)
+     - Tx thread priority based on SCHED_FIFO
+
+   * - <Class>RxThreadPriority (Integer)
+     - Rx thread priority based on SCHED_FIFO
+
+   * - <Class>TxThreadCpu (Integer)
+     - Tx thread CPU affinity
+
+   * - <Class>RxThreadCpu (Integer)
+     - Rx thread CPU affinity
+
+   * - <Class>Interface (String)
+     - Network interface to be used
+
+   * - <Class>Destination (MAC/IP Address)
+     - Destination MAC/IP address
+
+   * - LogThreadPriority (Integer):
+     - Log thread priority based on SCHED_FIFO
+
+   * - LogThreadCpu (Integer)
+     - Log thread CPU affinity
+
+   * - LogFile (String)
+     - Path to log file
+
+   * - LogLevel (String)
+     - Log level, one of ``Debug``, ``Info``, ``Warning``, ``Error``
+
+   * - StatsCollectionIntervalNS (Integer)
+     - Interval in which a summary of the data is generated, typically 1s, i.e. 1000000000Ns
+
+   * - StatsHistogramEnabled (Boolean)
+     - Decides whether a histogram is written after successful run or not
+
+   * - StatsHistogramMinimumNS (Integer)
+     - Lower boundary of RTT which is recorded in histogram e.g., 1ms
+
+   * - StatsHistogramMaximumNS (Integer)
+     - Upper boundary of RTT which is recorded in histogram e.g., 10ms
+
+   * - StatsHistogramFile (String)
+     - Path to file where to store the histogram after run
+
+   * - LogViaMQTT (Boolean)
+     - Enable and disable MQTT logging
+
+   * - LogViaMQTTThreadPriority (Integer)
+     - Thread priority for the logging thread, usually low < 7
+
+   * - LogViaMQTTThreadCpu (Integer)
+     - Thread CPU affinity
+
+   * - LogViaMQTTBrokerIP (IP Address)
+     - IP address where MQTT broker is running
+
+   * - LogViaMQTTBrokerPort (Integer)
+     - Port used by the MQTT Broker, default value is
+
+   * - LogViaMQTTKeepAliveSecs (Integer)
+     - Keep alive time for the connection, default value 60s
+
+   * - LogViaMQTTMeasurementName (String)
+     - Used to distinguish measurements coming from different machines.
+
+   * - DebugStopTraceOnOutlier (Integer)
+     - Stop Linux kernel tracing if round trip or oneway time exceeds expected value
+
+   * - DebugStopTraceOnError (Boolean)
+     - Stop Linux kernel tracing if error happened (e.g. transmission failure)
+
+   * - DebugMonitorMode (Boolean)
+     - Monitor mode for Fraunhofer FPGA measurement
+
+   * - DebugMonitorDestination (MAC Address)
+     - Destination address of first frame per burst
 
 The possible traffic classes are:
 
@@ -101,7 +224,7 @@ The possible traffic classes are:
           instance, what impact does real time frame encryption and decryption has on quantity
           structures? Key updates and other mechanisms are not covered.
 
-Sample configuration files are provided for Intel i225/i226 and stmmac.
+Sample configuration files are provided for Intel i210, i225/i226 and stmmac.
 
 Starting point for PROFINET TSN:
 

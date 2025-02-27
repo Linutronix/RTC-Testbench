@@ -1,6 +1,6 @@
 .. SPDX-License-Identifier: BSD-2-Clause
 ..
-.. Copyright (C) 2022-2024 Linutronix GmbH
+.. Copyright (C) 2022-2025 Linutronix GmbH
 .. Author Kurt Kanzenbach <kurt@linutronix.de>
 ..
 .. Testbench documentation introduction file.
@@ -12,47 +12,93 @@ Test runs
 Execution of test runs
 ----------------------
 
-PROFINET follows a deadline model. Therefore, the ``reference`` application
-constantly measures the round trip times of PROFINET frames. This is performed
-for each traffic class. The minimum, average and maximum is calculated. The
-transmission and reception timestamps are taken directly in the reference
-application. The collected information is regularly printed to the log file
-specified in the configuration.
+PROFINET follows a deadline model. Therefore, the ``reference`` application constantly measures the
+round trip times of PROFINET frames. This is performed for each traffic class. The minimum, average
+and maximum is calculated. The transmission and reception timestamps are taken directly in the
+reference application. The collected information is regularly printed to the log file specified in
+the configuration.
 
-The worst case round trip times are predictable, as PTP is used to synchronize
-the involved test machines. In theory, the round trip times should not exceed
-three times the given PROFINET cycle. Thus, the worst case round trip time is a
-good indicator whether the simulation works or not.
+The worst case round trip times are predictable, as PTP is used to synchronize the involved test
+machines. In theory, the round trip times should not exceed two times the given PROFINET
+cycle. Thus, the worst case round trip time is a good indicator whether the simulation works or
+not. Also the outlier statistics indicate whether frames have missed the expected deadline.
 
-In order to perform test runs two machines are required. They need to be connected via Ethernet. The link speed can be
-100Mbit/s, 1Gbit/s or even higher. Before the reference and mirror application are started the network interface needs
-to configured. Furthermore, PTP has to be used.
+In order to perform test runs two machines are required. They need to be connected either via an
+Ethernet (TSN) network or back to back. The link speed can be 100Mbit/s, 1Gbit/s or even
+higher. Before the reference and mirror application are started the network interface needs to
+configured. Furthermore, PTP has to be used.
 
-Example for Intel Comet Lake with i225:
+For every simulation there are four steps required. Example for Intel x86 platform with i225:
 
-.. code:: bash
+1. PTP Synchronization
+
+.. code-block:: bash
+   :caption: Start PTP on both machines
 
    host1: cd tests/profinet
-   host1: ./mirror.sh
+   host1: ../../scripts/ptp.sh enp3s0 # Requires /etc/gPTP.cfg from linuxptp
+   host1: tail -f /var/log/syslog     # Verify that PTP is running and stable
 
    host2: cd tests/profinet
-   host2: ./ref.sh
+   host2: ../../scripts/ptp.sh enp3s0 # Requires /etc/gPTP.cfg from linuxptp
+   host2: tail -f /var/log/syslog     # Verify that PTP is running and stable
+
+This step has to be done only once.
+
+2. Traffic flow configurations
+
+.. code-block:: bash
+   :caption: Configure traffic flow for network interface on both machines
+
+   host1: cd tests/profinet
+   host1: ./flow_cml.sh enp3s0
+   host1: tail -f /var/log/syslog     # Verify that PTP is running and stable
+
+   host2: cd tests/profinet
+   host2: ./flow_cml.sh enp3s0
+   host2: tail -f /var/log/syslog     # Verify that PTP is running and stable
+
+This step has to be done only once.
+
+3. Mirror
+
+.. code-block:: bash
+   :caption: Start mirror application on second device
+
+   host2: cd tests/profinet
+   host2: cp ../../build/xdp_kern_*.o .
+   host2: ../../build/mirror -c mirror_vid100_cml.yaml
+   host2: tail -f /var/log/mirror_vid100.log           # Verify that mirror application runs
+
+4. Reference
+
+.. code-block:: bash
+   :caption: Start reference application on first device
+
+   host1: cd tests/profinet
+   host1: cp ../../build/xdp_kern_*.o .
+   host1: ../../build/reference -c reference_vid100_cml.yaml
+   host1: tail -f /var/log/reference_vid100.log              # Check statistics
+
+The ``reference`` and ``mirror`` applications can be stopped with Ctrl-C and started again e.g. for
+testing changes in the YAML configurations. However, the ``mirror`` has to be always started before
+the ``reference``. This is due to the internal sequence counting mechanism.
 
 For use of the integrated TSN NICs on Intel Elkhart Lake a different configuration is required:
 
 .. code:: bash
 
-   host1: cd tests/multi_middleware/xdp
-   host1: mirror.sh
+   host1: cd tests/multi_middleware/stmmac/xdp
+   host1: ./mirror.sh
 
-   host2: cd tests/multi_middleware/xdp
+   host2: cd tests/multi_middleware/stmmac/xdp
    host2: ./ref.sh
 
 Interpretation of results
 -------------------------
 
-The following demonstrates an example test scenario performed on Intel Comet Lake CPU(s) equipped with Intel i225
-NIC(s). All scripts and configuration are located in ``tests/ptm``.
+The following demonstrates an example test scenario performed on Intel Comet Lake CPU(s) equipped
+with Intel i225 NIC(s). All scripts and configuration are located in ``tests/ptm``.
 
 - Cycle time of 1ms
 - Rx threads scheduled at offset 600us within 1ms period
@@ -90,23 +136,23 @@ The maximum round trip times are logged via a summary interval. Example:
 - UdpHighSent=3043 | UdpHighReceived=3043 | UdpHighRttMin=1005 [us] | UdpHighRttMax=1090 [us] | UdpHighRttAvg=1035.880053 [us]
 - UdpLowSent=3043 | UdpLowReceived=3043 | UdpLowRttMin=984 [us] | UdpLowRttMax=1075 [us] | UdpLowRttAvg=1020.958593 [us]
 
-As to be observed, the maximum round trip time for all real time traffic classes
-(TSN high/low and RTC) are below 2ms as expected. In particular, the
-pre-calculated round-trip time for the real time frames is 1.8ms. This test runs
-was executed over the period of 4 hours. In total 4 billion RT frames have
-been transmitted, received and checked. Not a single one missed its deadline or
-was damaged in any way.
+As to be observed, the maximum round trip time for all real time traffic classes (TSN high/low and
+RTC) are below 2ms as expected. In particular, the pre-calculated round-trip time for the real time
+frames is 1.8ms. This test runs was executed over the period of 4 hours. In total 4 billion RT
+frames have been transmitted, received and checked. Not a single one missed its deadline or was
+damaged in any way.
 
-The following image shows how the expected round-trip time is calculated according to the parameters shown above:
+The following image shows how the expected round-trip time is calculated according to the parameters
+shown above:
 
 .. image:: images/rtc_testbench_timing_1ms_en.png
   :width: 600
   :alt: Linux RealTime Communication Testbench scheduling 1ms
 
 Furthermore, the Linux RealTime Communication ``Testbench`` can also be utilized to check the
-Ethernet behavior on the wire. Therefore, special hardware equipment such as a
-TSN-Monitor from Fraunhofer or a Profishark 1G+ network TAP is required. The
-image below shows a burst of real time traffic:
+Ethernet behavior on the wire. Therefore, special hardware equipment such as a TSN-Monitor from
+Fraunhofer or a Profishark 1G+ network TAP is required. The image below shows a burst of real time
+traffic:
 
 .. image:: images/ipg_256x128bytes.png
   :width: 600
@@ -119,9 +165,9 @@ Multi Middleware
 ^^^^^^^^^^^^^^^^
 
 The Linux RealTime Communication ``Testbench`` is able to simulate different Middlewares such as
-OPC/UA PubSub or PROFINET. The multi middleware scenario is useful for analyzing
-whether it is possible to execute multiple time aware applications at the same
-time using the same network interface on real time Linux.
+OPC/UA PubSub or PROFINET. The multi middleware scenario is useful for analyzing whether it is
+possible to execute multiple time aware applications at the same time using the same network
+interface on real time Linux.
 
 The first defined scenario is the following:
 
@@ -214,14 +260,13 @@ Hardware: Intel Elkhart Lake with stmmac
 Precision Time Measurement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Precision Time Measurement enables precise coordination of events across
-multiple components with independent local time clocks. Some network cards such
-as the Intel i225 as well as Intel CPUs support this feature. It can be used to
-increase the precision of ``phc2sys``. Especially under heavy system and PCIe
-load the usage of PTM increases the synchronization precision significantly.
+Precision Time Measurement enables precise coordination of events across multiple components with
+independent local time clocks. Some network cards such as the Intel i225 as well as Intel CPUs
+support this feature. It can be used to increase the precision of ``phc2sys``. Especially under
+heavy system and PCIe load the usage of PTM increases the synchronization precision significantly.
 
-The following test scenario is designed to create network and PCIe load and to test
-influence of PTM for the precision of ``phc2sys``.
+The following test scenario is designed to create network and PCIe load and to test influence of PTM
+for the precision of ``phc2sys``.
 
 .. list-table:: Precision Time Measurement influence Test
    :widths: 28 28 12 12 12 12
@@ -269,9 +314,8 @@ Hardware: Intel CPU with Intel i225/i226
 PROFINET TSN
 ^^^^^^^^^^^^
 
-The following test scenario is designed to simulate PROFINET over TSN. It
-creates traffic for all eight traffic classes ranging from stream TSN to best
-effort.
+The following test scenario is designed to simulate PROFINET over TSN. It creates traffic for all
+eight traffic classes ranging from stream TSN to best effort.
 
 .. list-table:: PROFINET over TSN Test
    :widths: 28 28 12 12 12 12
@@ -312,8 +356,8 @@ effort.
      - 100
      - Remain
 
-All required configuration files and scripts are located in ``tests/profinet/``
-and ``tests/profinet_zc``.
+All required configuration files and scripts are located in ``tests/profinet/`` and
+``tests/profinet_zc``.
 
 In addition, PROFINET supports authentication and encryption. These mechanisms are demonstrated by
 ``tests/profinet_auth/`` and ``tests/profinet_crypt/``.
@@ -326,8 +370,8 @@ Hardware: Intel CPU with Intel i225/i226
 PROFINET RT
 ^^^^^^^^^^^
 
-The following test scenario is designed to simulate PROFINET RT. It creates
-traffic for cyclic and acyclic real time traffic as well as best effort.
+The following test scenario is designed to simulate PROFINET RT. It creates traffic for cyclic and
+acyclic real time traffic as well as best effort.
 
 .. list-table:: PROFINET RT
    :widths: 28 28 12 12 12 12
@@ -375,19 +419,16 @@ Hardware: Intel CPU with Intel i225/i226
 Netload
 ^^^^^^^
 
-Deterministic real time Ethernet communication requires guaranteed resources in
-the bridges as well as the end stations for bounded latency frame
-delivery. Thus, resource protection mechanisms are required. Additional not
-planned network traffic should not lead to any disturbance of the real time
-traffic. Therefore, PROFINET defines ingress rate limiters for bandwidth
-limitations of real-time and non-real time traffic (Unicast, Multicast and
-Broadcast). Traditionally, this Ingress Rate Limiter is used in
-bridges. However, this model is interesting for end stations as well, because
-the CPU and memory resources of individual end stations have to be protected in
-cases of malfunctioning or misconfigured bridges. The following test scenario is
-designed to test ingress rate limiting mechanisms. In contrast to all other test
-scenarios the netload one ignores receive errors in case any traffic has been
-dropped.
+Deterministic real time Ethernet communication requires guaranteed resources in the bridges as well
+as the end stations for bounded latency frame delivery. Thus, resource protection mechanisms are
+required. Additional not planned network traffic should not lead to any disturbance of the real time
+traffic. Therefore, PROFINET defines ingress rate limiters for bandwidth limitations of real-time
+and non-real time traffic (Unicast, Multicast and Broadcast). Traditionally, this Ingress Rate
+Limiter is used in bridges. However, this model is interesting for end stations as well, because the
+CPU and memory resources of individual end stations have to be protected in cases of malfunctioning
+or misconfigured bridges. The following test scenario is designed to test ingress rate limiting
+mechanisms. In contrast to all other test scenarios the netload one ignores receive errors in case
+any traffic has been dropped.
 
 .. list-table:: Netload Test
    :widths: 28 28 12 12 12 12
@@ -415,10 +456,9 @@ Hardware: Intel CPU with Intel i225/i226
 Busypolling
 ^^^^^^^^^^^
 
-There are applications which do prefer polling instead of interrupt driven
-network communication in order to reduce jitter introduced by hardware and
-software interrupts. The following test scenario is designed to test busy
-polling with AF_XDP sockets.
+There are applications which do prefer polling instead of interrupt driven network communication in
+order to reduce jitter introduced by hardware and software interrupts. The following test scenario
+is designed to test busy polling with AF_XDP sockets.
 
 .. Note:: Busy polling on ``PREEMPT_RT`` only works with Linux kernel >= v6.5.
 
@@ -469,12 +509,11 @@ Switches
 --------
 
 The Linux RealTime Communication ``Testbench`` relies on precise time synchronization between all
-involved nodes. Therefore, the PTP is leveraged. As a consequence it is
-recommended to use Ethernet switches which do support PTP based on 802.1AS.
+involved nodes. Therefore, the PTP is leveraged. As a consequence it is recommended to use Ethernet
+switches which do support PTP based on 802.1AS.
 
-Furthermore, when using Ethernet switches, disable the LLDP traffic class by
-setting ``LldpNumFramesPerCycle`` to 0. The Linux RealTime Communication ``Testbench`` simulates
-LLDP traffic with its own special crafted Ethernet frames, which are not valid
-LLDP messages in terms of the 802.1AB protocol.  As LLDP is link local traffic
-and interpreted by Ethernet switches, that will confuse the applications and the
-switches. Still LLDP can be enabled in the whole network.
+Furthermore, when using Ethernet switches, disable the LLDP traffic class by setting
+``LldpNumFramesPerCycle`` to 0. The Linux RealTime Communication ``Testbench`` simulates LLDP
+traffic with its own special crafted Ethernet frames, which are not valid LLDP messages in terms of
+the 802.1AB protocol.  As LLDP is link local traffic and interpreted by Ethernet switches, that will
+confuse the applications and the switches. Still LLDP can be enabled in the whole network.

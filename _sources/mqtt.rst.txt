@@ -56,6 +56,9 @@ The parameters which affect the MQTT integration are presented in the table belo
    * - LogViaMQTTThreadPriority
      - Thread priority for the logging thread, usually low < 7
 
+   * - LogViaMQTTThreadCpu
+     - Thread CPU affinity
+
    * - LogViaMQTTBrokerIP
      - IP address where MQTT broker is running
 

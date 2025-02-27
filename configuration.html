@@ -112,61 +112,190 @@
 <span id="id1"></span><h1>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h1>
 <section id="traffic-configuration">
 <h2>Traffic configuration<a class="headerlink" href="#traffic-configuration" title="Permalink to this heading"></a></h2>
-<p>The applications itself are configurable. The configuration defines all required
-parameters such as how many frames are transmitted per cycle, which traffic
-classes are active, the period and clock, …</p>
-<p>The configuration is based on YAML files and parsed at startup. Valid
-configurations have to be created before starting the simulation.</p>
+<p>The applications itself are configurable. The configuration defines all required parameters such as
+how many frames are transmitted per cycle, which traffic classes are active, the cycle time, clock
+and many more.</p>
+<p>The configuration is based on YAML files and parsed at startup. Valid configurations have to be
+created before starting the simulation.</p>
 <p>Possible parameters include:</p>
-<ul class="simple">
-<li><p>ApplicationClockId (String): <code class="docutils literal notranslate"><span class="pre">CLOCK_TAI</span></code> or <code class="docutils literal notranslate"><span class="pre">CLOCK_MONOTONIC</span></code></p></li>
-<li><p>ApplicationBaseStartTimeNS (Integer): Absolute start time of simulation (or nothing for
-default value now + 30s)</p></li>
-<li><p>ApplicationBaseCycleTimeNS (Integer): Application cycle time</p></li>
-<li><p>ApplicationTxBaseOffsetNS (Integer): Execution offset of Tx threads within Application cycle time</p></li>
-<li><p>ApplicationRxBaseOffsetNS (Integer): Execution offset of Rx threads within Application cycle time</p></li>
-<li><p>ApplicationXdpProgram (String): Application specific XDP program</p></li>
-<li><p>&lt;Class&gt;Enabled (Boolean): Selects whether this traffic is active or not</p></li>
-<li><p>&lt;Class&gt;XdpEnabled (Boolean): Use XDP instead of RAW sockets</p></li>
-<li><p>&lt;Class&gt;XdpSkbMode (Boolean): Use XDP skb mode (for testing XDP code or driver implementation)</p></li>
-<li><p>&lt;Class&gt;XdpZcMode (Boolean): Use XDP zero copy mode</p></li>
-<li><p>&lt;Class&gt;XdpWakeupMode (Boolean): Use XDP wakeup mode</p></li>
-<li><p>&lt;Class&gt;XdpBusyPollMode (Boolean): Drive XDP socket in busy poll mode</p></li>
-<li><p>&lt;Class&gt;TxTimeEnabled (Boolean): Use Tx Launch Time for all transmitted frames (requires ETF Qdisc and is not
-compatible with XDP)</p></li>
-<li><p>&lt;Class&gt;TxTimeOffsetNS (Integer): Optional Tx Launch Time offset relative to Qbv schedule and cycle time</p></li>
-<li><p>&lt;Class&gt;IgnoreRxErrors (Boolean): By default, the applications perform consistency checks for all received frames. This
-option disables these checks. Do not enable this. This is only useful for testing e.g., overload scenarios.</p></li>
-<li><p>&lt;Class&gt;Vid (Integer): VLAN ID used for traffic generation</p></li>
-<li><p>&lt;Class&gt;Pcp (Integer): VLAN PCP used for traffic generation</p></li>
-<li><p>&lt;Class&gt;NumFramesPerCycle (Integer): Number of frames transmitted per cycle</p></li>
-<li><p>&lt;Class&gt;PayloadPattern (String): Payload pattern for frame content. The payload is
-a sequence of bytes. If the payload pattern is smaller than the frame size, zero
-padding is added.</p></li>
-<li><p>&lt;Class&gt;FrameLength (Integer): Length of frames excluding four bytes of FCS</p></li>
-<li><p>&lt;Class&gt;SecurityMode (String): One of <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">AO</span></code> (Authentication only), <code class="docutils literal notranslate"><span class="pre">AE</span></code> (Authentication and Encryption)</p></li>
-<li><p>&lt;Class&gt;SecurityAlgorithm (String): One of <code class="docutils literal notranslate"><span class="pre">AES256-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">AES128-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">CHACHA20-POLY1305</span></code></p></li>
-<li><p>&lt;Class&gt;SecurityKey (String): Key to be used for crypto functions either 16 or 32 bytes depending on selected algorithm</p></li>
-<li><p>&lt;Class&gt;SecurityIvPrefix (String): Prefix of the IV which is 6 bytes in size</p></li>
-<li><p>&lt;Class&gt;RxQueue (Integer): Receive queue</p></li>
-<li><p>&lt;Class&gt;TxQueue (Integer): Transmit queue</p></li>
-<li><p>&lt;Class&gt;SocketPriority (Integer): Socket priority</p></li>
-<li><p>&lt;Class&gt;TxThreadPriority (Integer): Tx thread priority based on SCHED_FIFO</p></li>
-<li><p>&lt;Class&gt;RxThreadPriority (Integer): Rx thread priority based on SCHED_FIFO</p></li>
-<li><p>&lt;Class&gt;TxThreadCpu (Integer): Tx thread CPU affinity</p></li>
-<li><p>&lt;Class&gt;RxThreadCpu (Integer): Rx thread CPU affinity</p></li>
-<li><p>&lt;Class&gt;Interface (String): Network interface to be used</p></li>
-<li><p>&lt;Class&gt;Destination (MAC Address): Destination MAC address</p></li>
-<li><p>LogThreadPriority (Integer): Log thread priority based on SCHED_FIFO</p></li>
-<li><p>LogThreadCpu (Integer): Log thread CPU affinity</p></li>
-<li><p>LogFile (String): Path to log file</p></li>
-<li><p>LogLevel (String): Log level, one of Debug, Info, Warning, Error</p></li>
-<li><p>DebugStopTraceOnOutlier (Integer): Stop Linux kernel tracing if round trip or oneway time exceeds
-expected value</p></li>
-<li><p>DebugStopTraceOnError (Boolean): Stop Linux kernel tracing if error happened (e.g. transmission failure)</p></li>
-<li><p>DebugMonitorMode (Boolean): Monitor mode for Fraunhofer FPGA measurement</p></li>
-<li><p>DebugMonitorDestination (MAC Address): Destination address of first frame per burst</p></li>
-</ul>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Configuration options</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 33.3%" />
+<col style="width: 66.7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ApplicationClockId (String)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CLOCK_TAI</span></code> or <code class="docutils literal notranslate"><span class="pre">CLOCK_MONOTONIC</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>ApplicationBaseStartTimeNS (Integer)</p></td>
+<td><p>Absolute start time of simulation (or nothing for default value now + 30s)</p></td>
+</tr>
+<tr class="row-even"><td><p>ApplicationBaseCycleTimeNS (Integer)</p></td>
+<td><p>Application cycle time</p></td>
+</tr>
+<tr class="row-odd"><td><p>ApplicationTxBaseOffsetNS (Integer)</p></td>
+<td><p>Execution offset of Tx threads within Application cycle time</p></td>
+</tr>
+<tr class="row-even"><td><p>ApplicationRxBaseOffsetNS (Integer)</p></td>
+<td><p>Execution offset of Rx threads within Application cycle time</p></td>
+</tr>
+<tr class="row-odd"><td><p>ApplicationXdpProgram (String)</p></td>
+<td><p>Application specific XDP program</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;Enabled (Boolean)</p></td>
+<td><p>Selects whether this traffic is active or not</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;XdpEnabled (Boolean)</p></td>
+<td><p>Use XDP instead of RAW sockets</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;XdpSkbMode (Boolean)</p></td>
+<td><p>Use XDP skb mode (for testing XDP code or driver implementation)</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;XdpZcMode (Boolean)</p></td>
+<td><p>Use XDP zero copy mode</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;XdpWakeupMode (Boolean)</p></td>
+<td><p>Use XDP wakeup mode</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;XdpBusyPollMode (Boolean)</p></td>
+<td><p>Drive XDP socket in busy poll mode</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;TxTimeEnabled (Boolean)</p></td>
+<td><p>Use Tx Launch Time for all transmitted frames (requires ETF Qdisc and is not compatible with
+XDP)</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;TxTimeOffsetNS (Integer)</p></td>
+<td><p>Optional Tx Launch Time offset relative to Qbv schedule and cycle time</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;IgnoreRxErrors (Boolean)</p></td>
+<td><p>By default, the applications perform consistency checks for all received frames. This option
+disables these checks. Do not enable this. This is only useful for testing e.g., overload
+scenarios.</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;Vid (Integer)</p></td>
+<td><p>VLAN ID used for traffic generation</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;Pcp (Integer)</p></td>
+<td><p>VLAN PCP used for traffic generation</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;NumFramesPerCycle (Integer)</p></td>
+<td><p>Number of frames transmitted per cycle</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;PayloadPattern (String)</p></td>
+<td><p>Payload pattern for frame content. The payload is a sequence of bytes. If the payload pattern
+is smaller than the frame size, zero padding is added.</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;FrameLength (Integer)</p></td>
+<td><p>Length of frames excluding four bytes of FCS</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;SecurityMode (String)</p></td>
+<td><p>One of <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">AO</span></code> (Authentication only), <code class="docutils literal notranslate"><span class="pre">AE</span></code> (Authentication and Encryption)</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;SecurityAlgorithm (String)</p></td>
+<td><p>One of <code class="docutils literal notranslate"><span class="pre">AES256-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">AES128-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">CHACHA20-POLY1305</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;SecurityKey (String)</p></td>
+<td><p>Key to be used for crypto functions either 16 or 32 bytes depending on selected algorithm</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;SecurityIvPrefix (String)</p></td>
+<td><p>Prefix of the IV which is 6 bytes in size</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;RxQueue (Integer)</p></td>
+<td><p>Receive queue</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;TxQueue (Integer)</p></td>
+<td><p>Transmit queue. This is not used at the moment. Tx queue is determined via
+<code class="docutils literal notranslate"><span class="pre">SocketPriority</span></code>. For XDP the socket is bound to <code class="docutils literal notranslate"><span class="pre">RxQueue</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;SocketPriority (Integer): Socket priority</p></td>
+<td><p>Socket priority. It used for QoS of the operating system.</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;TxThreadPriority (Integer)</p></td>
+<td><p>Tx thread priority based on SCHED_FIFO</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;RxThreadPriority (Integer)</p></td>
+<td><p>Rx thread priority based on SCHED_FIFO</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;TxThreadCpu (Integer)</p></td>
+<td><p>Tx thread CPU affinity</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;RxThreadCpu (Integer)</p></td>
+<td><p>Rx thread CPU affinity</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;Interface (String)</p></td>
+<td><p>Network interface to be used</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;Destination (MAC/IP Address)</p></td>
+<td><p>Destination MAC/IP address</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogThreadPriority (Integer):</p></td>
+<td><p>Log thread priority based on SCHED_FIFO</p></td>
+</tr>
+<tr class="row-even"><td><p>LogThreadCpu (Integer)</p></td>
+<td><p>Log thread CPU affinity</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogFile (String)</p></td>
+<td><p>Path to log file</p></td>
+</tr>
+<tr class="row-even"><td><p>LogLevel (String)</p></td>
+<td><p>Log level, one of <code class="docutils literal notranslate"><span class="pre">Debug</span></code>, <code class="docutils literal notranslate"><span class="pre">Info</span></code>, <code class="docutils literal notranslate"><span class="pre">Warning</span></code>, <code class="docutils literal notranslate"><span class="pre">Error</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>StatsCollectionIntervalNS (Integer)</p></td>
+<td><p>Interval in which a summary of the data is generated, typically 1s, i.e. 1000000000Ns</p></td>
+</tr>
+<tr class="row-even"><td><p>StatsHistogramEnabled (Boolean)</p></td>
+<td><p>Decides whether a histogram is written after successful run or not</p></td>
+</tr>
+<tr class="row-odd"><td><p>StatsHistogramMinimumNS (Integer)</p></td>
+<td><p>Lower boundary of RTT which is recorded in histogram e.g., 1ms</p></td>
+</tr>
+<tr class="row-even"><td><p>StatsHistogramMaximumNS (Integer)</p></td>
+<td><p>Upper boundary of RTT which is recorded in histogram e.g., 10ms</p></td>
+</tr>
+<tr class="row-odd"><td><p>StatsHistogramFile (String)</p></td>
+<td><p>Path to file where to store the histogram after run</p></td>
+</tr>
+<tr class="row-even"><td><p>LogViaMQTT (Boolean)</p></td>
+<td><p>Enable and disable MQTT logging</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogViaMQTTThreadPriority (Integer)</p></td>
+<td><p>Thread priority for the logging thread, usually low &lt; 7</p></td>
+</tr>
+<tr class="row-even"><td><p>LogViaMQTTThreadCpu (Integer)</p></td>
+<td><p>Thread CPU affinity</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogViaMQTTBrokerIP (IP Address)</p></td>
+<td><p>IP address where MQTT broker is running</p></td>
+</tr>
+<tr class="row-even"><td><p>LogViaMQTTBrokerPort (Integer)</p></td>
+<td><p>Port used by the MQTT Broker, default value is</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogViaMQTTKeepAliveSecs (Integer)</p></td>
+<td><p>Keep alive time for the connection, default value 60s</p></td>
+</tr>
+<tr class="row-even"><td><p>LogViaMQTTMeasurementName (String)</p></td>
+<td><p>Used to distinguish measurements coming from different machines.</p></td>
+</tr>
+<tr class="row-odd"><td><p>DebugStopTraceOnOutlier (Integer)</p></td>
+<td><p>Stop Linux kernel tracing if round trip or oneway time exceeds expected value</p></td>
+</tr>
+<tr class="row-even"><td><p>DebugStopTraceOnError (Boolean)</p></td>
+<td><p>Stop Linux kernel tracing if error happened (e.g. transmission failure)</p></td>
+</tr>
+<tr class="row-odd"><td><p>DebugMonitorMode (Boolean)</p></td>
+<td><p>Monitor mode for Fraunhofer FPGA measurement</p></td>
+</tr>
+<tr class="row-even"><td><p>DebugMonitorDestination (MAC Address)</p></td>
+<td><p>Destination address of first frame per burst</p></td>
+</tr>
+</tbody>
+</table>
 <p>The possible traffic classes are:</p>
 <ul class="simple">
 <li><p>TsnHigh: TSN Stream High traffic</p></li>
@@ -205,7 +334,7 @@ development. This implementation is to be used only for performance measurements
 instance, what impact does real time frame encryption and decryption has on quantity
 structures? Key updates and other mechanisms are not covered.</p>
 </div>
-<p>Sample configuration files are provided for Intel i225/i226 and stmmac.</p>
+<p>Sample configuration files are provided for Intel i210, i225/i226 and stmmac.</p>
 <p>Starting point for PROFINET TSN:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/Linutronix/RTC-Testbench/tree/main/tests/profinet">https://github.com/Linutronix/RTC-Testbench/tree/main/tests/profinet</a></p></li>

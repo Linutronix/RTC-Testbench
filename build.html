@@ -109,9 +109,9 @@
   <section id="build">
 <h1>Build<a class="headerlink" href="#build" title="Permalink to this heading"></a></h1>
 <p>The buildsystem is cmake. The applications can be build and installed by:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build_x86
-<span class="nb">cd</span><span class="w"> </span>build_x86
-cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>..
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DWITH_MQTT<span class="o">=</span>TRUE<span class="w"> </span>..
 make<span class="w"> </span>-j<span class="sb">`</span>nproc<span class="sb">`</span>
 sudo<span class="w"> </span>make<span class="w"> </span>install
 </pre></div>
@@ -144,11 +144,13 @@ dnf<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </s
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For RHEL <code class="docutils literal notranslate"><span class="pre">libxdp-devel</span></code> is packaged in CodeReadyBuilder repos. More info at <a class="reference external" href="https://developers.redhat.com/blog/2018/11/15/introducing-codeready-linux-builder">https://developers.redhat.com/blog/2018/11/15/introducing-codeready-linux-builder</a>. Usually a matter of running <code class="docutils literal notranslate"><span class="pre">crb</span> <span class="pre">enable</span></code> on the subscription-manager registered system with the <code class="docutils literal notranslate"><span class="pre">EPEL</span></code> repository enabled.</p>
+<p>For RHEL <code class="docutils literal notranslate"><span class="pre">libxdp-devel</span></code> is packaged in CodeReadyBuilder repos. More info at
+<a class="reference external" href="https://developers.redhat.com/blog/2018/11/15/introducing-codeready-linux-builder">https://developers.redhat.com/blog/2018/11/15/introducing-codeready-linux-builder</a>. Usually
+a matter of running <code class="docutils literal notranslate"><span class="pre">crb</span> <span class="pre">enable</span></code> on the subscription-manager registered system with the
+<code class="docutils literal notranslate"><span class="pre">EPEL</span></code> repository enabled.</p>
 </div>
 <p>Furthermore, the Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> requires Linux kernel version &gt;= v5.12.
-PREEMPT_RT is recommended. In addition, the following configuration options have
-to be set:</p>
+PREEMPT_RT is recommended. In addition, the following configuration options have to be set:</p>
 <ul class="simple">
 <li><p>CONFIG_PTP_1588_CLOCK</p></li>
 <li><p>CONFIG_BPF</p></li>
@@ -164,7 +166,8 @@ to be set:</p>
 </ul>
 <section id="additional-options">
 <h2>Additional Options<a class="headerlink" href="#additional-options" title="Permalink to this heading"></a></h2>
-<p>Some features are added by using additional CMake opitions, the table bellow presents those features and options.</p>
+<p>Some features are added by using additional CMake opitions, the table bellow presents those features
+and options.</p>
 <table class="docutils align-default" id="id1">
 <caption><span class="caption-text">Features &amp; CMake options</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
 <colgroup>

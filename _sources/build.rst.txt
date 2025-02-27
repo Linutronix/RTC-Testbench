@@ -1,6 +1,6 @@
 .. SPDX-License-Identifier: BSD-2-Clause
 ..
-.. Copyright (C) 2022-2024 Linutronix GmbH
+.. Copyright (C) 2022-2025 Linutronix GmbH
 .. Author Kurt Kanzenbach <kurt@linutronix.de>
 ..
 .. Testbench documentation build file.
@@ -13,9 +13,9 @@ The buildsystem is cmake. The applications can be build and installed by:
 
 .. code:: bash
 
-   mkdir build_x86
-   cd build_x86
-   cmake -DCMAKE_BUILD_TYPE=Release ..
+   mkdir build
+   cd build
+   cmake -DCMAKE_BUILD_TYPE=Release -DWITH_MQTT=TRUE ..
    make -j`nproc`
    sudo make install
 
@@ -48,11 +48,13 @@ For RHEL based systems do:
    dnf -y install libxdp-devel libyaml-devel clang mosquitto-devel \
             python3-sphinx python3-sphinx_rtd_theme cmake openssl-devel llvm
 
-.. Note:: For RHEL ``libxdp-devel`` is packaged in CodeReadyBuilder repos. More info at https://developers.redhat.com/blog/2018/11/15/introducing-codeready-linux-builder. Usually a matter of running ``crb enable`` on the subscription-manager registered system with the ``EPEL`` repository enabled.
+.. Note:: For RHEL ``libxdp-devel`` is packaged in CodeReadyBuilder repos. More info at
+          https://developers.redhat.com/blog/2018/11/15/introducing-codeready-linux-builder. Usually
+          a matter of running ``crb enable`` on the subscription-manager registered system with the
+          ``EPEL`` repository enabled.
 
 Furthermore, the Linux RealTime Communication ``Testbench`` requires Linux kernel version >= v5.12.
-PREEMPT_RT is recommended. In addition, the following configuration options have
-to be set:
+PREEMPT_RT is recommended. In addition, the following configuration options have to be set:
 
 - CONFIG_PTP_1588_CLOCK
 - CONFIG_BPF
@@ -69,7 +71,8 @@ to be set:
 Additional Options
 ^^^^^^^^^^^^^^^^^^
 
-Some features are added by using additional CMake opitions, the table bellow presents those features and options.
+Some features are added by using additional CMake opitions, the table bellow presents those features
+and options.
 
 .. list-table:: Features & CMake options
    :widths: 50 50
