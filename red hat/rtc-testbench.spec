@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Red Hat
+# Copyright (C) 2024,2025 Red Hat
 # Author Pablo Iranzo Gómez <Pablo.Iranzo@redhat.com>
 # SPDX-License-Identifier: BSD-2-Clause
 
@@ -31,7 +31,7 @@ cd %{_topdir}/BUILD
 rm -rf %{name}-%{version}
 git clone https://github.com/%{myrepo} %{name}-%{version}
 cd %{name}-%{version}
-git checkout v%{version}
+git checkout %{version}
 
 %build
 cd %{_topdir}/BUILD/%{name}-%{version}
