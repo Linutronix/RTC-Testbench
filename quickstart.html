@@ -144,7 +144,7 @@ installer:</p>
 apt<span class="w"> </span>update
 apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>build-essential<span class="w"> </span>clang<span class="w"> </span>llvm<span class="w"> </span>cmake<span class="w"> </span>pkg-config<span class="w"> </span><span class="se">\</span>
 <span class="w">   </span>libbpf-dev<span class="w"> </span>libyaml-dev<span class="w"> </span>libc6-dev<span class="w"> </span>rt-tests<span class="w"> </span>ethtool<span class="w"> </span>iproute2<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>iperf3<span class="w"> </span>linuxptp<span class="w"> </span>libxdp-dev<span class="w"> </span>libssl-dev<span class="w"> </span>libmosquitto-dev<span class="w"> </span>git
+<span class="w">   </span>iperf3<span class="w"> </span>linuxptp<span class="w"> </span>libxdp-dev<span class="w"> </span>libssl-dev<span class="w"> </span>libmosquitto-dev<span class="w"> </span>git<span class="w"> </span>bc
 
 <span class="c1"># Install Linux RealTime Communication Testbench</span>
 git<span class="w"> </span>clone<span class="w"> </span>https://www.github.com/Linutronix/RTC-Testbench
@@ -160,6 +160,25 @@ simply installed via the package management:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install real time Linux kernel</span>
 apt<span class="w"> </span>update
 apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>linux-image-rt-amd64
+</pre></div>
+</div>
+<p>Alternatively the <a class="reference external" href="https://www.elbe-rfs.org">ELBE</a> build environment can be used to build a ready
+to go Debian based image. The necessary XML file is included in the repository. Follow the steps on this website to install ELBE:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://elbe-rfs.org/docs/sphinx/v15.5/article-quickstart.html#installing-elbe">https://elbe-rfs.org/docs/sphinx/v15.5/article-quickstart.html#installing-elbe</a></p></li>
+</ul>
+<p>Afterwards the image can be build with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generates testbench.img with 440 GiB size for SSD/HDD</span>
+elbe<span class="w"> </span>initvm<span class="w"> </span>-v<span class="w"> </span>hdd<span class="w"> </span>submit<span class="w"> </span>elbe/x86_64.xml
+<span class="c1"># Or generates testbench.img with 14 GiB size for SD cards/USB sticks</span>
+elbe<span class="w"> </span>initvm<span class="w"> </span>-v<span class="w"> </span>sd<span class="w"> </span>submit<span class="w"> </span>elbe/x86_64.xml
+</pre></div>
+</div>
+<p>The resulting build folder contains a file called <code class="docutils literal notranslate"><span class="pre">elbe-build-XXX/testbench.img</span></code>. This file can be
+directly copied to the SSD/HDD/USB stick/SD card of the devices.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Copy testbench.img to device /dev/sd&lt;X&gt;</span>
+<span class="c1"># Make sure /dev/sd&lt;X&gt; refers to the correct device</span>
+tar<span class="w"> </span>xJOf<span class="w"> </span>elbe-build-XXX/testbench.img.tar.xz<span class="w"> </span><span class="p">|</span><span class="w"> </span>dd<span class="w"> </span><span class="nv">of</span><span class="o">=</span>/dev/sd&lt;X&gt;<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>1M<span class="w"> </span><span class="nv">status</span><span class="o">=</span>progress
 </pre></div>
 </div>
 </section>

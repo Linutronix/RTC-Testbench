@@ -143,11 +143,11 @@ configured. Furthermore, PTP has to be used.</p>
 <div class="code-block-caption"><span class="caption-text">Start PTP on both machines</span><a class="headerlink" href="#id1" title="Permalink to this code"></a></div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host1:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/profinet
 host1:<span class="w"> </span>../../scripts/ptp.sh<span class="w"> </span>enp3s0<span class="w"> </span><span class="c1"># Requires /etc/gPTP.cfg from linuxptp</span>
-host1:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>/var/log/syslog<span class="w">     </span><span class="c1"># Verify that PTP is running and stable</span>
+host1:<span class="w"> </span>journalctl<span class="w"> </span>-f<span class="w">               </span><span class="c1"># Verify that PTP is running and stable</span>
 
 host2:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/profinet
 host2:<span class="w"> </span>../../scripts/ptp.sh<span class="w"> </span>enp3s0<span class="w"> </span><span class="c1"># Requires /etc/gPTP.cfg from linuxptp</span>
-host2:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>/var/log/syslog<span class="w">     </span><span class="c1"># Verify that PTP is running and stable</span>
+host2:<span class="w"> </span>journalctl<span class="w"> </span>-f<span class="w">               </span><span class="c1"># Verify that PTP is running and stable</span>
 </pre></div>
 </div>
 </div>
@@ -159,11 +159,11 @@ host2:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </s
 <div class="code-block-caption"><span class="caption-text">Configure traffic flow for network interface on both machines</span><a class="headerlink" href="#id2" title="Permalink to this code"></a></div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host1:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/profinet
 host1:<span class="w"> </span>./flow_cml.sh<span class="w"> </span>enp3s0
-host1:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>/var/log/syslog<span class="w">     </span><span class="c1"># Verify that PTP is running and stable</span>
+host1:<span class="w"> </span>journalctl<span class="w"> </span>-f<span class="w">               </span><span class="c1"># Verify that PTP is running and stable</span>
 
 host2:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/profinet
 host2:<span class="w"> </span>./flow_cml.sh<span class="w"> </span>enp3s0
-host2:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>/var/log/syslog<span class="w">     </span><span class="c1"># Verify that PTP is running and stable</span>
+host2:<span class="w"> </span>journalctl<span class="w"> </span>-f<span class="w">               </span><span class="c1"># Verify that PTP is running and stable</span>
 </pre></div>
 </div>
 </div>

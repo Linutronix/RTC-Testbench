@@ -36,7 +36,7 @@ For Debian based systems do:
    apt update
    apt install -y build-essential clang llvm cmake pkg-config \
       libbpf-dev libyaml-dev libc6-dev rt-tests ethtool iproute2 \
-      iperf3 linuxptp libxdp-dev libssl-dev
+      iperf3 linuxptp libxdp-dev libssl-dev libmosquitto-dev git bc
 
 .. Note:: For Debian Bullseye ``libxdp`` is packaged in backports.
 

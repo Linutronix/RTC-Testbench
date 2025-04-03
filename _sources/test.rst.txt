@@ -37,11 +37,11 @@ For every simulation there are four steps required. Example for Intel x86 platfo
 
    host1: cd tests/profinet
    host1: ../../scripts/ptp.sh enp3s0 # Requires /etc/gPTP.cfg from linuxptp
-   host1: tail -f /var/log/syslog     # Verify that PTP is running and stable
+   host1: journalctl -f               # Verify that PTP is running and stable
 
    host2: cd tests/profinet
    host2: ../../scripts/ptp.sh enp3s0 # Requires /etc/gPTP.cfg from linuxptp
-   host2: tail -f /var/log/syslog     # Verify that PTP is running and stable
+   host2: journalctl -f               # Verify that PTP is running and stable
 
 This step has to be done only once.
 
@@ -52,11 +52,11 @@ This step has to be done only once.
 
    host1: cd tests/profinet
    host1: ./flow_cml.sh enp3s0
-   host1: tail -f /var/log/syslog     # Verify that PTP is running and stable
+   host1: journalctl -f               # Verify that PTP is running and stable
 
    host2: cd tests/profinet
    host2: ./flow_cml.sh enp3s0
-   host2: tail -f /var/log/syslog     # Verify that PTP is running and stable
+   host2: journalctl -f               # Verify that PTP is running and stable
 
 This step has to be done only once.
 

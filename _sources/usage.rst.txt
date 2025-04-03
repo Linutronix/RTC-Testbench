@@ -1,6 +1,6 @@
 .. SPDX-License-Identifier: BSD-2-Clause
 ..
-.. Copyright (C) 2022-2024 Linutronix GmbH
+.. Copyright (C) 2022-2025 Linutronix GmbH
 .. Author Kurt Kanzenbach <kurt@linutronix.de>
 ..
 .. Testbench documentation usage file.
@@ -39,6 +39,24 @@ Usage for ``mirror`` application:
        -h, --help:    Print this help text
        -V, --version: Print version
        -c, --config:  Path to config file
+
+Signal Handling
+^^^^^^^^^^^^^^^
+
+The ``reference`` and ``mirror`` programs handle the following signals:
+
+.. list-table:: Signal handling
+   :widths: 50 100
+   :header-rows: 1
+
+   * - Signal
+     - Description
+
+   * - SIGINT/SIGTERM
+     - Application shutdown. All threads and communucation will be stopped. Can take some time.
+
+   * - SIGUSR1
+     - Reset global statistics (e.g. log file). Useful only for testing.
 
 Non-root User
 ^^^^^^^^^^^^^
