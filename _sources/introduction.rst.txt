@@ -50,6 +50,7 @@ Version history:
 - v5.0: September 2024, Grafana visualization
 - v5.1: November 2024, Tooling and bugfixes
 - v5.2: February 2025, Histogram and bugfixes
+- v5.3: May 2025, AF_XDP Tx Launch Time and bugfixes
 
 Motivation
 ^^^^^^^^^^
