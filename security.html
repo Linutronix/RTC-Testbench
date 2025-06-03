@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Histograms &mdash; Linux RealTime Communication Testbench v5.3 documentation</title>
+  <title>Security &mdash; Linux RealTime Communication Testbench v5.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
 
@@ -19,8 +19,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Test runs" href="test.html" />
-    <link rel="prev" title="MQTT and Grafana Integration" href="mqtt.html" /> 
+    <link rel="next" title="MQTT and Grafana Integration" href="mqtt.html" />
+    <link rel="prev" title="Configuration" href="configuration.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -60,19 +60,20 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
 </ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="security.html">Security</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Security</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#motivation">Motivation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-parameters">Configuration parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
+</ul>
+</li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="mqtt.html">MQTT and Grafana Integration</a></li>
 </ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Histograms</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#motivation">Motivation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#configuration-parameters">Configuration parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
-</ul>
-</li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="histogram.html">Histograms</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="test.html">Test runs</a></li>
@@ -101,9 +102,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Histograms</li>
+      <li class="breadcrumb-item active">Security</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/histogram.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/security.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -111,23 +112,23 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="histograms">
-<h1>Histograms<a class="headerlink" href="#histograms" title="Permalink to this heading"></a></h1>
+  <section id="security">
+<h1>Security<a class="headerlink" href="#security" title="Permalink to this heading"></a></h1>
 <section id="motivation">
 <h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading"></a></h2>
-<p>The Linux RealTime Communication Testbench keeps track of the round-trip times of each frame. Currently the minimum,
-maximum and average values are displayed in the log files over the whole application run
-time. However, it does not show the distribution of the round-trip times. For example, the
-distribution is of interest to see the relation of outliers in contrast to regular case.</p>
-<p>Therefore, the Linux RealTime Communication Testbench also includes the possibility to generate a histogram file after
-a successful run. The histogram itself is a text file which can be easily plotted e.g., with
-<code class="docutils literal notranslate"><span class="pre">gnuplot</span></code>.</p>
-<p>The histogram functionality is disabled by default. To enable it, apply the following options the
-configuration file of the <code class="docutils literal notranslate"><span class="pre">reference</span></code> application.</p>
+<p>Driven by legal requirements like EU Cyber Resilience Act (CRA), security for industrial
+communication systems is more and more playing a crucial role. The RTC <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> can also be
+used to measure and optimize the performance of a particular security implementation for
+authentication and/or encryption of each processed frame.</p>
+<p>The RTC <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> demonstrates one exemplary Profinet security implementation. The Profinet
+security specification is still under development. This implementation is to be used only for
+performance measurements. For instance, what impact does real time frame encryption and decryption
+have on quantity structures? Key management, updates, rotation etc. and other mechanisms are not
+covered.</p>
 </section>
 <section id="configuration-parameters">
 <h2>Configuration parameters<a class="headerlink" href="#configuration-parameters" title="Permalink to this heading"></a></h2>
-<p>The parameters which affect the histogram integration are presented in the table below:</p>
+<p>The parameters which allow to configure frame authentication or encryption are shown below:</p>
 <table class="docutils align-default" id="id1">
 <caption><span class="caption-text">Features &amp; configure options</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
 <colgroup>
@@ -140,26 +141,39 @@ configuration file of the <code class="docutils literal notranslate"><span class
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>StatsHistogramEnabled</p></td>
-<td><p>Decides whether a histogram is written after successful run or not</p></td>
+<tr class="row-even"><td><p>SecurityMode (String)</p></td>
+<td><p>One of <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">AO</span></code> (Authentication only), <code class="docutils literal notranslate"><span class="pre">AE</span></code> (Authentication and Encryption)</p></td>
 </tr>
-<tr class="row-odd"><td><p>StatsHistogramMinimumNS</p></td>
-<td><p>Lower boundary of RTT which is recorded in histogram e.g., 1ms</p></td>
+<tr class="row-odd"><td><p>SecurityAlgorithm (String)</p></td>
+<td><p>One of <code class="docutils literal notranslate"><span class="pre">AES256-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">AES128-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">CHACHA20-POLY1305</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p>StatsHistogramMaximumNS</p></td>
-<td><p>Upper boundary of RTT which is recorded in histogram e.g., 10ms</p></td>
+<tr class="row-even"><td><p>SecurityKey (String|Hex)</p></td>
+<td><p>Key to be used for crypto functions either 16 or 32 bytes depending on selected algorithm</p></td>
 </tr>
-<tr class="row-odd"><td><p>StatsHistogramFile</p></td>
-<td><p>Path to file where to store the histogram after run</p></td>
+<tr class="row-odd"><td><p>SecurityIvPrefix (String|Hex)</p></td>
+<td><p>Prefix of the IV which is 6 bytes in size</p></td>
 </tr>
 </tbody>
 </table>
+<p>These options are valid for classes TSNHigh, TSNLow, RTC and RTA.</p>
+</section>
+<section id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading"></a></h2>
+<p>The current implementation uses OpenSSL v3 or later. This means the authentication and encryption
+work is performed in software. Therefore, enabling security can have a significant performance
+impact.</p>
+<p>Future hardware like ASIC(s) or newer generation NIC(s) may provide Profinet security hardware
+offloading with the goal of zero performance impact. This is not covered yet.</p>
 </section>
 <section id="example">
 <h2>Example<a class="headerlink" href="#example" title="Permalink to this heading"></a></h2>
-<p>The example below shows a histogram of <code class="docutils literal notranslate"><span class="pre">tests/profinet</span></code>. It is plotted using
-<code class="docutils literal notranslate"><span class="pre">scripts/plot_histogram.pl</span></code> which requires <code class="docutils literal notranslate"><span class="pre">gnuplot</span></code> to be installed.</p>
-<a class="reference internal image-reference" href="_images/histogram.png"><img alt="Histogram of tests/profinet" src="_images/histogram.png" style="width: 600px;" /></a>
+<p>There are examples for Profinet Authentication only and Authentication and Encryption:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/profinet_auth</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/profinet_crypt</span></code></p></li>
+</ul>
+<p>For measuring the security performance impact the CPU run times of the involved real time tasks can
+be traced. See <code class="docutils literal notranslate"><span class="pre">scripts/trace_rtc.bt</span></code> for an example.</p>
 </section>
 </section>
 
@@ -167,8 +181,8 @@ configuration file of the <code class="docutils literal notranslate"><span class
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="mqtt.html" class="btn btn-neutral float-left" title="MQTT and Grafana Integration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="test.html" class="btn btn-neutral float-right" title="Test runs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="configuration.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="mqtt.html" class="btn btn-neutral float-right" title="MQTT and Grafana Integration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
