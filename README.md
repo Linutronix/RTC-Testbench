@@ -87,7 +87,6 @@ Linux RealTime Communication `Testbench` features include:
 The following list contains ideas for further development:
 
 - Add interface for workload emulation
-- Add test case for Frame Preemption
 - Rework busy polling configuration
 - Add configurations for other hardware platforms (hybrid!) and NIC(s)
 - Add integration with `ClockManager`
