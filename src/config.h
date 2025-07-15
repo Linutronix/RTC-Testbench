@@ -413,4 +413,13 @@ static inline bool config_have_xdp_tx_time(void)
 #endif
 }
 
+static inline bool config_have_rx_timestamp(void)
+{
+#ifdef RX_TIMESTAMP
+	return true;
+#else
+	return false;
+#endif
+}
+
 #endif /* _CONFIG_H_ */

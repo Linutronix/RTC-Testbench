@@ -83,6 +83,15 @@ if (WITH_MQTT)
   target_include_directories(mirror PUBLIC ${MOSQUITTO_INCLUDE_DIRS})
 endif()
 
+option(RX_TIMESTAMP "Enable RX timestamp support (requires libbpf >= 1.2)" OFF)
+
+if(RX_TIMESTAMP)
+  pkg_check_modules(LIBBPF_REQUIRED_FOR_RX_TIMESTAMP libbpf>=1.2)
+  if(NOT LIBBPF_REQUIRED_FOR_RX_TIMESTAMP_FOUND)
+    message(FATAL_ERROR "RX_TIMESTAMP requires libbpf >= 1.2, but version ${LIBBPF_VERSION} was found.")
+  endif()
+endif()
+
 target_compile_options(reference PRIVATE -Wall -Wshadow -std=gnu99 -Wvla)
 target_compile_options(mirror PRIVATE -Wall -Wshadow -std=gnu99 -Wvla)
 
@@ -142,7 +151,10 @@ include_directories("${PROJECT_BINARY_DIR}")
 # Add code for compiling XDP eBPF programes.
 #
 set(ASM_INCLUDE "/usr/include/${CMAKE_C_LIBRARY_ARCHITECTURE}")
-set(CLANG_FLAGS -Wall -O2 -fno-stack-protector -I ${ASM_INCLUDE})
+set(CLANG_FLAGS -Wall -O2 -fno-stack-protector
+    -I ${ASM_INCLUDE}
+    -I ${PROJECT_BINARY_DIR}  # required for app_config.h
+)
 
 function(add_xdp_prog name)
   add_custom_target(${name} ALL
