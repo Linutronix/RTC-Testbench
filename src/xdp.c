@@ -28,6 +28,7 @@
 #include "tx_time.h"
 #include "utils.h"
 #include "xdp.h"
+#include "xdp_metadata.h"
 
 static int program_loaded;
 static int xsks_map;
@@ -35,6 +36,17 @@ static int xsks_map;
 static enum xdp_attach_mode xdp_flags(bool skb_mode)
 {
 	return skb_mode ? XDP_MODE_SKB : XDP_MODE_NATIVE;
+}
+
+static void xdp_set_prog_bind_flags(struct bpf_object *obj, unsigned int if_index)
+{
+#ifdef RX_TIMESTAMP
+	struct bpf_program *bpf_prog = bpf_object__find_program_by_name(obj, "xdp_sock_prog");
+
+	bpf_program__set_ifindex(bpf_prog, if_index);
+	bpf_program__set_flags(bpf_prog, BPF_F_XDP_DEV_BOUND_ONLY);
+	setenv("LIBXDP_SKIP_DISPATCHER", "1", 1);
+#endif
 }
 
 static int xdp_load_program(struct xdp_socket *xsk, const char *interface, const char *xdp_program,
@@ -85,6 +97,10 @@ static int xdp_load_program(struct xdp_socket *xsk, const char *interface, const
 		}
 	}
 
+	obj = xdp_program__bpf_obj(prog);
+	if (config_have_rx_timestamp())
+		xdp_set_prog_bind_flags(obj, if_index);
+
 	ret = xdp_program__attach(prog, if_index, xdp_flags(skb_mode), 0);
 	if (ret) {
 		fprintf(stderr, "xdp_program__attach() failed\n");
@@ -92,7 +108,6 @@ static int xdp_load_program(struct xdp_socket *xsk, const char *interface, const
 	}
 
 	/* Locate xsks_map for AF_XDP socket code */
-	obj = xdp_program__bpf_obj(prog);
 	map = bpf_object__find_map_by_name(obj, "xsks_map");
 	xsks_map = bpf_map__fd(map);
 	if (xsks_map < 0) {
