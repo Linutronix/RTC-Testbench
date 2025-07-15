@@ -286,7 +286,7 @@ static int dcp_rx_frame(void *data, unsigned char *frame_data, size_t len)
 	frame_id_mismatch = false;
 
 	stat_frame_received(DCP_FRAME_TYPE, sequence_counter, out_of_order, payload_mismatch,
-			    frame_id_mismatch, tx_timestamp);
+			    frame_id_mismatch, tx_timestamp, 0, 0);
 
 	if (out_of_order) {
 		if (!ignore_rx_errors)

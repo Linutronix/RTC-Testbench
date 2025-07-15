@@ -235,13 +235,13 @@ int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len)
 	const bool mirror_enabled = class_config->rx_mirror_enabled;
 	const bool ignore_rx_errors = class_config->ignore_rx_errors;
 	size_t expected_frame_length = class_config->frame_length;
+	uint64_t tx_timestamp, rx_hw_timestamp, rx_sw_timestamp;
 	bool out_of_order, payload_mismatch, frame_id_mismatch;
 	unsigned char plaintext[MAX_FRAME_SIZE];
 	unsigned char new_frame[MAX_FRAME_SIZE];
 	struct profinet_secure_header *srt;
 	struct profinet_rt_header *rt;
 	uint64_t sequence_counter;
-	uint64_t tx_timestamp;
 	bool vlan_tag_missing;
 	void *p = frame_data;
 	struct ethhdr *eth;
@@ -387,12 +387,14 @@ int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len)
 				 begin_of_security_checksum);
 	}
 
+	xdp_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
 	out_of_order = sequence_counter != thread_context->rx_sequence_counter;
 	payload_mismatch = memcmp(p, expected_pattern, expected_pattern_length);
 	frame_id_mismatch = frame_id != thread_context->frame_id;
 
 	stat_frame_received(thread_context->frame_type, sequence_counter, out_of_order,
-			    payload_mismatch, frame_id_mismatch, tx_timestamp);
+			    payload_mismatch, frame_id_mismatch, tx_timestamp, rx_hw_timestamp,
+			    rx_sw_timestamp);
 
 	if (frame_id_mismatch)
 		log_message(

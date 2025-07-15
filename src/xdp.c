@@ -513,6 +513,21 @@ void xdp_gen_and_send_frames(struct xdp_socket *xsk, const struct xdp_gen_config
 		stat_frame_sent(xdp->frame_type, xdp->sequence_counter_begin + i);
 }
 
+void xdp_get_timestamp_metadata(void *data, uint64_t *rx_hw_ts, uint64_t *rx_sw_ts)
+{
+	struct xdp_meta *meta;
+
+	meta = data - sizeof(*meta);
+
+	if (meta->hint_valid & XDP_META_FIELD_TS) {
+		*rx_hw_ts = meta->rx_hw_timestamp;
+		*rx_sw_ts = meta->rx_sw_timestamp;
+	} else {
+		*rx_hw_ts = 0;
+		*rx_sw_ts = 0;
+	}
+}
+
 unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, bool mirror_enabled,
 				int (*receive_function)(void *data, unsigned char *, size_t),
 				void *data, const struct xdp_tx_time *tx_time)

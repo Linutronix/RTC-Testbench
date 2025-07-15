@@ -70,6 +70,21 @@ struct statistics {
 	uint64_t oneway_outliers;
 	double oneway_sum;
 	double oneway_avg;
+	/* Rx latency from NIC Rx Hw timestamp to user space timestamp */
+	uint64_t rx_min;
+	uint64_t rx_max;
+	double rx_sum;
+	double rx_avg;
+	/* Rx latency from NIC Rx Hw timestamp to Xdp prog timestamp */
+	uint64_t rx_hw2xdp_min;
+	uint64_t rx_hw2xdp_max;
+	double rx_hw2xdp_sum;
+	double rx_hw2xdp_avg;
+	/* Rx latency from Xdp prog timestamp to user space timestamp */
+	uint64_t rx_xdp2app_min;
+	uint64_t rx_xdp2app_max;
+	double rx_xdp2app_sum;
+	double rx_xdp2app_avg;
 };
 
 struct round_trip_context {
@@ -82,7 +97,8 @@ void stat_free(void);
 const char *stat_frame_type_to_string(enum stat_frame_type frame_type);
 void stat_frame_sent(enum stat_frame_type frame_type, uint64_t cycle_number);
 void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number, bool out_of_order,
-			 bool payload_mismatch, bool frame_id_mismatch, uint64_t tx_timestamp);
+			 bool payload_mismatch, bool frame_id_mismatch, uint64_t tx_timestamp,
+			 uint64_t rx_hw_timestamp, uint64_t rx_sw_timestamp);
 void stat_update(void);
 void stat_get_global_stats(struct statistics *stats, size_t len);
 void stat_get_stats_per_period(struct statistics *stats, size_t len);

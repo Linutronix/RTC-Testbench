@@ -415,12 +415,12 @@ static int generic_l2_rx_frame(void *data, unsigned char *frame_data, size_t len
 	const size_t num_frames_per_cycle = l2_config->num_frames_per_cycle;
 	const bool mirror_enabled = l2_config->rx_mirror_enabled;
 	const bool ignore_rx_errors = l2_config->ignore_rx_errors;
+	uint64_t tx_timestamp, rx_hw_timestamp, rx_sw_timestamp;
 	size_t expected_frame_length = l2_config->frame_length;
 	bool out_of_order, payload_mismatch, frame_id_mismatch;
 	unsigned char new_frame[MAX_FRAME_SIZE];
 	struct generic_l2_header *l2;
 	uint64_t sequence_counter;
-	uint64_t tx_timestamp;
 	bool vlan_tag_missing;
 	void *p = frame_data;
 	struct ethhdr *eth;
@@ -466,12 +466,13 @@ static int generic_l2_rx_frame(void *data, unsigned char *frame_data, size_t len
 	tx_timestamp = meta_data_to_tx_timestamp(&l2->meta_data);
 	set_mirror_tx_timestamp(&l2->meta_data);
 
+	xdp_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
 	out_of_order = sequence_counter != thread_context->rx_sequence_counter;
 	payload_mismatch = memcmp(p, expected_pattern, expected_pattern_length);
 	frame_id_mismatch = false;
 
 	stat_frame_received(GENERICL2_FRAME_TYPE, sequence_counter, out_of_order, payload_mismatch,
-			    frame_id_mismatch, tx_timestamp);
+			    frame_id_mismatch, tx_timestamp, rx_hw_timestamp, rx_sw_timestamp);
 
 	if (out_of_order) {
 		if (!ignore_rx_errors)
