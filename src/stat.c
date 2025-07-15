@@ -67,6 +67,9 @@ static void stat_reset(struct statistics *stats)
 	memset(stats, 0, sizeof(struct statistics));
 	stats->round_trip_min = UINT64_MAX;
 	stats->oneway_min = UINT64_MAX;
+	stats->rx_min = UINT64_MAX;
+	stats->rx_hw2xdp_min = UINT64_MAX;
+	stats->rx_xdp2app_min = UINT64_MAX;
 }
 
 int stat_init(enum log_stat_options log_selection)
@@ -211,7 +214,9 @@ static inline void stat_update_min_max(uint64_t new_value, uint64_t *min, uint64
 
 static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_type frame_type,
 				       uint64_t rt_time, uint64_t oneway_time, bool out_of_order,
-				       bool payload_mismatch, bool frame_id_mismatch)
+				       bool payload_mismatch, bool frame_id_mismatch,
+				       uint64_t rx_hw2app_time, uint64_t rx_hw2xdp_time,
+				       uint64_t rx_xdp2app_time)
 {
 	bool outlier = false;
 
@@ -238,6 +243,20 @@ static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_
 	stat->oneway_sum += oneway_time;
 	stat->oneway_avg = stat->oneway_sum / (double)stat->oneway_count;
 
+	if (rx_hw2app_time != 0 && rx_hw2xdp_time != 0 && rx_xdp2app_time != 0) {
+		stat_update_min_max(rx_hw2app_time, &stat->rx_min, &stat->rx_max);
+		stat->rx_sum += rx_hw2app_time;
+		stat->rx_avg = stat->rx_sum / (double)stat->oneway_count;
+
+		stat_update_min_max(rx_hw2xdp_time, &stat->rx_hw2xdp_min, &stat->rx_hw2xdp_max);
+		stat->rx_hw2xdp_sum += rx_hw2xdp_time;
+		stat->rx_hw2xdp_avg = stat->rx_hw2xdp_sum / (double)stat->oneway_count;
+
+		stat_update_min_max(rx_xdp2app_time, &stat->rx_xdp2app_min, &stat->rx_xdp2app_max);
+		stat->rx_xdp2app_sum += rx_xdp2app_time;
+		stat->rx_xdp2app_avg = stat->rx_xdp2app_sum / (double)stat->oneway_count;
+	}
+
 	stat->frames_received++;
 	stat->out_of_order_errors += out_of_order;
 	stat->payload_errors += payload_mismatch;
@@ -250,13 +269,15 @@ static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_
 static void stat_frame_received_per_period(enum stat_frame_type frame_type, uint64_t curr_time,
 					   uint64_t rt_time, uint64_t oneway_time,
 					   bool out_of_order, bool payload_mismatch,
-					   bool frame_id_mismatch)
+					   bool frame_id_mismatch, uint64_t rx_hw2app_time,
+					   uint64_t rx_hw2xdp_time, uint64_t rx_xdp2app_time)
 {
 	struct statistics *stat_per_period = &statistics_per_period[frame_type];
 
 	stat_per_period->time_stamp = curr_time;
 	stat_frame_received_common(stat_per_period, frame_type, rt_time, oneway_time, out_of_order,
-				   payload_mismatch, frame_id_mismatch);
+				   payload_mismatch, frame_id_mismatch, rx_hw2app_time,
+				   rx_hw2xdp_time, rx_xdp2app_time);
 }
 
 static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
@@ -270,7 +291,8 @@ static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
 static void stat_frame_received_per_period(enum stat_frame_type frame_type, uint64_t curr_time,
 					   uint64_t rt_time, bool out_of_order,
 					   bool payload_mismatch, bool frame_id_mismatch,
-					   uint64_t tx_timestamp)
+					   uint64_t tx_timestamp, uint64_t rx_hw2app_time,
+					   uint64_t rx_hw2xdp_time, uint64_t rx_xdp2app_time)
 {
 }
 
@@ -300,12 +322,14 @@ void stat_frame_sent(enum stat_frame_type frame_type, uint64_t cycle_number)
 }
 
 void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number, bool out_of_order,
-			 bool payload_mismatch, bool frame_id_mismatch, uint64_t tx_timestamp)
+			 bool payload_mismatch, bool frame_id_mismatch, uint64_t tx_timestamp,
+			 uint64_t rx_hw_timestamp, uint64_t rx_sw_timestamp)
 {
 	struct round_trip_context *rtt = &round_trip_contexts[frame_type];
 	const bool histogram = app_config.stats_histogram_enabled;
 	struct statistics *stat = &global_statistics[frame_type];
-	uint64_t rt_time = 0, curr_time, oneway_time;
+	uint64_t rt_time = 0, curr_time, oneway_time, rx_hw2app_time, rx_hw2xdp_time,
+		 rx_xdp2app_time;
 	struct timespec rx_time = {};
 	bool outlier = false;
 
@@ -330,13 +354,30 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 	oneway_time = curr_time - tx_timestamp;
 	oneway_time /= 1000;
 
+	if (rx_hw_timestamp != 0 && rx_sw_timestamp != 0) {
+		/* Calculate Rx times */
+		rx_hw2app_time = curr_time - rx_hw_timestamp;
+		rx_hw2app_time /= 1000;
+		rx_hw2xdp_time = rx_sw_timestamp - rx_hw_timestamp;
+		rx_hw2xdp_time /= 1000;
+		rx_xdp2app_time = curr_time - rx_sw_timestamp;
+		rx_xdp2app_time /= 1000;
+	} else {
+		/* If one of the timestamp is not available, set them to zero */
+		rx_hw2app_time = 0;
+		rx_hw2xdp_time = 0;
+		rx_xdp2app_time = 0;
+	}
+
 	/* Update global stats */
 	outlier = stat_frame_received_common(stat, frame_type, rt_time, oneway_time, out_of_order,
-					     payload_mismatch, frame_id_mismatch);
+					     payload_mismatch, frame_id_mismatch, rx_hw2app_time,
+					     rx_hw2xdp_time, rx_xdp2app_time);
 
 	/* Update stats per collection interval */
 	stat_frame_received_per_period(frame_type, curr_time, rt_time, oneway_time, out_of_order,
-				       payload_mismatch, frame_id_mismatch);
+				       payload_mismatch, frame_id_mismatch, rx_hw2app_time,
+				       rx_hw2xdp_time, rx_xdp2app_time);
 
 	/* Stop tracing after certain amount of time */
 	if (app_config.debug_stop_trace_on_outlier && outlier) {

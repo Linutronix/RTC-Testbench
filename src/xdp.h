@@ -85,5 +85,6 @@ void xdp_gen_and_send_frames(struct xdp_socket *xsk, const struct xdp_gen_config
 unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, bool mirror_enabled,
 				int (*receive_function)(void *data, unsigned char *, size_t),
 				void *data, const struct xdp_tx_time *tx_time);
+void xdp_get_timestamp_metadata(void *data, uint64_t *rx_hw_ts, uint64_t *rx_sw_ts);
 
 #endif /* _XDP_H_ */

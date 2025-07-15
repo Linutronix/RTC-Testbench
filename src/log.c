@@ -126,6 +126,23 @@ static void log_add_traffic_class(const char *name, enum stat_frame_type frame_t
 	*buffer += written;
 	*length -= written;
 
+	if (config_have_rx_timestamp() && app_config.classes[frame_type].xdp_enabled) {
+		written = snprintf(*buffer, *length,
+				   "%sRxMin=%" PRIu64 " [us] | %sRxMax=%" PRIu64
+				   " [us] | %sRxAvg=%lf [us] | "
+				   "%sRxHw2XdpMin=%" PRIu64 " [us] | %sRxHw2XdpMax=%" PRIu64
+				   " [us] | %sRxHw2XdpAvg=%lf [us] | "
+				   "%sRxXdp2AppMin=%" PRIu64 " [us] | %sRxXdp2AppMax=%" PRIu64
+				   " [us] | %sRxXdp2AppAvg=%lf [us] | ",
+				   name, stat->rx_min, name, stat->rx_max, name, stat->rx_avg, name,
+				   stat->rx_hw2xdp_min, name, stat->rx_hw2xdp_max, name,
+				   stat->rx_hw2xdp_avg, name, stat->rx_xdp2app_min, name,
+				   stat->rx_xdp2app_max, name, stat->rx_xdp2app_avg);
+
+		*buffer += written;
+		*length -= written;
+	}
+
 	if (stat_frame_type_is_real_time(frame_type)) {
 		written = snprintf(*buffer, *length,
 				   "%sRttOutliers=%" PRIu64 " | %sOnewayOutliers=%" PRIu64 " | ",

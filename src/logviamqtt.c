@@ -87,6 +87,15 @@ static void log_via_mqtt_add_traffic_class(struct mosquitto *mosq, const char *m
 			   "\t\t\t\"OnewayMin\" : %" PRIu64 ",\n"
 			   "\t\t\t\"OnewayMax\" : %" PRIu64 ",\n"
 			   "\t\t\t\"OnewayAv\" : %lf,\n"
+			   "\t\t\t\"RxMin\" : %" PRIu64 ",\n"
+			   "\t\t\t\"RxMax\" : %" PRIu64 ",\n"
+			   "\t\t\t\"RxAv\" : %lf,\n"
+			   "\t\t\t\"RxHw2XdpMin\" : %" PRIu64 ",\n"
+			   "\t\t\t\"RxHw2XdpMax\" : %" PRIu64 ",\n"
+			   "\t\t\t\"RxHw2XdpAv\" : %lf,\n"
+			   "\t\t\t\"RxXdp2AppMin\" : %" PRIu64 ",\n"
+			   "\t\t\t\"RxXdp2AppMax\" : %" PRIu64 ",\n"
+			   "\t\t\t\"RxXdp2AppAv\" : %lf,\n"
 			   "\t\t\t\"OutofOrderErrors\" : %" PRIu64 ",\n"
 			   "\t\t\t\"FrameIdErrors\" : %" PRIu64 ",\n"
 			   "\t\t\t\"PayloadErrors\" : %" PRIu64 ",\n"
@@ -94,9 +103,11 @@ static void log_via_mqtt_add_traffic_class(struct mosquitto *mosq, const char *m
 			   "\t\t\t\"OnewayOutliers\" : %" PRIu64 "\n\t\t}",
 			   "stats", name, stat->frames_sent, stat->frames_received,
 			   stat->round_trip_min, stat->round_trip_max, stat->round_trip_avg,
-			   stat->oneway_min, stat->oneway_max, stat->oneway_avg,
-			   stat->out_of_order_errors, stat->frame_id_errors, stat->payload_errors,
-			   stat->round_trip_outliers, stat->oneway_outliers);
+			   stat->oneway_min, stat->oneway_max, stat->oneway_avg, stat->rx_min,
+			   stat->rx_max, stat->rx_avg, stat->rx_hw2xdp_min, stat->rx_hw2xdp_max,
+			   stat->rx_hw2xdp_avg, stat->rx_xdp2app_min, stat->rx_xdp2app_max,
+			   stat->rx_xdp2app_avg, stat->out_of_order_errors, stat->frame_id_errors,
+			   stat->payload_errors, stat->round_trip_outliers, stat->oneway_outliers);
 
 	p += written;
 	stat_message_length -= written;
