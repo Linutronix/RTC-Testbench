@@ -83,3 +83,6 @@ and options.
 
    * - MQTT
      - WITH_MQTT
+
+   * - Show Packet RX Latency
+     - RX_TIMESTAMP
