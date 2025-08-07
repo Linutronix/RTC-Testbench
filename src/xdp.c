@@ -591,6 +591,7 @@ unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, boo
 		/* Parse it */
 		addr = xsk_umem__add_offset_to_addr(addr);
 		packet = xsk_umem__get_data(xsk->umem.buffer, addr);
+		receive_function(data, packet, len);
 
 		if (mirror_enabled) {
 			struct xdp_desc *tx_desc = xsk_ring_prod__tx_desc(&xsk->tx, idx_tx++);
@@ -606,8 +607,6 @@ unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, boo
 			/* Move buffer back to fill queue */
 			*xsk_ring_prod__fill_addr(&xsk->umem.fq, idx_fq++) = orig;
 		}
-
-		receive_function(data, packet, len);
 	}
 
 	if (mirror_enabled) {
