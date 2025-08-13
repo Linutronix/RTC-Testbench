@@ -17,7 +17,11 @@
 #include <linux/if_link.h>
 #include <linux/ip.h>
 #include <linux/limits.h>
+#include <linux/net_tstamp.h>
+#include <linux/sockios.h>
 #include <linux/udp.h>
+#include <stdio.h>
+#include <sys/ioctl.h>
 
 #include "app_config.h"
 
@@ -48,6 +52,105 @@ static void xdp_set_prog_bind_flags(struct bpf_object *obj, unsigned int if_inde
 	setenv("LIBXDP_SKIP_DISPATCHER", "1", 1);
 #endif
 }
+
+#ifdef TX_TIMESTAMP
+static int xdp_enable_hw_tx_timestamping(const char *if_name)
+{
+	struct ifreq ifr = {};
+	struct hwtstamp_config hwconfig = {};
+	int socket_fd;
+
+	socket_fd = socket(PF_INET, SOCK_DGRAM, 0);
+	if (socket_fd < 0) {
+		fprintf(stderr, "XdpTxHwTs: Failed to create socket for interface %s: %s\n",
+			if_name, strerror(errno));
+		return -errno;
+	}
+
+	strncpy(ifr.ifr_name, if_name, IFNAMSIZ - 1);
+	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+	ifr.ifr_data = (char *)&hwconfig;
+
+	if (ioctl(socket_fd, SIOCGHWTSTAMP, &ifr) < 0) {
+		fprintf(stderr, "XdpTxHwTs: Failed to read HW timestamp config for %s: %s\n",
+			if_name, strerror(errno));
+		close(socket_fd);
+		return -errno;
+	}
+
+	if (hwconfig.rx_filter != HWTSTAMP_FILTER_NONE) {
+		log_message(
+			LOG_LEVEL_INFO,
+			"XdpTxHwTs: ptp4l or another service already configured RX HW timestamping "
+			"on %s — keeping existing RX settings\n",
+			if_name);
+	}
+
+	if (hwconfig.tx_type == HWTSTAMP_TX_ON) {
+		log_message(
+			LOG_LEVEL_INFO,
+			"XdpTxHwTs: TX HW timestamping already enabled on %s — skipping reapply\n",
+			if_name);
+		close(socket_fd);
+		return 0;
+	}
+
+	/* Only change TX type, keep RX settings */
+	hwconfig.tx_type = HWTSTAMP_TX_ON;
+	ifr.ifr_data = (char *)&hwconfig;
+
+	if (ioctl(socket_fd, SIOCSHWTSTAMP, &ifr) < 0) {
+		if (errno == EINVAL || errno == EOPNOTSUPP) {
+			fprintf(stderr,
+				"XdpTxHwTs: HW timestamping not supported by driver on %s\n",
+				if_name);
+		} else {
+			fprintf(stderr,
+				"XdpTxHwTs: Failed to enable HW TX timestamping on %s: %s\n",
+				if_name, strerror(errno));
+		}
+		close(socket_fd);
+		return -errno;
+	}
+
+	log_message(
+		LOG_LEVEL_INFO,
+		"XdpTxHwTs: HW TX timestamping enabled for interface %s (RX config preserved)\n",
+		if_name);
+	close(socket_fd);
+	return 0;
+}
+
+static void xdp_process_tx_timestamp(struct xdp_socket *xsk, uint32_t idx_cq)
+{
+	struct round_trip_context *rtt = xsk->rtt;
+	uint64_t seq = xsk->tx_hw_ts_seq_lagged;
+	size_t idx = seq % rtt->backlog_len;
+
+	uint64_t addr = *xsk_ring_cons__comp_addr(&xsk->umem.cq, idx_cq);
+	unsigned char *data = xsk_umem__get_data(xsk->umem.buffer, addr);
+	struct xsk_tx_metadata *meta =
+		(struct xsk_tx_metadata *)(data - sizeof(struct xsk_tx_metadata));
+
+	log_message(LOG_LEVEL_DEBUG,
+		    "XdpTxHwTs CQ[0]: addr=0x%llx, flags=0x%llx, ts=%llu, seq=%llu, idx=%zu\n",
+		    (unsigned long long)addr, (unsigned long long)meta->flags,
+		    (unsigned long long)meta->completion.tx_timestamp, (unsigned long long)seq,
+		    idx);
+
+	if (meta->flags & XDP_TXMD_FLAGS_TIMESTAMP) {
+		rtt->backlog[idx].hw_ts = meta->completion.tx_timestamp;
+
+		/* Determine the frame type from the round trip context */
+		enum stat_frame_type frame_type = (enum stat_frame_type)(rtt - round_trip_contexts);
+		stat_frame_sent_latency(frame_type, seq);
+	} else {
+		log_message(LOG_LEVEL_WARNING,
+			    "XDP TX HW timestamp missing for expected seq %" PRIu64 ", idx=%zu\n",
+			    seq, idx);
+	}
+}
+#endif
 
 static int xdp_load_program(struct xdp_socket *xsk, const char *interface, const char *xdp_program,
 			    int skb_mode)
@@ -165,7 +268,7 @@ static int xdp_configure_socket_options(struct xdp_socket *xsk, bool busy_poll_m
 	return ret;
 }
 
-static int xdp_umem_create(struct xdp_socket *xsk, bool tx_time_mode)
+static int xdp_umem_create(struct xdp_socket *xsk, bool tx_time_mode, bool tx_hwtstamp_mode)
 {
 	void *buffer = NULL;
 	int ret;
@@ -179,18 +282,20 @@ static int xdp_umem_create(struct xdp_socket *xsk, bool tx_time_mode)
 	memset(buffer, '\0', XDP_NUM_FRAMES * XDP_FRAME_SIZE);
 
 	/*
-	 * libxdp >= 1.5.0 exports a new function called xsk_umem__create_opts() which supports Tx
-	 * MetaData. Use this variant if available.
+	 * libxdp >= 1.5.0 supports Tx metadata via xsk_umem__create_opts().
+	 * Enable metadata if either tx_time_mode or tx_hwtstamp_mode is true.
 	 */
-#ifdef HAVE_XDP_TX_TIME
-	DECLARE_LIBXDP_OPTS(xsk_umem_opts, cfg, .size = XDP_NUM_FRAMES * XDP_FRAME_SIZE,
-			    .fill_size = XSK_RING_PROD__DEFAULT_NUM_DESCS,
-			    .comp_size = XSK_RING_CONS__DEFAULT_NUM_DESCS,
-			    .frame_size = XDP_FRAME_SIZE,
-			    .frame_headroom = XSK_UMEM__DEFAULT_FRAME_HEADROOM,
-			    /* struct xsk_tx_metadata contains all AF_XDP offload requests. */
-			    .flags = tx_time_mode ? XDP_UMEM_TX_METADATA_LEN : 0,
-			    .tx_metadata_len = tx_time_mode ? sizeof(struct xsk_tx_metadata) : 0, );
+#if defined(HAVE_XDP_TX_TIME) || defined(TX_TIMESTAMP)
+	bool use_tx_metadata = tx_time_mode || tx_hwtstamp_mode;
+
+	DECLARE_LIBXDP_OPTS(
+		xsk_umem_opts, cfg, .size = XDP_NUM_FRAMES * XDP_FRAME_SIZE,
+		.fill_size = XSK_RING_PROD__DEFAULT_NUM_DESCS,
+		.comp_size = XSK_RING_CONS__DEFAULT_NUM_DESCS, .frame_size = XDP_FRAME_SIZE,
+		.frame_headroom = XSK_UMEM__DEFAULT_FRAME_HEADROOM,
+		/* struct xsk_tx_metadata contains all AF_XDP offload requests. */
+		.flags = use_tx_metadata ? XDP_UMEM_TX_METADATA_LEN : 0,
+		.tx_metadata_len = use_tx_metadata ? sizeof(struct xsk_tx_metadata) : 0, );
 
 	xsk->umem.umem = xsk_umem__create_opts(buffer, &xsk->umem.fq, &xsk->umem.cq, &cfg);
 	if (!xsk->umem.umem) {
@@ -217,6 +322,7 @@ static int xdp_umem_create(struct xdp_socket *xsk, bool tx_time_mode)
 
 	xsk->umem.buffer = buffer;
 	xsk->tx_time_mode = tx_time_mode;
+	xsk->tx_hwtstamp_mode = tx_hwtstamp_mode;
 	return 0;
 
 err:
@@ -226,7 +332,7 @@ err:
 
 struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_program, int queue,
 				   bool skb_mode, bool zero_copy_mode, bool wakeup_mode,
-				   bool busy_poll_mode, bool tx_time_mode)
+				   bool busy_poll_mode, bool tx_time_mode, bool tx_hwtstamp_mode)
 {
 	struct xsk_socket_config xsk_cfg;
 	struct xdp_socket *xsk;
@@ -241,8 +347,19 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 	if (ret)
 		goto err;
 
+	/* Enable HW TX timestamping if requested */
+#ifdef TX_TIMESTAMP
+	if (tx_hwtstamp_mode) {
+		ret = xdp_enable_hw_tx_timestamping(interface);
+		if (ret) {
+			fprintf(stderr, "Failed to enable HW TX timestamping on %s!\n", interface);
+			goto err;
+		}
+	}
+#endif
+
 	/* Allocate and register AF_XDP umem area */
-	ret = xdp_umem_create(xsk, tx_time_mode);
+	ret = xdp_umem_create(xsk, tx_time_mode, tx_hwtstamp_mode);
 	if (ret) {
 		fprintf(stderr, "Failed to allocate AF_XDP UMEM area!\n");
 		goto err2;
@@ -250,7 +367,6 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 
 	/* Add some buffers */
 	ret = xsk_ring_prod__reserve(&xsk->umem.fq, XSK_RING_PROD__DEFAULT_NUM_DESCS, &idx);
-
 	if (ret != XSK_RING_PROD__DEFAULT_NUM_DESCS) {
 		fprintf(stderr, "xsk_ring_prod__reserve() failed\n");
 		goto err3;
@@ -260,8 +376,8 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 		*xsk_ring_prod__fill_addr(&xsk->umem.fq, idx) = i * XDP_FRAME_SIZE;
 
 		/* Reserve space for Tx Meta Data on retransmit. */
-#ifdef HAVE_XDP_TX_TIME
-		if (xsk->tx_time_mode)
+#if defined(HAVE_XDP_TX_TIME) || defined(TX_TIMESTAMP)
+		if (tx_time_mode || tx_hwtstamp_mode)
 			*xsk_ring_prod__fill_addr(&xsk->umem.fq, idx) +=
 				sizeof(struct xsk_tx_metadata);
 #endif
@@ -357,6 +473,12 @@ void xdp_complete_tx_only(struct xdp_socket *xsk)
 	if (!received)
 		return;
 
+#ifdef TX_TIMESTAMP
+	if (xsk->tx_hwtstamp_mode) {
+		xdp_process_tx_timestamp(xsk, idx_cq);
+	}
+#endif
+
 	xsk_ring_cons__release(&xsk->umem.cq, received);
 	xsk->outstanding_tx -= received;
 }
@@ -380,6 +502,12 @@ void xdp_complete_tx(struct xdp_socket *xsk)
 	if (!received)
 		return;
 
+#ifdef TX_TIMESTAMP
+	if (xsk->tx_hwtstamp_mode) {
+		xdp_process_tx_timestamp(xsk, idx_cq);
+	}
+#endif
+
 	/* Re-add for Rx */
 	ret = xsk_ring_prod__reserve(&xsk->umem.fq, received, &idx_fq);
 	while (ret != received) {
@@ -391,9 +519,14 @@ void xdp_complete_tx(struct xdp_socket *xsk)
 		ret = xsk_ring_prod__reserve(&xsk->umem.fq, received, &idx_fq);
 	}
 
-	for (i = 0; i < received; ++i)
-		*xsk_ring_prod__fill_addr(&xsk->umem.fq, idx_fq++) =
-			*xsk_ring_cons__comp_addr(&xsk->umem.cq, idx_cq++);
+	/*
+	 * Use explicit indexing to avoid re-reading comp[0], which was already accessed for HW
+	 * timestamping
+	 */
+	for (i = 0; i < received; ++i) {
+		uint64_t addr = *xsk_ring_cons__comp_addr(&xsk->umem.cq, idx_cq + i);
+		*xsk_ring_prod__fill_addr(&xsk->umem.fq, idx_fq + i) = addr;
+	}
 
 	xsk_ring_prod__submit(&xsk->umem.fq, received);
 	xsk_ring_cons__release(&xsk->umem.cq, received);
@@ -405,26 +538,43 @@ static unsigned char *xdp_prepare_tx_desc(struct xdp_socket *xsk, struct xdp_des
 {
 	unsigned char *data;
 
-#ifdef HAVE_XDP_TX_TIME
-	/* Add Tx Launch Time if supported. */
-	if (xsk->tx_time_mode) {
+#if defined(HAVE_XDP_TX_TIME) || defined(TX_TIMESTAMP)
+	/* Add Tx Time or Tx HW Timestamp request if supported */
+	if (xsk->tx_time_mode || xsk->tx_hwtstamp_mode) {
 		struct xsk_tx_metadata *meta;
-		uint64_t time;
 
-		/* Reserve meta data space for Tx Time. */
+		/* Reserve meta data space for Tx Time and Tx HW Timestamp */
 		if (tx)
 			tx_desc->addr += sizeof(struct xsk_tx_metadata);
 
 		data = xsk_umem__get_data(xsk->umem.buffer, tx_desc->addr);
 		meta = (struct xsk_tx_metadata *)(data - sizeof(struct xsk_tx_metadata));
 
-		/* Add Tx Launch Time to Tx desc. */
-		meta->flags = XDP_TXMD_FLAGS_LAUNCH_TIME;
-		time = tx_time_get_frame_tx_time(tx_time->sequence_counter_begin + i,
-						 tx_time->duration, tx_time->num_frames_per_cycle,
-						 tx_time->tx_time_offset, tx_time->traffic_class);
-		meta->request.launch_time = time;
+		/* Zero out entire metadata struct before filling */
+		memset(meta, 0, sizeof(*meta));
 
+		/* Set flags and request fields */
+		meta->flags = 0;
+#ifdef HAVE_XDP_TX_TIME
+		if (xsk->tx_time_mode) {
+			uint64_t time;
+
+			meta->flags |= XDP_TXMD_FLAGS_LAUNCH_TIME;
+			time = tx_time_get_frame_tx_time(
+				tx_time->sequence_counter_begin + i, tx_time->duration,
+				tx_time->num_frames_per_cycle, tx_time->tx_time_offset,
+				tx_time->traffic_class);
+			meta->request.launch_time = time;
+		}
+#endif
+#ifdef TX_TIMESTAMP
+		/* Only timestamp first packet per cycle */
+		if (xsk->tx_hwtstamp_mode && i == 0) {
+			meta->flags |= XDP_TXMD_FLAGS_TIMESTAMP;
+			/* Initialize TX HW timestamp */
+			meta->completion.tx_timestamp = 0;
+		}
+#endif
 		tx_desc->options |= XDP_TX_METADATA;
 	} else {
 		data = xsk_umem__get_data(xsk->umem.buffer, tx_desc->addr);
@@ -508,7 +658,22 @@ void xdp_gen_and_send_frames(struct xdp_socket *xsk, const struct xdp_gen_config
 	/* Kick Tx */
 	xdp_complete_tx_only(xsk);
 
-	/* Log */
+	/* Log SW timestamps */
+#ifdef TX_TIMESTAMP
+	if (xsk->tx_hwtstamp_mode) {
+		/*
+		 * When TX HW timestamping is enabled, record SW timestamp once per cycle
+		 * (for the first frame in this cycle) and count all frames
+		 */
+		stat_frames_sent_batch(xdp->frame_type, xdp->sequence_counter_begin,
+				       xdp->num_frames_per_cycle);
+
+		/* Update the sequence number for expected HW timestamp in next cycle */
+		xsk->tx_hw_ts_seq_lagged = xdp->sequence_counter_begin;
+		return;
+	}
+#endif
+	/* Normal mode: record SW timestamp for each frame */
 	for (i = 0; i < xdp->num_frames_per_cycle; ++i)
 		stat_frame_sent(xdp->frame_type, xdp->sequence_counter_begin + i);
 }
@@ -600,8 +765,8 @@ unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, boo
 			tx_desc->addr = orig;
 			tx_desc->len = frame_length;
 
-			/* Prepare tx desc with Tx Time */
-			if (xsk->tx_time_mode)
+			/* Prepare tx desc with Tx Time or Tx HW timestamp */
+			if (xsk->tx_time_mode || xsk->tx_hwtstamp_mode)
 				xdp_prepare_tx_desc(xsk, tx_desc, tx_time, i, false);
 		} else {
 			/* Move buffer back to fill queue */

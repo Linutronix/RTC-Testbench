@@ -15,6 +15,8 @@
 enum log_stat_options {
 	LOG_REFERENCE = 0,
 	LOG_MIRROR,
+	/* Mirror mode with TX timestamping enabled */
+	LOG_TX_TIMESTAMPS,
 	LOG_NUM_OPTIONS
 };
 
@@ -85,10 +87,22 @@ struct statistics {
 	uint64_t rx_xdp2app_max;
 	double rx_xdp2app_sum;
 	double rx_xdp2app_avg;
+	/* Tx latency from user space (at send) to NIC Tx HW timestamp */
+	uint64_t tx_min;
+	uint64_t tx_max;
+	uint64_t tx_count;
+	uint64_t tx_hw_timestamp_missing;
+	double tx_sum;
+	double tx_avg;
+};
+
+struct rtt_entry {
+	uint64_t sw_ts;
+	uint64_t hw_ts;
 };
 
 struct round_trip_context {
-	int64_t *backlog;
+	struct rtt_entry *backlog;
 	size_t backlog_len;
 };
 
@@ -96,13 +110,17 @@ int stat_init(enum log_stat_options log_selection);
 void stat_free(void);
 const char *stat_frame_type_to_string(enum stat_frame_type frame_type);
 void stat_frame_sent(enum stat_frame_type frame_type, uint64_t cycle_number);
+void stat_frames_sent_batch(enum stat_frame_type frame_type, uint64_t cycle_number,
+			    uint64_t frame_count);
 void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number, bool out_of_order,
 			 bool payload_mismatch, bool frame_id_mismatch, uint64_t tx_timestamp,
 			 uint64_t rx_hw_timestamp, uint64_t rx_sw_timestamp);
 void stat_update(void);
 void stat_get_global_stats(struct statistics *stats, size_t len);
 void stat_get_stats_per_period(struct statistics *stats, size_t len);
+void stat_frame_sent_latency(enum stat_frame_type frame_type, uint64_t seq);
 
 extern volatile sig_atomic_t reset_stats;
+extern struct round_trip_context round_trip_contexts[NUM_FRAME_TYPES];
 
 #endif /* _STAT_H_ */

@@ -40,7 +40,7 @@ static pthread_mutex_t global_statistics_mutex;
 static struct statistics statistics_per_period[NUM_FRAME_TYPES];
 static struct statistics statistics_per_period_for_log[NUM_FRAME_TYPES];
 
-static struct round_trip_context round_trip_contexts[NUM_FRAME_TYPES];
+struct round_trip_context round_trip_contexts[NUM_FRAME_TYPES];
 static uint64_t rtt_expected_rt_limit;
 static int log_stat_user_selected;
 static FILE *file_tracing_on;
@@ -70,6 +70,7 @@ static void stat_reset(struct statistics *stats)
 	stats->rx_min = UINT64_MAX;
 	stats->rx_hw2xdp_min = UINT64_MAX;
 	stats->rx_xdp2app_min = UINT64_MAX;
+	stats->tx_min = UINT64_MAX;
 }
 
 int stat_init(enum log_stat_options log_selection)
@@ -81,18 +82,26 @@ int stat_init(enum log_stat_options log_selection)
 
 	init_mutex(&global_statistics_mutex);
 
-	if (log_selection == LOG_REFERENCE) {
+	if (log_selection == LOG_REFERENCE || log_selection == LOG_TX_TIMESTAMPS) {
 		bool allocation_error = false;
 
 		for (i = 0; i < NUM_FRAME_TYPES; i++) {
-			struct round_trip_context *current_context = &round_trip_contexts[i];
+			bool needs_backlog = (log_selection == LOG_REFERENCE) ||
+					     (log_selection == LOG_TX_TIMESTAMPS &&
+					      app_config.classes[i].tx_hwtstamp_enabled);
 
-			current_context->backlog_len =
-				STAT_MAX_BACKLOG * app_config.classes[i].num_frames_per_cycle;
+			if (needs_backlog) {
+				struct round_trip_context *current_context =
+					&round_trip_contexts[i];
 
-			current_context->backlog =
-				calloc(current_context->backlog_len, sizeof(int64_t));
-			allocation_error |= !current_context->backlog;
+				current_context->backlog_len =
+					STAT_MAX_BACKLOG *
+					app_config.classes[i].num_frames_per_cycle;
+
+				current_context->backlog = calloc(current_context->backlog_len,
+								  sizeof(struct rtt_entry));
+				allocation_error |= !current_context->backlog;
+			}
 		}
 
 		if (allocation_error)
@@ -265,6 +274,18 @@ static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_
 	return outlier;
 }
 
+#ifdef TX_TIMESTAMP
+static void stat_frame_sent_latency_common(struct statistics *stat, enum stat_frame_type frame_type,
+					   uint64_t tx_latency_us)
+{
+	stat_update_min_max(tx_latency_us, &stat->tx_min, &stat->tx_max);
+
+	stat->tx_count++;
+	stat->tx_sum += tx_latency_us;
+	stat->tx_avg = stat->tx_sum / (double)stat->tx_count;
+}
+#endif
+
 #if defined(WITH_MQTT)
 static void stat_frame_received_per_period(enum stat_frame_type frame_type, uint64_t curr_time,
 					   uint64_t rt_time, uint64_t oneway_time,
@@ -287,6 +308,16 @@ static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
 	/* Just increment the Tx counter. The reset per period is done by the Rx part. */
 	stat_per_period->frames_sent++;
 }
+
+#ifdef TX_TIMESTAMP
+static void stat_frame_sent_latency_per_period(enum stat_frame_type frame_type,
+					       uint64_t tx_latency_us)
+{
+	struct statistics *stat_per_period = &statistics_per_period[frame_type];
+
+	stat_frame_sent_latency_common(stat_per_period, frame_type, tx_latency_us);
+}
+#endif
 #else
 static void stat_frame_received_per_period(enum stat_frame_type frame_type, uint64_t curr_time,
 					   uint64_t rt_time, bool out_of_order,
@@ -299,27 +330,100 @@ static void stat_frame_received_per_period(enum stat_frame_type frame_type, uint
 static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
 {
 }
+
+#ifdef TX_TIMESTAMP
+static void stat_frame_sent_latency_per_period(enum stat_frame_type frame_type,
+					       uint64_t tx_latency_us)
+{
+}
+#endif
 #endif
 
 void stat_frame_sent(enum stat_frame_type frame_type, uint64_t cycle_number)
 {
+	/* Single frame is just a batch operation with count=1 */
+	stat_frames_sent_batch(frame_type, cycle_number, 1);
+}
+
+void stat_frames_sent_batch(enum stat_frame_type frame_type, uint64_t cycle_number,
+			    uint64_t frame_count)
+{
 	struct round_trip_context *rtt = &round_trip_contexts[frame_type];
 	struct statistics *stat = &global_statistics[frame_type];
+	size_t idx = cycle_number % rtt->backlog_len;
 	struct timespec tx_time = {};
 
-	log_message(LOG_LEVEL_DEBUG, "%s: frame[%" PRIu64 "] sent\n",
-		    stat_frame_type_to_string(frame_type), cycle_number);
-
-	if (log_stat_user_selected == LOG_REFERENCE) {
-		/* Record Tx timestamp in */
-		clock_gettime(app_config.application_clock_id, &tx_time);
-		rtt->backlog[cycle_number % rtt->backlog_len] = ts_to_ns(&tx_time);
+	if (frame_count == 1) {
+		log_message(LOG_LEVEL_DEBUG, "%s: frame[%" PRIu64 "] sent\n",
+			    stat_frame_type_to_string(frame_type), cycle_number);
+	} else {
+		log_message(LOG_LEVEL_DEBUG, "%s: %" PRIu64 " frames[%" PRIu64 "] sent\n",
+			    stat_frame_type_to_string(frame_type), frame_count, cycle_number);
 	}
 
-	/* Increment stats */
-	stat_frame_sent_per_period(frame_type);
-	stat->frames_sent++;
+	if ((log_stat_user_selected == LOG_REFERENCE ||
+	     log_stat_user_selected == LOG_TX_TIMESTAMPS) &&
+	    rtt->backlog) {
+		/* Record Tx SW timestamp for the first frame in the cycle */
+		clock_gettime(app_config.application_clock_id, &tx_time);
+		rtt->backlog[idx].sw_ts = ts_to_ns(&tx_time);
+	}
+
+	/* Increment stats by frame_count */
+	for (uint64_t i = 0; i < frame_count; i++) {
+		stat_frame_sent_per_period(frame_type);
+	}
+	stat->frames_sent += frame_count;
 }
+
+#ifdef TX_TIMESTAMP
+void stat_frame_sent_latency(enum stat_frame_type frame_type, uint64_t seq)
+{
+	bool hwtstamp_enabled = app_config.classes[frame_type].tx_hwtstamp_enabled;
+	struct statistics *stat_per_period = &statistics_per_period[frame_type];
+	struct round_trip_context *rtt = &round_trip_contexts[frame_type];
+	struct statistics *stat = &global_statistics[frame_type];
+	size_t idx = seq % rtt->backlog_len;
+	uint64_t sw_ts = rtt->backlog[idx].sw_ts;
+	uint64_t hw_ts = rtt->backlog[idx].hw_ts;
+
+	if (!hwtstamp_enabled) {
+		log_message(LOG_LEVEL_INFO,
+			    "TxLatency [%s] HW timestamping disabled — skipping Tx latency stat\n",
+			    stat_frame_type_to_string(frame_type));
+		return;
+	}
+
+	if (hw_ts > sw_ts) {
+		int64_t latency = (int64_t)(hw_ts - sw_ts);
+
+		latency /= 1000;
+
+		log_message(LOG_LEVEL_DEBUG,
+			    "TxLatency [%s] Seq %" PRIu64
+			    ": SW %llu ns, HW %llu ns, latency %lld us, idx=%zu\n",
+			    stat_frame_type_to_string(frame_type), seq, (unsigned long long)sw_ts,
+			    (unsigned long long)hw_ts, (long long)latency, idx);
+
+		/* Update global stats */
+		stat_frame_sent_latency_common(stat, frame_type, latency);
+
+		/* Update stats per collection interval */
+		stat_frame_sent_latency_per_period(frame_type, latency);
+
+	} else {
+		/* HW timestamp missing — update both global & per-period */
+		stat->tx_hw_timestamp_missing++;
+		stat_per_period->tx_hw_timestamp_missing++;
+
+		log_message(LOG_LEVEL_DEBUG,
+			    "TxLatency [%s] Seq %" PRIu64
+			    ": No HW Tx timestamp for SW %llu ns, idx=%zu\n",
+			    stat_frame_type_to_string(frame_type), seq, (unsigned long long)sw_ts,
+			    idx);
+	}
+}
+#endif
 
 void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number, bool out_of_order,
 			 bool payload_mismatch, bool frame_id_mismatch, uint64_t tx_timestamp,
@@ -341,9 +445,34 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 	curr_time = ts_to_ns(&rx_time);
 
 	if (log_stat_user_selected == LOG_REFERENCE) {
+		uint64_t tx_sw_ts;
+		size_t backlog_idx;
+
+		/* Determine which timestamp to use based on TX HW timestamp configuration */
+		if (app_config.classes[frame_type].tx_hwtstamp_enabled) {
+			/*
+			 * When TX HW timestamping is enabled, only first frame of each cycle has
+			 * timestamp
+			 */
+			uint64_t first_frame_in_cycle =
+				(cycle_number /
+				 app_config.classes[frame_type].num_frames_per_cycle) *
+				app_config.classes[frame_type].num_frames_per_cycle;
+			backlog_idx = first_frame_in_cycle % rtt->backlog_len;
+			tx_sw_ts = rtt->backlog[backlog_idx].sw_ts;
+		} else {
+			/* When TX HW timestamping is disabled, each frame has its own timestamp */
+			backlog_idx = cycle_number % rtt->backlog_len;
+			tx_sw_ts = rtt->backlog[backlog_idx].sw_ts;
+		}
+
 		/* Calc Round Trip Time */
-		rt_time = curr_time - rtt->backlog[cycle_number % rtt->backlog_len];
-		rt_time /= 1000;
+		if (tx_sw_ts != 0) {
+			rt_time = curr_time - tx_sw_ts;
+			rt_time /= 1000;
+		} else {
+			rt_time = 0;
+		}
 
 		/* Update histogram */
 		if (histogram)

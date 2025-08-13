@@ -28,6 +28,7 @@
 #include "security.h"
 #include "stat.h"
 #include "utils.h"
+#include "xdp.h"
 
 static void rta_initialize_frames(struct thread_context *thread_context, unsigned char *frame_data,
 				  size_t num_frames, const unsigned char *source,
@@ -36,13 +37,27 @@ static void rta_initialize_frames(struct thread_context *thread_context, unsigne
 	const struct traffic_class_config *rta_config = thread_context->conf;
 	size_t i;
 
-	for (i = 0; i < num_frames; ++i)
-		initialize_profinet_frame(rta_config->security_mode, frame_idx(frame_data, i),
-					  MAX_FRAME_SIZE, source, destination,
-					  rta_config->payload_pattern,
+	for (i = 0; i < num_frames; ++i) {
+		unsigned char *frame = frame_idx(frame_data, i);
+		size_t frame_length = MAX_FRAME_SIZE;
+
+		/*
+		 * In case both AF_XDP and Tx HW Timestamp are enabled the payload starts at:
+		 *   frame_data + sizeof(struct xsk_tx_metadata)
+		 */
+#ifdef TX_TIMESTAMP
+		if (rta_config->xdp_enabled && rta_config->tx_hwtstamp_enabled) {
+			frame += sizeof(struct xsk_tx_metadata);
+			frame_length -= sizeof(struct xsk_tx_metadata);
+		}
+#endif
+
+		initialize_profinet_frame(rta_config->security_mode, frame, frame_length, source,
+					  destination, rta_config->payload_pattern,
 					  rta_config->payload_pattern_length,
 					  rta_config->vid | rta_config->pcp << VLAN_PCP_SHIFT,
 					  thread_context->frame_id);
+	}
 }
 
 static int rta_send_messages(struct thread_context *thread_context, int socket_fd,
@@ -284,6 +299,8 @@ static void *rta_xdp_tx_thread_routine(void *data)
 	int ret;
 
 	xsk = thread_context->xsk;
+	xsk->rtt = &round_trip_contexts[RTA_FRAME_TYPE];
+	xsk->tx_hw_ts_seq_lagged = 0;
 
 	ret = get_interface_mac_address(rta_config->interface, source, ETH_ALEN);
 	if (ret < 0) {
@@ -357,12 +374,36 @@ static void *rta_xdp_tx_thread_routine(void *data)
 
 			xsk_ring_prod__submit(&xsk->tx, received);
 
-			for (i = sequence_counter; i < sequence_counter + received; ++i)
-				stat_frame_sent(RTA_FRAME_TYPE, i);
+			if (received > 0) {
+				if (rta_config->tx_hwtstamp_enabled) {
+					/*
+					 * Once-per-cycle: record TX SW timestamp for the first
+					 * packet in this cycle and count all frames
+					 */
+					stat_frames_sent_batch(RTA_FRAME_TYPE, sequence_counter,
+							       received);
+				} else {
+					for (i = sequence_counter; i < sequence_counter + received;
+					     ++i)
+						stat_frame_sent(RTA_FRAME_TYPE, i);
+				}
+			}
 
 			xsk->outstanding_tx += received;
 			thread_context->received_frames = 0;
 			xdp_complete_tx(xsk);
+
+#ifdef TX_TIMESTAMP
+			if (received > 0 && rta_config->tx_hwtstamp_enabled) {
+				/*
+				 * TX HW timestamp becomes available in the next cycle
+				 * after the packet is transmitted.
+				 * This is one cycle later than SW timestamp tracked
+				 * using sequence_counter
+				 */
+				xsk->tx_hw_ts_seq_lagged = sequence_counter;
+			}
+#endif
 
 			pthread_mutex_unlock(&thread_context->xdp_data_mutex);
 		}
@@ -580,7 +621,8 @@ int rta_threads_create(struct thread_context *thread_context)
 		thread_context->xsk = xdp_open_socket(
 			rta_config->interface, app_config.application_xdp_program,
 			rta_config->rx_queue, rta_config->xdp_skb_mode, rta_config->xdp_zc_mode,
-			rta_config->xdp_wakeup_mode, rta_config->xdp_busy_poll_mode, false);
+			rta_config->xdp_wakeup_mode, rta_config->xdp_busy_poll_mode, false,
+			rta_config->tx_hwtstamp_enabled);
 		if (!thread_context->xsk) {
 			fprintf(stderr, "Failed to create Rta Xdp socket!\n");
 			ret = -ENOMEM;

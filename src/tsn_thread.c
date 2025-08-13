@@ -48,11 +48,12 @@ static void tsn_initialize_frames(struct thread_context *thread_context, unsigne
 		size_t frame_length = MAX_FRAME_SIZE;
 
 		/*
-		 * In case both AF_XDP and Tx Launch Time are enabled the payload starts at:
-		 *   frame_data + sizeof(struct xsk_tx_metadata)
+		 * In case both AF_XDP and Tx Launch Time or Tx HW Timestamp are enabled the payload
+		 * starts at: frame_data + sizeof(struct xsk_tx_metadata)
 		 */
-#ifdef HAVE_XDP_TX_TIME
-		if (tsn_config->xdp_enabled && tsn_config->tx_time_enabled) {
+#if defined(HAVE_XDP_TX_TIME) || defined(TX_TIMESTAMP)
+		if (tsn_config->xdp_enabled &&
+		    (tsn_config->tx_time_enabled || tsn_config->tx_hwtstamp_enabled)) {
 			frame += sizeof(struct xsk_tx_metadata);
 			frame_length -= sizeof(struct xsk_tx_metadata);
 		}
@@ -344,6 +345,8 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 	int ret;
 
 	xsk = thread_context->xsk;
+	xsk->rtt = &round_trip_contexts[thread_context->frame_type];
+	xsk->tx_hw_ts_seq_lagged = 0;
 
 	ret = get_interface_mac_address(tsn_config->interface, source, ETH_ALEN);
 	if (ret < 0) {
@@ -444,12 +447,37 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 
 			xsk_ring_prod__submit(&xsk->tx, received);
 
-			for (i = sequence_counter; i < sequence_counter + received; ++i)
-				stat_frame_sent(thread_context->frame_type, i);
+			if (received > 0) {
+				if (tsn_config->tx_hwtstamp_enabled) {
+					/*
+					 * Once-per-cycle: record TX SW timestamp for the first
+					 * packet in this cycle and count all frames
+					 */
+					stat_frames_sent_batch(thread_context->frame_type,
+							       sequence_counter, received);
+				} else {
+					for (i = sequence_counter; i < sequence_counter + received;
+					     ++i)
+						stat_frame_sent(thread_context->frame_type, i);
+				}
+			}
 
 			xsk->outstanding_tx += received;
 			thread_context->received_frames = 0;
+
 			xdp_complete_tx(xsk);
+
+#ifdef TX_TIMESTAMP
+			if (received > 0 && tsn_config->tx_hwtstamp_enabled) {
+				/*
+				 * TX HW timestamp becomes available in the next cycle
+				 * after the packet is transmitted.
+				 * This is one cycle later than SW timestamp tracked
+				 * using sequence_counter
+				 */
+				xsk->tx_hw_ts_seq_lagged = sequence_counter;
+			}
+#endif
 
 			pthread_mutex_unlock(&thread_context->xdp_data_mutex);
 		}
@@ -638,7 +666,7 @@ int tsn_threads_create(struct thread_context *thread_context)
 			tsn_config->interface, app_config.application_xdp_program,
 			tsn_config->rx_queue, tsn_config->xdp_skb_mode, tsn_config->xdp_zc_mode,
 			tsn_config->xdp_wakeup_mode, tsn_config->xdp_busy_poll_mode,
-			tsn_config->tx_time_enabled);
+			tsn_config->tx_time_enabled, tsn_config->tx_hwtstamp_enabled);
 		if (!thread_context->xsk) {
 			fprintf(stderr, "Failed to create Tsn Xdp socket!\n");
 			ret = -ENOMEM;

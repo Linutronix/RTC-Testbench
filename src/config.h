@@ -37,6 +37,7 @@ struct traffic_class_config {
 	bool xdp_wakeup_mode;
 	bool xdp_busy_poll_mode;
 	bool tx_time_enabled;
+	bool tx_hwtstamp_enabled;
 	bool ignore_rx_errors;
 	uint64_t tx_time_offset_ns;
 	uint64_t burst_period_ns;
@@ -416,6 +417,15 @@ static inline bool config_have_xdp_tx_time(void)
 static inline bool config_have_rx_timestamp(void)
 {
 #ifdef RX_TIMESTAMP
+	return true;
+#else
+	return false;
+#endif
+}
+
+static inline bool config_have_tx_timestamp(void)
+{
+#ifdef TX_TIMESTAMP
 	return true;
 #else
 	return false;

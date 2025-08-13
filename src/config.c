@@ -228,6 +228,8 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighXdpBusyPollMode, xdp_busy_poll_mode);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighTxTimeEnabled, tx_time_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighIgnoreRxErrors, ignore_rx_errors);
+			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighTxTimeStampEnabled,
+						      tx_hwtstamp_enabled);
 			CONFIG_STORE_TIME_PARAM_CLASS(TsnHighTxTimeOffsetNS, tx_time_offset_ns);
 			CONFIG_STORE_INT_PARAM_CLASS(TsnHighVid, vid);
 			CONFIG_STORE_INT_PARAM_CLASS(TsnHighPcp, pcp);
@@ -259,6 +261,8 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpBusyPollMode, xdp_busy_poll_mode);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowTxTimeEnabled, tx_time_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowIgnoreRxErrors, ignore_rx_errors);
+			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowTxTimeStampEnabled,
+						      tx_hwtstamp_enabled);
 			CONFIG_STORE_TIME_PARAM_CLASS(TsnLowTxTimeOffsetNS, tx_time_offset_ns);
 			CONFIG_STORE_INT_PARAM_CLASS(TsnLowVid, vid);
 			CONFIG_STORE_INT_PARAM_CLASS(TsnLowPcp, pcp);
@@ -288,6 +292,7 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpWakeupMode, xdp_wakeup_mode);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpBusyPollMode, xdp_busy_poll_mode);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcIgnoreRxErrors, ignore_rx_errors);
+			CONFIG_STORE_BOOL_PARAM_CLASS(RtcTxTimeStampEnabled, tx_hwtstamp_enabled);
 			CONFIG_STORE_INT_PARAM_CLASS(RtcVid, vid);
 			CONFIG_STORE_INT_PARAM_CLASS(RtcPcp, pcp);
 			CONFIG_STORE_ULONG_PARAM_CLASS(RtcNumFramesPerCycle, num_frames_per_cycle);
@@ -315,6 +320,7 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtaXdpWakeupMode, xdp_wakeup_mode);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtaXdpBusyPollMode, xdp_busy_poll_mode);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtaIgnoreRxErrors, ignore_rx_errors);
+			CONFIG_STORE_BOOL_PARAM_CLASS(RtaTxTimeStampEnabled, tx_hwtstamp_enabled);
 			CONFIG_STORE_INT_PARAM_CLASS(RtaVid, vid);
 			CONFIG_STORE_INT_PARAM_CLASS(RtaPcp, pcp);
 			CONFIG_STORE_TIME_PARAM_CLASS(RtaBurstPeriodNS, burst_period_ns);
@@ -417,6 +423,8 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2XdpBusyPollMode, xdp_busy_poll_mode);
 			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2TxTimeEnabled, tx_time_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2IgnoreRxErrors, ignore_rx_errors);
+			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2TxTimeStampEnabled,
+						      tx_hwtstamp_enabled);
 			CONFIG_STORE_TIME_PARAM_CLASS(GenericL2TxTimeOffsetNS, tx_time_offset_ns);
 			CONFIG_STORE_INT_PARAM_CLASS(GenericL2Vid, vid);
 			CONFIG_STORE_INT_PARAM_CLASS(GenericL2Pcp, pcp);
@@ -539,6 +547,7 @@ void config_print_values(void)
 	printf("TsnHighTxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
 	printf("TsnHighIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
 	printf("TsnHighTxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
+	printf("TsnHighTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
 	printf("TsnHighVid=%d\n", conf->vid);
 	printf("TsnHighPcp=%d\n", conf->pcp);
 	printf("TsnHighNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
@@ -576,6 +585,7 @@ void config_print_values(void)
 	printf("TsnLowTxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
 	printf("TsnLowIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
 	printf("TsnLowTxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
+	printf("TsnLowTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
 	printf("TsnLowVid=%d\n", conf->vid);
 	printf("TsnLowPcp=%d\n", conf->pcp);
 	printf("TsnLowNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
@@ -611,6 +621,7 @@ void config_print_values(void)
 	printf("RtcXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
 	printf("RtcXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
 	printf("RtcIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+	printf("RtcTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
 	printf("RtcVid=%d\n", conf->vid);
 	printf("RtcPcp=%d\n", conf->pcp);
 	printf("RtcNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
@@ -645,6 +656,7 @@ void config_print_values(void)
 	printf("RtaXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
 	printf("RtaXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
 	printf("RtaIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+	printf("RtaTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
 	printf("RtaVid=%d\n", conf->vid);
 	printf("RtaPcp=%d\n", conf->pcp);
 	printf("RtaBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
@@ -781,6 +793,7 @@ void config_print_values(void)
 	printf("GenericL2TxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
 	printf("GenericL2IgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
 	printf("GenericL2TxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
+	printf("GenericL2TxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
 	printf("GenericL2Vid=%d\n", conf->vid);
 	printf("GenericL2Pcp=%d\n", conf->pcp);
 	printf("GenericL2EtherType=0x%04x\n", conf->ether_type);
@@ -882,6 +895,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->tx_time_enabled = false;
 	conf->ignore_rx_errors = false;
 	conf->tx_time_offset_ns = 0;
+	conf->tx_hwtstamp_enabled = false;
 	conf->vid = TSN_HIGH_VID_VALUE;
 	conf->pcp = TSN_HIGH_PCP_VALUE;
 	conf->num_frames_per_cycle = 0;
@@ -916,6 +930,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->tx_time_enabled = false;
 	conf->ignore_rx_errors = false;
 	conf->tx_time_offset_ns = 0;
+	conf->tx_hwtstamp_enabled = false;
 	conf->vid = TSN_LOW_VID_VALUE;
 	conf->pcp = TSN_LOW_PCP_VALUE;
 	conf->num_frames_per_cycle = 0;
@@ -948,6 +963,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->xdp_wakeup_mode = true;
 	conf->xdp_busy_poll_mode = false;
 	conf->ignore_rx_errors = false;
+	conf->tx_hwtstamp_enabled = false;
 	conf->vid = PROFINET_RT_VID_VALUE;
 	conf->pcp = RTC_PCP_VALUE;
 	conf->num_frames_per_cycle = 0;
@@ -980,6 +996,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->xdp_wakeup_mode = true;
 	conf->xdp_busy_poll_mode = false;
 	conf->ignore_rx_errors = false;
+	conf->tx_hwtstamp_enabled = false;
 	conf->vid = PROFINET_RT_VID_VALUE;
 	conf->pcp = RTA_PCP_VALUE;
 	conf->burst_period_ns = 200000000;
@@ -1124,6 +1141,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->tx_time_enabled = false;
 	conf->ignore_rx_errors = false;
 	conf->tx_time_offset_ns = 0;
+	conf->tx_hwtstamp_enabled = false;
 	conf->vid = 100;
 	conf->pcp = 6;
 	conf->ether_type = 0xb62c;
@@ -1345,6 +1363,23 @@ bool config_sanity_check(void)
 		fprintf(stderr,
 			"TxTime and XDP cannot be used at the same time on this platform!\n");
 		fprintf(stderr, "Update libxdp to >= v1.5.0 support it.\n");
+		return false;
+	}
+
+	if (!config_have_tx_timestamp() &&
+	    ((app_config.classes[GENERICL2_FRAME_TYPE].tx_hwtstamp_enabled &&
+	      app_config.classes[GENERICL2_FRAME_TYPE].xdp_enabled) ||
+	     (app_config.classes[RTC_FRAME_TYPE].tx_hwtstamp_enabled &&
+	      app_config.classes[RTC_FRAME_TYPE].xdp_enabled) ||
+	     (app_config.classes[RTA_FRAME_TYPE].tx_hwtstamp_enabled &&
+	      app_config.classes[RTA_FRAME_TYPE].xdp_enabled) ||
+	     (app_config.classes[TSN_HIGH_FRAME_TYPE].tx_hwtstamp_enabled &&
+	      app_config.classes[TSN_HIGH_FRAME_TYPE].xdp_enabled) ||
+	     (app_config.classes[TSN_LOW_FRAME_TYPE].tx_hwtstamp_enabled &&
+	      app_config.classes[TSN_LOW_FRAME_TYPE].xdp_enabled))) {
+		fprintf(stderr, "XDP Tx HW Timestamp requires TX_TIMESTAMP build support!\n");
+		fprintf(stderr, "Rebuild with -DTX_TIMESTAMP=ON (requires libxdp >= v1.4.1 and "
+				"Linux kernel >= v6.8).\n");
 		return false;
 	}
 

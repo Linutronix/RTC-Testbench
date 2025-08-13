@@ -28,6 +28,7 @@ check_symbol_exists(SO_BUSY_POLL "sys/socket.h" HAVE_SO_BUSY_POLL)
 check_symbol_exists(SO_PREFER_BUSY_POLL "sys/socket.h" HAVE_SO_PREFER_BUSY_POLL)
 check_symbol_exists(SO_BUSY_POLL_BUDGET "sys/socket.h" HAVE_SO_BUSY_POLL_BUDGET)
 check_symbol_exists(XDP_TXMD_FLAGS_LAUNCH_TIME "linux/if_xdp.h" HAVE_XDP_FLAGS_TX_TIME)
+check_symbol_exists(XDP_TXMD_FLAGS_TIMESTAMP "linux/if_xdp.h" HAVE_XDP_FLAGS_TX_HWTSTAMP)
 
 add_executable(reference
   src/reference.c
@@ -84,11 +85,18 @@ if (WITH_MQTT)
 endif()
 
 option(RX_TIMESTAMP "Enable RX timestamp support (requires libbpf >= 1.2)" OFF)
+option(TX_TIMESTAMP "Enable TX timestamp support (requires libxdp >= 1.4.1)" OFF)
 
 if(RX_TIMESTAMP)
   pkg_check_modules(LIBBPF_REQUIRED_FOR_RX_TIMESTAMP libbpf>=1.2)
   if(NOT LIBBPF_REQUIRED_FOR_RX_TIMESTAMP_FOUND)
     message(FATAL_ERROR "RX_TIMESTAMP requires libbpf >= 1.2, but version ${LIBBPF_VERSION} was found.")
+  endif()
+endif()
+
+if(TX_TIMESTAMP)
+  if(NOT ((${LIBXDP_VERSION} GREATER_EQUAL 1.4.1) AND (${HAVE_XDP_FLAGS_TX_HWTSTAMP})))
+    message(FATAL_ERROR "TX_TIMESTAMP requires libxdp >= 1.4.1 and kernel support for XDP_TXMD_FLAGS_TIMESTAMP")
   endif()
 endif()
 
@@ -138,6 +146,13 @@ target_include_directories(mirror PUBLIC ${LIBCRYPTO_INCLUDE_DIRS})
 if ((${LIBXDP_VERSION} GREATER_EQUAL 1.5.0) AND (${HAVE_XDP_FLAGS_TX_TIME}))
   message(STATUS "XDP and Tx Launch Time support available using libxdp version: ${LIBXDP_VERSION}")
   set(HAVE_XDP_TX_TIME ${HAVE_XDP_FLAGS_TX_TIME})
+endif()
+
+#
+# Check for XDP and Tx HW Timestamp support. It requires: libxdp >= 1.4.1 and Linux v6.8.
+#
+if ((${LIBXDP_VERSION} GREATER_EQUAL 1.4.1) AND (${HAVE_XDP_FLAGS_TX_HWTSTAMP}))
+  message(STATUS "XDP and Tx HW Timestamp support available using libxdp version: ${LIBXDP_VERSION}")
 endif()
 
 set(INSTALL_EBPF_DIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/rtc-testbench/ebpf)
