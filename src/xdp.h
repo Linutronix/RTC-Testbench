@@ -47,9 +47,14 @@ struct xdp_socket {
 	struct xsk_umem_info umem;
 	struct xsk_socket *xsk;
 	struct xdp_program *prog;
+	/* TX timestamping: Store HW timestamps from AF_XDP completion queue */
+	struct round_trip_context *rtt;
+	/* Sequence number for TX HW timestamp (available one cycle later) */
+	int64_t tx_hw_ts_seq_lagged;
 	int fd;
 	bool busy_poll_mode;
 	bool tx_time_mode;
+	bool tx_hwtstamp_mode;
 };
 
 struct xdp_tx_time {
@@ -77,7 +82,7 @@ struct xdp_gen_config {
 
 struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_program, int queue,
 				   bool skb_mode, bool zero_copy_mode, bool wakeup_mode,
-				   bool busy_poll_mode, bool tx_time_mode);
+				   bool busy_poll_mode, bool tx_time_mode, bool tx_hwtstamp_mode);
 void xdp_close_socket(struct xdp_socket *xsk, const char *interface, bool skb_mode);
 void xdp_complete_tx_only(struct xdp_socket *xsk);
 void xdp_complete_tx(struct xdp_socket *xsk);

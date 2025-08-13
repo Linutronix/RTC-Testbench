@@ -143,6 +143,18 @@ static void log_add_traffic_class(const char *name, enum stat_frame_type frame_t
 		*length -= written;
 	}
 
+	if (app_config.classes[frame_type].tx_hwtstamp_enabled &&
+	    app_config.classes[frame_type].xdp_enabled) {
+		written =
+			snprintf(*buffer, *length,
+				 "%sTxMin=%" PRIu64 " [us] | %sTxMax=%" PRIu64
+				 " [us] | %sTxAvg=%lf [us] | %sTxHwTimestampMissing=%" PRIu64 " | ",
+				 name, stat->tx_min, name, stat->tx_max, name, stat->tx_avg, name,
+				 stat->tx_hw_timestamp_missing);
+		*buffer += written;
+		*length -= written;
+	}
+
 	if (stat_frame_type_is_real_time(frame_type)) {
 		written = snprintf(*buffer, *length,
 				   "%sRttOutliers=%" PRIu64 " | %sOnewayOutliers=%" PRIu64 " | ",

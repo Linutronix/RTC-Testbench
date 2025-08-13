@@ -105,6 +105,7 @@ static void print_version_and_die(void)
 
 int main(int argc, char *argv[])
 {
+	bool enable_tx_latency_logging = false;
 	const char *config_file = NULL;
 	int c, ret;
 
@@ -168,7 +169,19 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	ret = stat_init(LOG_MIRROR);
+	for (int i = 0; i < NUM_FRAME_TYPES; i++) {
+		if (app_config.classes[i].tx_hwtstamp_enabled) {
+			enable_tx_latency_logging = true;
+			break;
+		}
+	}
+
+	if (enable_tx_latency_logging) {
+		ret = stat_init(LOG_TX_TIMESTAMPS);
+	} else {
+		ret = stat_init(LOG_MIRROR);
+	}
+
 	if (ret) {
 		fprintf(stderr, "Failed to initialize statistics!\n");
 		exit(EXIT_FAILURE);
