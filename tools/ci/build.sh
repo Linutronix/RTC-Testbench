@@ -11,7 +11,7 @@
 set -e
 
 COMPILER="gcc clang"
-OPTIONS="WITH_MQTT"
+OPTIONS="WITH_MQTT RX_TIMESTAMP TX_TIMESTAMP"
 
 cd $(dirname $0)
 
