@@ -21,6 +21,7 @@ TSNHigh:
   TsnHighXdpWakeupMode: true
   TsnHighTxTimeEnabled: false
   TsnHighTxTimeOffsetNS: 0
+  TsnHighTxTimeStampEnabled: false
   TsnHighVid: 100
   TsnHighPcp: 6
   TsnHighNumFramesPerCycle: 32

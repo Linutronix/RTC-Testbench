@@ -22,6 +22,7 @@ TSNHigh:
   TsnHighXdpWakeupMode: true
   TsnHighTxTimeEnabled: false
   TsnHighTxTimeOffsetNS: 0
+  TsnHighTxTimeStampEnabled: false
   TsnHighVid: 100
   TsnHighPcp: 7
   TsnHighNumFramesPerCycle: 1
@@ -45,6 +46,7 @@ TSNLow:
   TsnLowXdpWakeupMode: true
   TsnLowTxTimeEnabled: false
   TsnLowTxTimeOffsetNS: 0
+  TsnLowTxTimeStampEnabled: false
   TsnLowVid: 100
   TsnLowPcp: 6
   TsnLowNumFramesPerCycle: 1
@@ -66,6 +68,7 @@ RTC:
   RtcXdpSkbMode: false
   RtcXdpZcMode: true
   RtcXdpWakeupMode: true
+  RtcTxTimeStampEnabled: false
   RtcVid: 100
   RtcPcp: 5
   RtcNumFramesPerCycle: 1
@@ -87,6 +90,7 @@ RTA:
   RtaXdpSkbMode: false
   RtaXdpZcMode: false
   RtaXdpWakeupMode: true
+  RtaTxTimeStampEnabled: false
   RtaVid: 100
   RtaPcp: 4
   RtaBurstPeriodNS: 200ms

@@ -23,6 +23,7 @@ TSNHigh:
   TsnHighXdpWakeupMode: true
   TsnHighTxTimeEnabled: true
   TsnHighTxTimeOffsetNS: 0
+  TsnHighTxTimeStampEnabled: false
   TsnHighVid: 100
   TsnHighNumFramesPerCycle: 1
   TsnHighPayloadPattern: |
@@ -45,6 +46,7 @@ TSNLow:
   TsnLowXdpWakeupMode: true
   TsnLowTxTimeEnabled: true
   TsnLowTxTimeOffsetNS: 50us
+  TsnLowTxTimeStampEnabled: false
   TsnLowVid: 100
   TsnLowNumFramesPerCycle: 1
   TsnLowPayloadPattern: |
