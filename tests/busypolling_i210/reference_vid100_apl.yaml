@@ -22,6 +22,7 @@ RTC:
   RtcXdpZcMode: true
   RtcXdpWakeupMode: true
   RtcXdpBusyPollMode: true
+  RtcTxTimeStampEnabled: false
   RtcVid: 100
   RtcNumFramesPerCycle: 256
   RtcPayloadPattern: |

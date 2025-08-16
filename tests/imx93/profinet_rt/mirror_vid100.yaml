@@ -21,6 +21,7 @@ RTC:
   RtcXdpZcMode: true
   RtcXdpWakeupMode: true
   RtcXdpBusyPollMode: true
+  RtcTxTimeStampEnabled: false
   RtcVid: 100
   RtcNumFramesPerCycle: 64
   RtcPayloadPattern: |
@@ -42,6 +43,7 @@ RTA:
   RtaXdpZcMode: false
   RtaXdpWakeupMode: true
   RtaXdpBusyPollMode: false
+  RtaTxTimeStampEnabled: false
   RtaVid: 100
   RtaBurstPeriodNS: 200ms
   RtaNumFramesPerCycle: 32

@@ -23,6 +23,7 @@ GenericL2:
   GenericL2XdpWakeupMode: true
   GenericL2TxTimeEnabled: false
   GenericL2TxTimeOffsetNS: 0
+  GenericL2TxTimeStampEnabled: false
   GenericL2Vid: 200
   GenericL2Pcp: 6
   GenericL2EtherType: 0xb62c
