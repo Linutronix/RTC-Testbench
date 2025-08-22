@@ -86,3 +86,6 @@ and options.
 
    * - Show Packet RX Latency
      - RX_TIMESTAMP
+
+   * - Enable TX Hardware Timestamping
+     - TX_TIMESTAMP

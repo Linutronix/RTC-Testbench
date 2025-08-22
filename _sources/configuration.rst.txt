@@ -73,6 +73,9 @@ Possible parameters include:
    * - <Class>TxTimeOffsetNS (Integer)
      - Optional Tx Launch Time offset relative to Qbv schedule and cycle time
 
+   * - <Class>TxHwTstampEnabled (Boolean)
+     - Enable TX hardware timestamping for latency measurement (requires TX_TIMESTAMP build option)
+
    * - <Class>IgnoreRxErrors (Boolean)
      - By default, the applications perform consistency checks for all received frames. This option
        disables these checks. Do not enable this. This is only useful for testing e.g., overload
