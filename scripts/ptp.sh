@@ -26,6 +26,7 @@ phc_ctl ${INTERFACE} set
 # Stop ntpd
 systemctl stop systemd-timesyncd || true
 systemctl stop ntpd || true
+systemctl stop chrony || true
 
 # Start ptp with 802.1AS-2011 endstation profile
 ptp4l -2 -H -i ${INTERFACE} --socket_priority=4 --tx_timestamp_timeout=40 -f /etc/gPTP.cfg &
