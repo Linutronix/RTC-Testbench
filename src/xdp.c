@@ -347,8 +347,8 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 	if (ret)
 		goto err;
 
-	/* Enable HW TX timestamping if requested */
 #ifdef TX_TIMESTAMP
+	/* Enable HW TX timestamping if requested */
 	if (tx_hwtstamp_mode) {
 		ret = xdp_enable_hw_tx_timestamping(interface);
 		if (ret) {
