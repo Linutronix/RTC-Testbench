@@ -19,6 +19,7 @@
 #include "lldp_thread.h"
 #include "log.h"
 #include "logviamqtt.h"
+#include "print.h"
 #include "rta_thread.h"
 #include "rtc_thread.h"
 #include "stat.h"
@@ -44,6 +45,8 @@ static void term_handler(int sig)
 	int i;
 
 	printf("Stopping all application threads...\n");
+
+	print_stop = 1;
 
 	if (log_via_mqtt_thread)
 		log_via_mqtt_thread->stop = 1;
@@ -248,6 +251,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Failed to create and start TSN High Threads!\n");
 		exit(EXIT_FAILURE);
 	}
+
+	print_stats();
 
 	tsn_high_threads_wait_for_finish(&threads[TSN_HIGH_THREAD]);
 	tsn_low_threads_wait_for_finish(&threads[TSN_LOW_THREAD]);

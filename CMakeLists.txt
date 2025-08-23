@@ -52,7 +52,8 @@ add_executable(reference
   src/security.c
   src/packet.c
   src/hist.c
-  src/workload.c)
+  src/workload.c
+  src/print.c)
 add_executable(mirror
   src/mirror.c
   src/config.c
@@ -75,7 +76,8 @@ add_executable(mirror
   src/security.c
   src/packet.c
   src/hist.c
-  src/workload.c)
+  src/workload.c
+  src/print.c)
 
 option(WITH_MQTT, "Enable/Disable logging via MQTT" OFF)
 if (WITH_MQTT)
