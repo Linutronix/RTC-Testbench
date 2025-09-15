@@ -4,7 +4,7 @@ SPDX-License-Identifier: BSD-2-Clause
 Copyright (C) 2021-2025 Linutronix GmbH
 Author Kurt Kanzenbach <kurt@linutronix.de>
 
-The following XML file can be used to build a ready to go Debian Bookworm based image. It contains all
+The following XML file can be used to build a ready to go Debian Trixie based image. It contains all
 of the requirements to run the RTC-Testbench.
 
 It can built with ELBE: https://www.elbe-rfs.org/
@@ -27,23 +27,23 @@ Run 'elbe initvm -v <hdd|sd> submit x86_64.xml' to build it.
       <url-list>
         <url>
           <binary>
-            http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+            http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
           </binary>
           <source>
-            http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+            http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware
           </source>
         </url>
 	<url>
           <binary>
-            http://deb.debian.org/debian bookworm contrib non-free non-free-firmware
+            http://deb.debian.org/debian trixie contrib non-free non-free-firmware
           </binary>
           <source>
-            http://deb.debian.org/debian bookworm contrib non-free non-free-firmware
+            http://deb.debian.org/debian trixie contrib non-free non-free-firmware
           </source>
         </url>
       </url-list>
     </mirror>
-    <suite>bookworm</suite>
+    <suite>trixie</suite>
   </project>
   <target>
     <hostname>testbench</hostname>
