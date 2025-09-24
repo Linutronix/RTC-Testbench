@@ -252,7 +252,25 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxThreadCpu, rx_thread_cpu);
 			CONFIG_STORE_INTERFACE_PARAM_CLASS(TsnHighInterface, interface);
 			CONFIG_STORE_MAC_PARAM_CLASS(TsnHighDestination, l2_destination);
-
+			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighRxWorkloadEnabled,
+						      rx_workload_enabled);
+			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighRxWorkloadPrewarm,
+						      rx_workload_prewarm);
+			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxWorkloadSkipCount,
+						     rx_workload_skip_count);
+			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadFile, workload_file);
+			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadSetupFunction,
+							workload_setup_function);
+			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadSetupArguments,
+							workload_setup_arguments);
+			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadFunction,
+							workload_function);
+			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadArguments,
+							workload_arguments);
+			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxWorkloadThreadCpu,
+						     workload_thread_cpu);
+			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxWorkloadThreadPriority,
+						     workload_thread_priority);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowEnabled, enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpEnabled, xdp_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpSkbMode, xdp_skb_mode);
@@ -570,6 +588,17 @@ void config_print_values(void)
 	printf("TsnHighInterface=%s\n", conf->interface);
 	printf("TsnHighDestination=");
 	print_mac_address(conf->l2_destination);
+	printf("\n");
+	printf("TsnHighRxWorkloadEnabled=%s\n", conf->rx_workload_enabled ? "True" : "False");
+	printf("TsnHighRxWorkloadPrewarm=%s\n", conf->rx_workload_prewarm ? "True" : "False");
+	printf("TsnHighRxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
+	printf("TsnHighRxWorkloadFile=%s\n", conf->workload_file);
+	printf("TsnHighRxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
+	printf("TsnHighRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
+	printf("TsnHighRxWorkloadFunction=%s\n", conf->workload_function);
+	printf("TsnHighRxWorkloadArguments=%s\n", conf->workload_arguments);
+	printf("TsnHighRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
+	printf("TsnHighRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 	printf("\n");
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
@@ -915,6 +944,16 @@ int config_set_defaults(bool mirror_enabled)
 	conf->rx_thread_priority = 98;
 	conf->tx_thread_cpu = 0;
 	conf->rx_thread_cpu = 0;
+	conf->rx_workload_enabled = false;
+	conf->rx_workload_prewarm = false;
+	conf->rx_workload_skip_count = 0;
+	conf->workload_file = NULL;
+	conf->workload_function = NULL;
+	conf->workload_arguments = NULL;
+	conf->workload_setup_function = NULL;
+	conf->workload_setup_arguments = NULL;
+	conf->workload_thread_cpu = 0;
+	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
 

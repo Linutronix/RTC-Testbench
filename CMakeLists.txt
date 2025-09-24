@@ -51,7 +51,8 @@ add_executable(reference
   src/tx_time.c
   src/security.c
   src/packet.c
-  src/hist.c)
+  src/hist.c
+  src/workload.c)
 add_executable(mirror
   src/mirror.c
   src/config.c
@@ -73,7 +74,8 @@ add_executable(mirror
   src/tx_time.c
   src/security.c
   src/packet.c
-  src/hist.c)
+  src/hist.c
+  src/workload.c)
 
 option(WITH_MQTT, "Enable/Disable logging via MQTT" OFF)
 if (WITH_MQTT)
@@ -114,6 +116,9 @@ if (WITH_ASAN)
   target_link_options(reference PRIVATE -fsanitize=address)
   target_link_options(mirror PRIVATE -fsanitize=address)
 endif()
+
+# Export symbols for dynamically loaded workloads
+target_link_options(mirror PRIVATE -Wl,--export-dynamic)
 
 target_link_libraries(reference Threads::Threads)
 target_link_libraries(reference ${YAML_LIBRARIES})
@@ -193,3 +198,6 @@ add_xdp_prog(xdp_kern_profinet_veth_dispatch)
 install(TARGETS reference DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT binaries)
 install(TARGETS mirror DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT binaries)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/rtc-testbench/tests)
+
+# Add workloads subdirectory for automatic compilation
+add_subdirectory(tests/workloads)

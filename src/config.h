@@ -77,6 +77,23 @@ struct traffic_class_config {
 	int rx_thread_priority;
 	int tx_thread_cpu;
 	int rx_thread_cpu;
+	int workload_thread_cpu;
+	int workload_thread_priority;
+
+	/* Workload settings */
+	bool rx_workload_enabled;
+	bool rx_workload_prewarm;
+	int rx_workload_skip_count;
+	char *workload_file;
+	size_t workload_file_length;
+	char *workload_function;
+	size_t workload_function_length;
+	char *workload_arguments;
+	size_t workload_arguments_length;
+	char *workload_setup_function;
+	size_t workload_setup_function_length;
+	char *workload_setup_arguments;
+	size_t workload_setup_arguments_length;
 };
 
 struct application_config {

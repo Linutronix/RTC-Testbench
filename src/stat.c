@@ -70,6 +70,7 @@ static void stat_reset(struct statistics *stats)
 	stats->rx_min = UINT64_MAX;
 	stats->rx_hw2xdp_min = UINT64_MAX;
 	stats->rx_xdp2app_min = UINT64_MAX;
+	stats->rx_workload_min = UINT64_MAX;
 	stats->tx_min = UINT64_MAX;
 }
 
@@ -309,6 +310,22 @@ static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
 	stat_per_period->frames_sent++;
 }
 
+static void stat_frame_workload_per_period(enum stat_frame_type frame_type, uint64_t workload_time)
+{
+	struct statistics *stat_per_period = &statistics_per_period[frame_type];
+
+	if (stat_per_period->rx_workload_count >
+	    app_config.classes[frame_type].rx_workload_skip_count) {
+		stat_update_min_max(workload_time, &stat_per_period->rx_workload_min,
+				    &stat_per_period->rx_workload_max);
+	}
+
+	stat_per_period->rx_workload_count++;
+	stat_per_period->rx_workload_sum += workload_time;
+	stat_per_period->rx_workload_avg =
+		stat_per_period->rx_workload_sum / (double)stat_per_period->rx_workload_count;
+}
+
 #ifdef TX_TIMESTAMP
 static void stat_frame_sent_latency_per_period(enum stat_frame_type frame_type,
 					       uint64_t tx_latency_us)
@@ -331,6 +348,9 @@ static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
 {
 }
 
+static void stat_frame_workload_per_period(enum stat_frame_type frame_type, uint64_t workload_time)
+{
+}
 #ifdef TX_TIMESTAMP
 static void stat_frame_sent_latency_per_period(enum stat_frame_type frame_type,
 					       uint64_t tx_latency_us)
@@ -523,4 +543,39 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 		fclose(file_tracing_on);
 		exit(EXIT_SUCCESS);
 	}
+}
+
+void stat_frame_workload(enum stat_frame_type frame_type, uint64_t cycle_number,
+			 struct timespec start_ts)
+{
+	struct statistics *stat = &global_statistics[frame_type];
+	uint64_t workload_time = 0, curr_time, start_time;
+	struct timespec clk_time = {};
+
+	log_message(LOG_LEVEL_DEBUG, "%s: frame[%" PRIu64 "] workload_complete\n",
+		    stat_frame_type_to_string(frame_type), cycle_number);
+
+	clock_gettime(app_config.application_clock_id, &clk_time);
+	curr_time = ts_to_ns(&clk_time);
+	start_time = ts_to_ns(&start_ts);
+
+	workload_time = curr_time - start_time;
+	workload_time /= 1000;
+
+	if (stat->rx_workload_count > app_config.classes[frame_type].rx_workload_skip_count) {
+		stat_update_min_max(workload_time, &stat->rx_workload_min, &stat->rx_workload_max);
+	}
+
+	stat->rx_workload_count++;
+	stat->rx_workload_sum += workload_time;
+	stat->rx_workload_avg = stat->rx_workload_sum / (double)stat->rx_workload_count;
+
+	/* Update stats per collection interval */
+	stat_frame_workload_per_period(frame_type, workload_time);
+}
+void stat_inc_workload_outlier(enum stat_frame_type frame_type)
+{
+	struct statistics *stat = &global_statistics[frame_type];
+
+	stat->rx_workload_outliers++;
 }
