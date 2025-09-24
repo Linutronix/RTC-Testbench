@@ -1,0 +1,64 @@
+---
+#
+# Copyright (C) 2024 Linutronix GmbH
+# Author Kurt Kanzenbach <kurt@linutronix.de>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Sample reference YAML configuration file for Intel Comet Lake platforms with
+# i225 NIC(s).
+#
+Application:
+  ApplicationClockId: CLOCK_TAI
+  # ApplicationBaseStartTimeNS: 0
+  ApplicationBaseCycleTimeNS: 1ms
+  ApplicationTxBaseOffsetNS: 700us
+  ApplicationRxBaseOffsetNS: 300us
+  ApplicationXdpProgram: xdp_kern_profinet_vid100.o
+TsnHigh:
+  TsnHighEnabled: true
+  TsnHighXdpEnabled: true
+  TsnHighXdpSkbMode: false
+  TsnHighXdpZcMode: true
+  TsnHighXdpWakeupMode: true
+  TsnHighXdpBusyPollMode: true
+  TsnHighVid: 100
+  TsnHighNumFramesPerCycle: 32
+  TsnHighPayloadPattern: |
+    TsnHighPayloadPattern
+  TsnHighFrameLength: 128
+  TsnHighRxQueue: 1
+  TsnHighTxQueue: 1
+  TsnHighSocketPriority: 7
+  TsnHighTxThreadPriority: 98
+  TsnHighRxThreadPriority: 98
+  TsnHighTxThreadCpu: 2
+  TsnHighRxThreadCpu: 2
+  TsnHighInterface: enp4s0
+  TsnHighDestination: a8:74:1d:9d:36:14
+  TsnHighRxWorkloadEnabled: true
+  TsnHighRxWorkloadFile: ../workloads/pointer_chasing/pointer_chasing.so
+  TsnHighRxWorkloadSetupFunction: ptr_chase_setup
+  TsnHighRxWorkloadSetupArguments: "0x4A4000 0x129000"
+  TsnHighRxWorkloadFunction: run_ptr_chasing
+  TsnHighRxWorkloadPrewarm: false
+  TsnHighRxWorkloadSkipCount: 100
+  TsnHighRxWorkloadThreadCpu: 2
+  TsnHighRxWorkloadThreadPriority: 98
+Log:
+  LogThreadPriority: 1
+  LogThreadCpu: 0
+  LogFile: /var/log/mirror_vid100.log
+  LogLevel: Info
+LogViaMQTT:
+  LogViaMQTT: False
+  LogViaMQTTThreadPriority: 10
+  LogViaMQTTThreadCpu: 0
+  LogViaMQTTBrokerIP: 127.0.0.1
+  LogViaMQTTBrokerPort: 1883
+  LogViaMQTTMeasurementName: mirror
+Debug:
+  DebugStopTraceOnOutlier: false
+  DebugStopTraceOnError: false
+  DebugMonitorMode: false
+  DebugMonitorDestination: 44:44:44:44:44:44
