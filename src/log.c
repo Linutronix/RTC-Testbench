@@ -162,6 +162,19 @@ static void log_add_traffic_class(const char *name, enum stat_frame_type frame_t
 		*buffer += written;
 		*length -= written;
 	}
+
+	if (app_config.classes[frame_type].rx_workload_enabled) {
+		written = snprintf(*buffer, *length,
+				   "%sRxWorkloadMin=%" PRIu64 " [us] | "
+				   "%sRxWorkloadMax=%" PRIu64 " [us] | "
+				   "%sRxWorkloadAvg=%lf [us] | "
+				   "%sRxWorkloadOutliers=%" PRIu64 " | ",
+				   name, stat->rx_workload_min, name, stat->rx_workload_max, name,
+				   stat->rx_workload_avg, name, stat->rx_workload_outliers);
+
+		*buffer += written;
+		*length -= written;
+	}
 }
 
 static void *log_thread_routine(void *data)

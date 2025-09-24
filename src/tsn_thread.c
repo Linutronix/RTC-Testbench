@@ -34,6 +34,7 @@
 #include "tsn_thread.h"
 #include "tx_time.h"
 #include "utils.h"
+#include "workload.h"
 #include "xdp.h"
 
 static void tsn_initialize_frames(struct thread_context *thread_context, unsigned char *frame_data,
@@ -439,6 +440,16 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 
 			sequence_counter = thread_context->rx_sequence_counter - received;
 
+			/* Increment workload outlier count if workload did not finish. */
+			if (tsn_config->rx_workload_enabled) {
+				if (thread_context->workload->workload_done == 0 &&
+				    sequence_counter) {
+					stat_inc_workload_outlier(thread_context->frame_type);
+					log_message(LOG_LEVEL_DEBUG, "Workload did not finish!\n");
+				} else
+					thread_context->workload->workload_done = 0;
+			}
+
 			/*
 			 * The XDP receiver stored the frames within the umem area and populated the
 			 * Tx ring. Now, the Tx ring can be committed to the kernel. Furthermore,
@@ -603,6 +614,14 @@ static void *tsn_xdp_rx_thread_routine(void *data)
 					      receive_profinet_frame, thread_context, &tx_time);
 		thread_context->received_frames = received;
 		pthread_mutex_unlock(&thread_context->xdp_data_mutex);
+
+		if (thread_context->conf->rx_workload_enabled && mirror_enabled) {
+			/* Run workload if we received frames or prewarm is enabled */
+			if (received || thread_context->conf->rx_workload_prewarm) {
+				thread_context->workload->workload_run = 1;
+				pthread_cond_signal(&(thread_context->workload->workload_cond));
+			}
+		}
 	}
 
 	return NULL;
@@ -743,11 +762,39 @@ int tsn_threads_create(struct thread_context *thread_context)
 		goto err_thread_rx;
 	}
 
+	/* Create workload thread for RX and TX traffic */
+	if (tsn_config->rx_workload_enabled) {
+		thread_context->workload = calloc(1, sizeof(struct workload_config));
+
+		if (!thread_context->workload) {
+			fprintf(stderr, "Failed to allocate workload!\n");
+			ret = -ENOMEM;
+			goto err_thread_wl;
+		}
+
+		workload_context_init(
+			thread_context, tsn_config->workload_file, tsn_config->workload_function,
+			tsn_config->workload_arguments, tsn_config->workload_setup_function,
+			tsn_config->workload_setup_arguments, thread_context->frame_type);
+		ret = create_rt_thread(
+			&thread_context->workload->workload_task_id, tsn_config->workload_function,
+			tsn_config->workload_thread_priority, tsn_config->workload_thread_cpu,
+			&workload_thread_routine, thread_context);
+		if (ret) {
+			fprintf(stderr, "Failed to create Tsn Workload Thread!\n");
+			goto err_thread_wl;
+		}
+	}
+
 	thread_context->meta_data_offset =
 		get_meta_data_offset(thread_context->frame_type, tsn_config->security_mode);
 
 	return 0;
 
+err_thread_wl:
+	thread_context->stop = 1;
+	free(thread_context->workload);
+	pthread_join(thread_context->rx_task_id, NULL);
 err_thread_rx:
 	thread_context->stop = 1;
 	pthread_join(thread_context->tx_task_id, NULL);
@@ -806,6 +853,9 @@ static void tsn_threads_free(struct thread_context *thread_context)
 	if (thread_context->xsk)
 		xdp_close_socket(thread_context->xsk, tsn_config->interface,
 				 tsn_config->xdp_skb_mode);
+
+	if (thread_context->workload != NULL && thread_context->workload->workload_task_id)
+		workload_thread_free(thread_context);
 }
 
 static void tsn_threads_wait_for_finish(struct thread_context *thread_context)
@@ -813,6 +863,8 @@ static void tsn_threads_wait_for_finish(struct thread_context *thread_context)
 	if (!thread_context)
 		return;
 
+	if (thread_context->workload != NULL && thread_context->workload->workload_task_id)
+		pthread_join(thread_context->workload->workload_task_id, NULL);
 	if (thread_context->rx_task_id)
 		pthread_join(thread_context->rx_task_id, NULL);
 	if (thread_context->tx_task_id)

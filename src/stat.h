@@ -87,6 +87,13 @@ struct statistics {
 	uint64_t rx_xdp2app_max;
 	double rx_xdp2app_sum;
 	double rx_xdp2app_avg;
+	/* Workload statistics */
+	uint64_t rx_workload_min;
+	uint64_t rx_workload_max;
+	uint64_t rx_workload_count;
+	double rx_workload_sum;
+	double rx_workload_avg;
+	uint64_t rx_workload_outliers;
 	/* Tx latency from user space (at send) to NIC Tx HW timestamp */
 	uint64_t tx_min;
 	uint64_t tx_max;
@@ -118,6 +125,8 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 void stat_update(void);
 void stat_get_global_stats(struct statistics *stats, size_t len);
 void stat_get_stats_per_period(struct statistics *stats, size_t len);
+void stat_frame_workload(enum stat_frame_type, uint64_t cycle_number, struct timespec start_ts);
+void stat_inc_workload_outlier(enum stat_frame_type frame_type);
 void stat_frame_sent_latency(enum stat_frame_type frame_type, uint64_t seq);
 
 extern volatile sig_atomic_t reset_stats;
