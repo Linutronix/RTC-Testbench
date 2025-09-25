@@ -762,7 +762,7 @@ int tsn_threads_create(struct thread_context *thread_context)
 		goto err_thread_rx;
 	}
 
-	/* Create workload thread for RX and TX traffic */
+	/* Create workload thread for execution after network RX */
 	if (tsn_config->rx_workload_enabled) {
 		thread_context->workload = calloc(1, sizeof(struct workload_config));
 
