@@ -66,3 +66,11 @@ From the main project build directory:
 ```bash
 make pointer_chasing                   # Build shared library
 ```
+
+## Copyright
+
+Copyright (C) 2025 Intel Corporation
+
+## License
+
+BSD-2 Clause and Dual BSD/GPL for all eBPF programs
