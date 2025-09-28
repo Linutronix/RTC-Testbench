@@ -13,6 +13,10 @@ set -e
 COMPILER="gcc clang"
 OPTIONS="WITH_MQTT RX_TIMESTAMP TX_TIMESTAMP"
 
+if [ "$1" == "ubuntu" ]; then
+  OPTIONS="WITH_MQTT"
+fi
+
 cd $(dirname $0)
 
 pushd ../..
