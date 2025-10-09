@@ -101,11 +101,18 @@ struct statistics {
 	uint64_t tx_hw_timestamp_missing;
 	double tx_sum;
 	double tx_avg;
+	/* Device latency at Mirror (Rx HW to Tx HW timestamp) */
+	uint64_t device_latency_min;
+	uint64_t device_latency_max;
+	uint64_t device_latency_count;
+	double device_latency_sum;
+	double device_latency_avg;
 };
 
 struct rtt_entry {
 	uint64_t sw_ts;
 	uint64_t hw_ts;
+	uint64_t rx_hw_ts;
 };
 
 struct round_trip_context {
@@ -128,8 +135,11 @@ void stat_get_stats_per_period(struct statistics *stats, size_t len);
 void stat_frame_workload(enum stat_frame_type, uint64_t cycle_number, struct timespec start_ts);
 void stat_inc_workload_outlier(enum stat_frame_type frame_type);
 void stat_frame_sent_latency(enum stat_frame_type frame_type, uint64_t seq);
+void stat_frame_device_latency(enum stat_frame_type frame_type, uint64_t cycle_number,
+			       uint64_t tx_hw_timestamp);
 
 extern volatile sig_atomic_t reset_stats;
 extern struct round_trip_context round_trip_contexts[NUM_FRAME_TYPES];
+extern int log_stat_user_selected;
 
 #endif /* _STAT_H_ */

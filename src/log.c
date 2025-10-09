@@ -126,6 +126,19 @@ static void log_add_traffic_class(const char *name, enum stat_frame_type frame_t
 	*buffer += written;
 	*length -= written;
 
+	/* Add device latency statistics for mirror mode */
+	if (app_config.classes[frame_type].tx_hwtstamp_enabled && config_have_rx_timestamp() &&
+	    app_config.classes[frame_type].xdp_enabled && stat->device_latency_count > 0) {
+		written =
+			snprintf(*buffer, *length,
+				 "%sDeviceLatencyMin=%" PRIu64 " [us] | %sDeviceLatencyMax=%" PRIu64
+				 " [us] | %sDeviceLatencyAvg=%lf [us] | ",
+				 name, stat->device_latency_min, name, stat->device_latency_max,
+				 name, stat->device_latency_avg);
+		*buffer += written;
+		*length -= written;
+	}
+
 	if (config_have_rx_timestamp() && app_config.classes[frame_type].xdp_enabled) {
 		written = snprintf(*buffer, *length,
 				   "%sRxMin=%" PRIu64 " [us] | %sRxMax=%" PRIu64

@@ -89,3 +89,7 @@ and options.
 
    * - Enable TX Hardware Timestamping
      - TX_TIMESTAMP
+  
+   * - Show Device Latency for Mirror Mode (Rx HW to Tx HW timestamp)
+     - RX_TIMESTAMP
+     - TX_TIMESTAMP

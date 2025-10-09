@@ -29,6 +29,7 @@
 #include "log.h"
 #include "net.h"
 #include "security.h"
+#include "stat.h"
 #include "tx_time.h"
 #include "utils.h"
 #include "xdp.h"
@@ -144,6 +145,15 @@ static void xdp_process_tx_timestamp(struct xdp_socket *xsk, uint32_t idx_cq)
 		/* Determine the frame type from the round trip context */
 		enum stat_frame_type frame_type = (enum stat_frame_type)(rtt - round_trip_contexts);
 		stat_frame_sent_latency(frame_type, seq);
+
+		/*
+		 * Calculate device latency (RX HW to TX HW) only for mirror mode and valid HW
+		 * timestamp
+		 */
+		if (log_stat_user_selected == LOG_TX_TIMESTAMPS && config_have_rx_timestamp() &&
+		    meta->completion.tx_timestamp > rtt->backlog[idx].sw_ts) {
+			stat_frame_device_latency(frame_type, seq, meta->completion.tx_timestamp);
+		}
 	} else {
 		log_message(LOG_LEVEL_WARNING,
 			    "XDP TX HW timestamp missing for expected seq %" PRIu64 ", idx=%zu\n",
