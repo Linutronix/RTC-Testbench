@@ -66,6 +66,11 @@ Welcome to Linux RealTime Communication Testbench's documentation!
 .. toctree::
    :maxdepth: 2
 
+   workload.rst
+
+.. toctree::
+   :maxdepth: 2
+
    wireshark.rst
 
 .. toctree::
