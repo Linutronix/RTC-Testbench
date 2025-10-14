@@ -42,7 +42,7 @@ Log:
   LogFile: /var/log/reference_vid100.log
   LogLevel: Info
 LogViaMQTT:
-  LogViaMQTT: False
+  LogViaMQTT: false
   LogViaMQTTThreadPriority: 10
   LogViaMQTTThreadCpu: 0
   LogViaMQTTBrokerIP: 127.0.0.1

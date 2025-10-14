@@ -21,7 +21,7 @@ CYCLETIME_NS=$2
 BASETIME=$3
 
 [ -z $INTERFACE ] && INTERFACE="enp3s0"                          # default: enp3s0
-[ -z $CYCLETIME_NS ] && CYCLETIME_NS="1000000"                    # default: 125us
+[ -z $CYCLETIME_NS ] && CYCLETIME_NS="1000000"                   # default: 125us
 [ -z $BASETIME ] && BASETIME=$(date '+%s000000000' -d '-30 sec') # default: now - 30s
 
 load_kernel_modules
@@ -33,7 +33,7 @@ igc_start "${INTERFACE}"
 #
 # Split traffic between TSN streams, priority and everything else.
 #
-ENTRY1_NS="500000"  # TSN Streams / Prio
+ENTRY1_NS="500000" # TSN Streams / Prio
 ENTRY2_NS="500000" # Everything else
 
 #
