@@ -72,6 +72,18 @@ struct statistics {
 	uint64_t oneway_outliers;
 	double oneway_sum;
 	double oneway_avg;
+	/* First-frame processing latency at Mirror (1st Rx HW to 1st Tx HW timestamp) */
+	uint64_t proc_first_min;
+	uint64_t proc_first_max;
+	uint64_t proc_first_count;
+	double proc_first_sum;
+	double proc_first_avg;
+	/* Batch processing latency at Mirror (1st Rx HW to Last Tx HW timestamp) */
+	uint64_t proc_batch_min;
+	uint64_t proc_batch_max;
+	uint64_t proc_batch_count;
+	double proc_batch_sum;
+	double proc_batch_avg;
 	/* Rx latency from NIC Rx Hw timestamp to user space timestamp */
 	uint64_t rx_min;
 	uint64_t rx_max;
@@ -106,6 +118,7 @@ struct statistics {
 struct rtt_entry {
 	uint64_t sw_ts;
 	uint64_t hw_ts;
+	uint64_t rx_hw_ts;
 };
 
 struct round_trip_context {
@@ -128,8 +141,13 @@ void stat_get_stats_per_period(struct statistics *stats, size_t len);
 void stat_frame_workload(enum stat_frame_type, uint64_t cycle_number, struct timespec start_ts);
 void stat_inc_workload_outlier(enum stat_frame_type frame_type);
 void stat_frame_sent_latency(enum stat_frame_type frame_type, uint64_t seq);
+void stat_proc_first_latency(enum stat_frame_type frame_type, uint64_t cycle_number,
+			     uint64_t tx_hw_timestamp);
+void stat_proc_batch_latency(enum stat_frame_type frame_type, uint64_t cycle_number,
+			     uint64_t last_tx_hw_timestamp);
 
 extern volatile sig_atomic_t reset_stats;
 extern struct round_trip_context round_trip_contexts[NUM_FRAME_TYPES];
+extern int log_stat_user_selected;
 
 #endif /* _STAT_H_ */
