@@ -40,6 +40,17 @@ struct xsk_umem_info {
 	void *buffer;
 };
 
+struct xdp_tx_hwts {
+	/* Store HW timestamps from AF_XDP completion queue */
+	struct round_trip_context *rtt;
+	/* Sequence number for TX HW timestamp (available one cycle later) */
+	int64_t seq_lagged;
+	/* Counter for tracking TX HW timestamp completions in current cycle (max 2: first+last) */
+	uint32_t count;
+	/* Total number of frames per cycle (needed to identify last packet) */
+	uint32_t frames_per_cycle;
+};
+
 struct xdp_socket {
 	uint64_t outstanding_tx;
 	struct xsk_ring_cons rx;
@@ -47,10 +58,8 @@ struct xdp_socket {
 	struct xsk_umem_info umem;
 	struct xsk_socket *xsk;
 	struct xdp_program *prog;
-	/* TX timestamping: Store HW timestamps from AF_XDP completion queue */
-	struct round_trip_context *rtt;
-	/* Sequence number for TX HW timestamp (available one cycle later) */
-	int64_t tx_hw_ts_seq_lagged;
+	/* TX hardware timestamping context */
+	struct xdp_tx_hwts tx_hwts;
 	int fd;
 	bool busy_poll_mode;
 	bool tx_time_mode;

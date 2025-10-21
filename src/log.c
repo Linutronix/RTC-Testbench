@@ -126,6 +126,28 @@ static void log_add_traffic_class(const char *name, enum stat_frame_type frame_t
 	*buffer += written;
 	*length -= written;
 
+	if (app_config.classes[frame_type].tx_hwtstamp_enabled && config_have_rx_timestamp() &&
+	    app_config.classes[frame_type].xdp_enabled && stat->proc_first_count > 0) {
+		written = snprintf(*buffer, *length,
+				   "%sProcFirstMin=%" PRIu64 " [us] | %sProcFirstMax=%" PRIu64
+				   " [us] | %sProcFirstAvg=%lf [us] | ",
+				   name, stat->proc_first_min, name, stat->proc_first_max, name,
+				   stat->proc_first_avg);
+		*buffer += written;
+		*length -= written;
+	}
+
+	if (app_config.classes[frame_type].tx_hwtstamp_enabled && config_have_rx_timestamp() &&
+	    app_config.classes[frame_type].xdp_enabled && stat->proc_batch_count > 0) {
+		written = snprintf(*buffer, *length,
+				   "%sProcBatchMin=%" PRIu64 " [us] | %sProcBatchMax=%" PRIu64
+				   " [us] | %sProcBatchAvg=%lf [us] | ",
+				   name, stat->proc_batch_min, name, stat->proc_batch_max, name,
+				   stat->proc_batch_avg);
+		*buffer += written;
+		*length -= written;
+	}
+
 	if (config_have_rx_timestamp() && app_config.classes[frame_type].xdp_enabled) {
 		written = snprintf(*buffer, *length,
 				   "%sRxMin=%" PRIu64 " [us] | %sRxMax=%" PRIu64
