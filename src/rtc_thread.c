@@ -315,8 +315,8 @@ static void *rtc_xdp_tx_thread_routine(void *data)
 	int ret;
 
 	xsk = thread_context->xsk;
-	xsk->rtt = &round_trip_contexts[RTC_FRAME_TYPE];
-	xsk->tx_hw_ts_seq_lagged = 0;
+	xsk->tx_hwts.rtt = &round_trip_contexts[RTC_FRAME_TYPE];
+	xsk->tx_hwts.frames_per_cycle = rtc_config->num_frames_per_cycle;
 
 	ret = get_interface_mac_address(rtc_config->interface, source, ETH_ALEN);
 	if (ret < 0) {
@@ -437,7 +437,7 @@ static void *rtc_xdp_tx_thread_routine(void *data)
 				 * This is one cycle later than SW timestamp tracked
 				 * using sequence_counter
 				 */
-				xsk->tx_hw_ts_seq_lagged = sequence_counter;
+				xsk->tx_hwts.seq_lagged = sequence_counter;
 			}
 #endif
 

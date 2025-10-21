@@ -22,6 +22,7 @@ TsnHigh:
   TsnHighXdpZcMode: true
   TsnHighXdpWakeupMode: true
   TsnHighXdpBusyPollMode: true
+  TsnHighTxTimeStampEnabled: false
   TsnHighVid: 100
   TsnHighNumFramesPerCycle: 32
   TsnHighPayloadPattern: |
