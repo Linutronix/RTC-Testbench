@@ -164,25 +164,25 @@ Possible parameters include:
    * - StatsHistogramFile (String)
      - Path to file where to store the histogram after run
 
-   * - LogViaMQTT (Boolean)
+   * - LogMqtt (Boolean)
      - Enable and disable MQTT logging
 
-   * - LogViaMQTTThreadPriority (Integer)
+   * - LogMqttThreadPriority (Integer)
      - Thread priority for the logging thread, usually low < 7
 
-   * - LogViaMQTTThreadCpu (Integer)
+   * - LogMqttThreadCpu (Integer)
      - Thread CPU affinity
 
-   * - LogViaMQTTBrokerIP (IP Address)
+   * - LogMqttBrokerIP (IP Address)
      - IP address where MQTT broker is running
 
-   * - LogViaMQTTBrokerPort (Integer)
+   * - LogMqttBrokerPort (Integer)
      - Port used by the MQTT Broker, default value is
 
-   * - LogViaMQTTKeepAliveSecs (Integer)
+   * - LogMqttKeepAliveSecs (Integer)
      - Keep alive time for the connection, default value 60s
 
-   * - LogViaMQTTMeasurementName (String)
+   * - LogMqttMeasurementName (String)
      - Used to distinguish measurements coming from different machines.
 
    * - DebugStopTraceOnOutlier (Integer)

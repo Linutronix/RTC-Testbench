@@ -42,13 +42,13 @@ Log:
   LogThreadCpu: 0
   LogFile: /var/log/reference_vid100.log
   LogLevel: Info
-LogViaMQTT:
-  LogViaMQTT: false
-  LogViaMQTTThreadPriority: 10
-  LogViaMQTTThreadCpu: 0
-  LogViaMQTTBrokerIP: 127.0.0.1
-  LogViaMQTTBrokerPort: 1883
-  LogViaMQTTMeasurementName: reference
+LogMqtt:
+  LogMqtt: false
+  LogMqttThreadPriority: 10
+  LogMqttThreadCpu: 0
+  LogMqttBrokerIP: 127.0.0.1
+  LogMqttBrokerPort: 1883
+  LogMqttMeasurementName: reference
 Debug:
   DebugStopTraceOnOutlier: false
   DebugStopTraceOnError: false

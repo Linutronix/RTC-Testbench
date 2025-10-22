@@ -50,25 +50,25 @@ The parameters which affect the MQTT integration are presented in the table belo
    * - StatsCollectionIntervalNS
      - Interval in which a summary of the data is generated, typically 1s, i.e. 1000000000Ns
 
-   * - LogViaMQTT
+   * - LogMqtt
      - Enable and disable MQTT logging
 
-   * - LogViaMQTTThreadPriority
+   * - LogMqttThreadPriority
      - Thread priority for the logging thread, usually low < 7
 
-   * - LogViaMQTTThreadCpu
+   * - LogMqttThreadCpu
      - Thread CPU affinity
 
-   * - LogViaMQTTBrokerIP
+   * - LogMqttBrokerIP
      - IP address where MQTT broker is running
 
-   * - LogViaMQTTBrokerPort
+   * - LogMqttBrokerPort
      - Port used by the MQTT Broker, default value is
 
-   * - LogViaMQTTKeepAliveSecs
+   * - LogMqttKeepAliveSecs
      - Keep alive time for the connection, default value 60s
 
-   * - LogViaMQTTMeasurementName
+   * - LogMqttMeasurementName
      - Used to distinguish measurements coming from different machines.
 
 
@@ -108,7 +108,7 @@ Influx Access
 ^^^^^^^^^^^^^^
 
 Used database for the provided configuration is "testbench" and is defined in the telegraf.conf file.
-The measurement name is the "LogViaMQTTMeasurementName" provided in the configuration.
+The measurement name is the "LogMqttMeasurementName" provided in the configuration.
 The Timestamp provided is the time taken in the application side when the last frame in the recording period "StatsCollectionIntervalNS"
 is received, and the traffic class name is one of the columns of the measurment.
 This way one can investigate the data base by providing the following code when running influx:
@@ -116,9 +116,9 @@ This way one can investigate the data base by providing the following code when 
 .. code:: bash
 
    use testbench
-   SELECT * from ${LogViaMQTTMeasurementName}
+   SELECT * from ${LogMqttMeasurementName}
 
-where ${LogViaMQTTMeasurementName} is a placeholder for the real name used.
+where ${LogMqttMeasurementName} is a placeholder for the real name used.
 
 
 Grafana Access

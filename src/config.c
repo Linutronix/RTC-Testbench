@@ -481,13 +481,13 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_TIME_PARAM(StatsCollectionIntervalNS,
 						stats_collection_interval_ns);
 
-			CONFIG_STORE_BOOL_PARAM(LogViaMQTT, log_mqtt);
-			CONFIG_STORE_INT_PARAM(LogViaMQTTThreadPriority, log_mqtt_thread_priority);
-			CONFIG_STORE_INT_PARAM(LogViaMQTTThreadCpu, log_mqtt_thread_cpu);
-			CONFIG_STORE_STRING_PARAM(LogViaMQTTBrokerIP, log_mqtt_broker_ip);
-			CONFIG_STORE_INT_PARAM(LogViaMQTTBrokerPort, log_mqtt_broker_port);
-			CONFIG_STORE_INT_PARAM(LogViaMQTTKeepAliveSecs, log_mqtt_keep_alive_secs);
-			CONFIG_STORE_STRING_PARAM(LogViaMQTTMeasurementName,
+			CONFIG_STORE_BOOL_PARAM(LogMqtt, log_mqtt);
+			CONFIG_STORE_INT_PARAM(LogMqttThreadPriority, log_mqtt_thread_priority);
+			CONFIG_STORE_INT_PARAM(LogMqttThreadCpu, log_mqtt_thread_cpu);
+			CONFIG_STORE_STRING_PARAM(LogMqttBrokerIP, log_mqtt_broker_ip);
+			CONFIG_STORE_INT_PARAM(LogMqttBrokerPort, log_mqtt_broker_port);
+			CONFIG_STORE_INT_PARAM(LogMqttKeepAliveSecs, log_mqtt_keep_alive_secs);
+			CONFIG_STORE_STRING_PARAM(LogMqttMeasurementName,
 						  log_mqtt_measurement_name);
 
 			if (!strcmp(key, "ApplicationBaseStartTimeNS"))
@@ -868,13 +868,13 @@ void config_print_values(void)
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
 
-	printf("LogViaMQTT=%s\n", app_config.log_mqtt ? "True" : "False");
-	printf("LogViaMQTTThreadPriority=%d\n", app_config.log_mqtt_thread_priority);
-	printf("LogViaMQTTThreadCpu=%d\n", app_config.log_mqtt_thread_cpu);
-	printf("LogViaMQTTBrokerIP=%s\n", app_config.log_mqtt_broker_ip);
-	printf("LogViaMQTTBrokerPort=%d\n", app_config.log_mqtt_broker_port);
-	printf("LogViaMQTTKeepAliveSecs=%d\n", app_config.log_mqtt_keep_alive_secs);
-	printf("LogViaMQTTMeasurementName=%s\n", app_config.log_mqtt_measurement_name);
+	printf("LogMqtt=%s\n", app_config.log_mqtt ? "True" : "False");
+	printf("LogMqttThreadPriority=%d\n", app_config.log_mqtt_thread_priority);
+	printf("LogMqttThreadCpu=%d\n", app_config.log_mqtt_thread_cpu);
+	printf("LogMqttBrokerIP=%s\n", app_config.log_mqtt_broker_ip);
+	printf("LogMqttBrokerPort=%d\n", app_config.log_mqtt_broker_port);
+	printf("LogMqttKeepAliveSecs=%d\n", app_config.log_mqtt_keep_alive_secs);
+	printf("LogMqttMeasurementName=%s\n", app_config.log_mqtt_measurement_name);
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
 }
@@ -1224,7 +1224,7 @@ int config_set_defaults(bool mirror_enabled)
 	app_config.stats_histogram_file_length = strlen(default_hist_file);
 	app_config.stats_collection_interval_ns = 1e9;
 
-	/* LogViaMQTT */
+	/* LogMqtt */
 	app_config.log_mqtt = false;
 	app_config.log_mqtt_broker_port = 1883;
 	app_config.log_mqtt_thread_priority = 1;
