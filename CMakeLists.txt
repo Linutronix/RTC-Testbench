@@ -35,7 +35,7 @@ add_executable(reference
   src/config.c
   src/utils.c
   src/log.c
-  src/logviamqtt.c
+  src/log_mqtt.c
   src/stat.c
   src/ring_buffer.c
   src/thread.c
@@ -59,7 +59,7 @@ add_executable(mirror
   src/config.c
   src/utils.c
   src/log.c
-  src/logviamqtt.c
+  src/log_mqtt.c
   src/stat.c
   src/ring_buffer.c
   src/thread.c

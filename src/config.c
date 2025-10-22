@@ -481,16 +481,14 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_TIME_PARAM(StatsCollectionIntervalNS,
 						stats_collection_interval_ns);
 
-			CONFIG_STORE_BOOL_PARAM(LogViaMQTT, log_via_mqtt);
-			CONFIG_STORE_INT_PARAM(LogViaMQTTThreadPriority,
-					       log_via_mqtt_thread_priority);
-			CONFIG_STORE_INT_PARAM(LogViaMQTTThreadCpu, log_via_mqtt_thread_cpu);
-			CONFIG_STORE_STRING_PARAM(LogViaMQTTBrokerIP, log_via_mqtt_broker_ip);
-			CONFIG_STORE_INT_PARAM(LogViaMQTTBrokerPort, log_via_mqtt_broker_port);
-			CONFIG_STORE_INT_PARAM(LogViaMQTTKeepAliveSecs,
-					       log_via_mqtt_keep_alive_secs);
+			CONFIG_STORE_BOOL_PARAM(LogViaMQTT, log_mqtt);
+			CONFIG_STORE_INT_PARAM(LogViaMQTTThreadPriority, log_mqtt_thread_priority);
+			CONFIG_STORE_INT_PARAM(LogViaMQTTThreadCpu, log_mqtt_thread_cpu);
+			CONFIG_STORE_STRING_PARAM(LogViaMQTTBrokerIP, log_mqtt_broker_ip);
+			CONFIG_STORE_INT_PARAM(LogViaMQTTBrokerPort, log_mqtt_broker_port);
+			CONFIG_STORE_INT_PARAM(LogViaMQTTKeepAliveSecs, log_mqtt_keep_alive_secs);
 			CONFIG_STORE_STRING_PARAM(LogViaMQTTMeasurementName,
-						  log_via_mqtt_measurement_name);
+						  log_mqtt_measurement_name);
 
 			if (!strcmp(key, "ApplicationBaseStartTimeNS"))
 				base_time_seen = true;
@@ -870,13 +868,13 @@ void config_print_values(void)
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
 
-	printf("LogViaMQTT=%s\n", app_config.log_via_mqtt ? "True" : "False");
-	printf("LogViaMQTTThreadPriority=%d\n", app_config.log_via_mqtt_thread_priority);
-	printf("LogViaMQTTThreadCpu=%d\n", app_config.log_via_mqtt_thread_cpu);
-	printf("LogViaMQTTBrokerIP=%s\n", app_config.log_via_mqtt_broker_ip);
-	printf("LogViaMQTTBrokerPort=%d\n", app_config.log_via_mqtt_broker_port);
-	printf("LogViaMQTTKeepAliveSecs=%d\n", app_config.log_via_mqtt_keep_alive_secs);
-	printf("LogViaMQTTMeasurementName=%s\n", app_config.log_via_mqtt_measurement_name);
+	printf("LogViaMQTT=%s\n", app_config.log_mqtt ? "True" : "False");
+	printf("LogViaMQTTThreadPriority=%d\n", app_config.log_mqtt_thread_priority);
+	printf("LogViaMQTTThreadCpu=%d\n", app_config.log_mqtt_thread_cpu);
+	printf("LogViaMQTTBrokerIP=%s\n", app_config.log_mqtt_broker_ip);
+	printf("LogViaMQTTBrokerPort=%d\n", app_config.log_mqtt_broker_port);
+	printf("LogViaMQTTKeepAliveSecs=%d\n", app_config.log_mqtt_keep_alive_secs);
+	printf("LogViaMQTTMeasurementName=%s\n", app_config.log_mqtt_measurement_name);
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
 }
@@ -888,9 +886,9 @@ int config_set_defaults(bool mirror_enabled)
 	static unsigned char default_lldp_destination[] = {0x01, 0x80, 0xc2, 0x00, 0x00, 0x0e};
 	static unsigned char default_destination[] = {0xa8, 0xa1, 0x59, 0x2c, 0xa8, 0xdb};
 	static unsigned char default_dcp_identify[] = {0x01, 0x0e, 0xcf, 0x00, 0x00, 0x00};
-	static const char *default_log_via_mqtt_measurement_name = "reference";
+	static const char *default_log_mqtt_measurement_name = "reference";
 	static const char *default_udp_low_destination = "192.168.2.120";
-	static const char *default_log_via_mqtt_broker_ip = "127.0.0.1";
+	static const char *default_log_mqtt_broker_ip = "127.0.0.1";
 	static const char *default_udp_low_source = "192.168.2.119";
 	static const char *default_payload_pattern = "Payload";
 	static const char *default_hist_file = "histogram.txt";
@@ -1227,17 +1225,17 @@ int config_set_defaults(bool mirror_enabled)
 	app_config.stats_collection_interval_ns = 1e9;
 
 	/* LogViaMQTT */
-	app_config.log_via_mqtt = false;
-	app_config.log_via_mqtt_broker_port = 1883;
-	app_config.log_via_mqtt_thread_priority = 1;
-	app_config.log_via_mqtt_thread_cpu = 7;
-	app_config.log_via_mqtt_keep_alive_secs = 60;
-	app_config.log_via_mqtt_broker_ip = strdup(default_log_via_mqtt_broker_ip);
-	if (!app_config.log_via_mqtt_broker_ip)
+	app_config.log_mqtt = false;
+	app_config.log_mqtt_broker_port = 1883;
+	app_config.log_mqtt_thread_priority = 1;
+	app_config.log_mqtt_thread_cpu = 7;
+	app_config.log_mqtt_keep_alive_secs = 60;
+	app_config.log_mqtt_broker_ip = strdup(default_log_mqtt_broker_ip);
+	if (!app_config.log_mqtt_broker_ip)
 		goto out;
 
-	app_config.log_via_mqtt_measurement_name = strdup(default_log_via_mqtt_measurement_name);
-	if (!app_config.log_via_mqtt_measurement_name)
+	app_config.log_mqtt_measurement_name = strdup(default_log_mqtt_measurement_name);
+	if (!app_config.log_mqtt_measurement_name)
 		goto out;
 	return 0;
 out:
@@ -1432,7 +1430,7 @@ bool config_sanity_check(void)
 		return false;
 	}
 
-	if (!config_have_mosquitto() && app_config.log_via_mqtt) {
+	if (!config_have_mosquitto() && app_config.log_mqtt) {
 		fprintf(stderr, "Log via Mosquito enabled, but not supported!\n");
 		return false;
 	}
@@ -1510,6 +1508,6 @@ void config_free(void)
 	free(app_config.log_file);
 	free(app_config.log_level);
 
-	free(app_config.log_via_mqtt_broker_ip);
-	free(app_config.log_via_mqtt_measurement_name);
+	free(app_config.log_mqtt_broker_ip);
+	free(app_config.log_mqtt_measurement_name);
 }

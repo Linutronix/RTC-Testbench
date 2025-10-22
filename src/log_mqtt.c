@@ -20,7 +20,7 @@
 #endif
 
 #include "config.h"
-#include "logviamqtt.h"
+#include "log_mqtt.h"
 #include "ring_buffer.h"
 #include "stat.h"
 #include "thread.h"
@@ -29,20 +29,20 @@
 #define LOGVIAMQTT_BUFFER_SIZE (8 * 1024)
 
 #ifndef WITH_MQTT
-struct log_via_mqtt_thread_context *log_via_mqtt_thread_create(void)
+struct log_mqtt_thread_context *log_mqtt_thread_create(void)
 {
 	return NULL;
 }
 
-void log_via_mqtt_thread_wait_for_finish(struct log_via_mqtt_thread_context *thread_context)
+void log_mqtt_thread_wait_for_finish(struct log_mqtt_thread_context *thread_context)
 {
 }
 
-void log_via_mqtt_thread_free(struct log_via_mqtt_thread_context *thread_context)
+void log_mqtt_thread_free(struct log_mqtt_thread_context *thread_context)
 {
 }
 
-void log_via_mqtt_free(void)
+void log_mqtt_free(void)
 {
 }
 
@@ -50,13 +50,13 @@ void log_via_mqtt_free(void)
 
 static struct statistics statistics_per_period[NUM_FRAME_TYPES];
 
-int log_via_mqtt_init(void)
+int log_mqtt_init(void)
 {
 	return 0;
 }
 
-static void log_via_mqtt_add_traffic_class(struct mosquitto *mosq, const char *mqtt_base_topic_name,
-					   struct statistics *stat, const char *name)
+static void log_mqtt_add_traffic_class(struct mosquitto *mosq, const char *mqtt_base_topic_name,
+				       struct statistics *stat, const char *name)
 {
 	char stat_message[2048] = {}, *p;
 	size_t stat_message_length;
@@ -140,16 +140,16 @@ static void log_via_mqtt_add_traffic_class(struct mosquitto *mosq, const char *m
 		fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(result_pub));
 }
 
-static void log_via_mqtt_on_connect(struct mosquitto *mosq, void *obj, int reason_code)
+static void log_mqtt_on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
 	if (reason_code != 0)
 		mosquitto_disconnect(mosq);
 }
 
-static void *log_via_mqtt_thread_routine(void *data)
+static void *log_mqtt_thread_routine(void *data)
 {
 	uint64_t period_ns = app_config.stats_collection_interval_ns;
-	struct log_via_mqtt_thread_context *mqtt_context = data;
+	struct log_mqtt_thread_context *mqtt_context = data;
 	int ret, connect_status;
 	struct timespec time;
 
@@ -161,16 +161,16 @@ static void *log_via_mqtt_thread_routine(void *data)
 		goto err_mqtt_outof_memory;
 	}
 
-	connect_status = mosquitto_connect(mqtt_context->mosq, app_config.log_via_mqtt_broker_ip,
-					   app_config.log_via_mqtt_broker_port,
-					   app_config.log_via_mqtt_keep_alive_secs);
+	connect_status = mosquitto_connect(mqtt_context->mosq, app_config.log_mqtt_broker_ip,
+					   app_config.log_mqtt_broker_port,
+					   app_config.log_mqtt_keep_alive_secs);
 	if (connect_status != MOSQ_ERR_SUCCESS) {
 		fprintf(stderr, "MQTTLog Error by connect: %s\n",
 			mosquitto_strerror(connect_status));
 		goto err_mqtt_connect;
 	}
 
-	mosquitto_connect_callback_set(mqtt_context->mosq, log_via_mqtt_on_connect);
+	mosquitto_connect_callback_set(mqtt_context->mosq, log_mqtt_on_connect);
 
 	ret = mosquitto_loop_start(mqtt_context->mosq);
 	if (ret != MOSQ_ERR_SUCCESS) {
@@ -204,9 +204,8 @@ static void *log_via_mqtt_thread_routine(void *data)
 		/* Publish via MQTT */
 		for (i = 0; i < NUM_FRAME_TYPES; i++) {
 			if (config_is_traffic_class_active(stat_frame_type_to_string(i)))
-				log_via_mqtt_add_traffic_class(
-					mqtt_context->mosq,
-					app_config.log_via_mqtt_measurement_name,
+				log_mqtt_add_traffic_class(
+					mqtt_context->mosq, app_config.log_mqtt_measurement_name,
 					&statistics_per_period[i], stat_frame_type_to_string(i));
 		}
 	}
@@ -223,26 +222,25 @@ err_time:
 	return NULL;
 }
 
-struct log_via_mqtt_thread_context *log_via_mqtt_thread_create(void)
+struct log_mqtt_thread_context *log_mqtt_thread_create(void)
 {
-	struct log_via_mqtt_thread_context *mqtt_context;
+	struct log_mqtt_thread_context *mqtt_context;
 	int init_val, ret = 0;
 
-	if (!app_config.log_via_mqtt)
+	if (!app_config.log_mqtt)
 		return NULL;
 
 	mqtt_context = calloc(1, sizeof(*mqtt_context));
 	if (!mqtt_context)
 		return NULL;
 
-	init_val = log_via_mqtt_init();
+	init_val = log_mqtt_init();
 	if (init_val != 0)
 		goto err_thread;
 
 	ret = create_rt_thread(&mqtt_context->mqtt_log_task_id, "LoggerGraph",
-			       app_config.log_via_mqtt_thread_priority,
-			       app_config.log_via_mqtt_thread_cpu, log_via_mqtt_thread_routine,
-			       mqtt_context);
+			       app_config.log_mqtt_thread_priority, app_config.log_mqtt_thread_cpu,
+			       log_mqtt_thread_routine, mqtt_context);
 
 	if (ret)
 		goto err_thread;
@@ -254,12 +252,12 @@ err_thread:
 	return NULL;
 }
 
-void log_via_mqtt_thread_free(struct log_via_mqtt_thread_context *thread_context)
+void log_mqtt_thread_free(struct log_mqtt_thread_context *thread_context)
 {
 	if (!thread_context)
 		return;
 
-	if (app_config.log_via_mqtt) {
+	if (app_config.log_mqtt) {
 		if (thread_context->mosq)
 			mosquitto_destroy(thread_context->mosq);
 		mosquitto_lib_cleanup();
@@ -268,7 +266,7 @@ void log_via_mqtt_thread_free(struct log_via_mqtt_thread_context *thread_context
 	free(thread_context);
 }
 
-void log_via_mqtt_thread_stop(struct log_via_mqtt_thread_context *thread_context)
+void log_mqtt_thread_stop(struct log_mqtt_thread_context *thread_context)
 {
 	if (!thread_context)
 		return;
@@ -277,11 +275,11 @@ void log_via_mqtt_thread_stop(struct log_via_mqtt_thread_context *thread_context
 	pthread_join(thread_context->mqtt_log_task_id, NULL);
 }
 
-void log_via_mqtt_free(void)
+void log_mqtt_free(void)
 {
 }
 
-void log_via_mqtt_thread_wait_for_finish(struct log_via_mqtt_thread_context *thread_context)
+void log_mqtt_thread_wait_for_finish(struct log_mqtt_thread_context *thread_context)
 {
 	if (!thread_context)
 		return;

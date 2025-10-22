@@ -18,7 +18,7 @@
 #include "layer2_thread.h"
 #include "lldp_thread.h"
 #include "log.h"
-#include "logviamqtt.h"
+#include "log_mqtt.h"
 #include "print.h"
 #include "rta_thread.h"
 #include "rtc_thread.h"
@@ -35,7 +35,7 @@ static struct option long_options[] = {
 	{NULL},
 };
 
-static struct log_via_mqtt_thread_context *log_via_mqtt_thread;
+static struct log_mqtt_thread_context *log_mqtt_thread;
 static struct log_thread_context *log_thread;
 static struct thread_context *g2_threads;
 static struct thread_context *threads;
@@ -48,8 +48,8 @@ static void term_handler(int sig)
 
 	print_stop = 1;
 
-	if (log_via_mqtt_thread)
-		log_via_mqtt_thread->stop = 1;
+	if (log_mqtt_thread)
+		log_mqtt_thread->stop = 1;
 
 	if (log_thread)
 		log_thread->stop = 1;
@@ -181,8 +181,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	log_via_mqtt_thread = log_via_mqtt_thread_create();
-	if (!log_via_mqtt_thread && app_config.log_via_mqtt) {
+	log_mqtt_thread = log_mqtt_thread_create();
+	if (!log_mqtt_thread && app_config.log_mqtt) {
 		fprintf(stderr, "Failed to create and start Log via MQTT Thread!\n");
 		exit(EXIT_FAILURE);
 	}
@@ -263,7 +263,7 @@ int main(int argc, char *argv[])
 	udp_high_threads_wait_for_finish(&threads[UDP_HIGH_THREAD]);
 	udp_low_threads_wait_for_finish(&threads[UDP_LOW_THREAD]);
 	generic_l2_threads_wait_for_finish(g2_threads);
-	log_via_mqtt_thread_wait_for_finish(log_via_mqtt_thread);
+	log_mqtt_thread_wait_for_finish(log_mqtt_thread);
 	log_thread_wait_for_finish(log_thread);
 
 	histogram_write();
@@ -277,13 +277,13 @@ int main(int argc, char *argv[])
 	udp_high_threads_free(&threads[UDP_HIGH_THREAD]);
 	udp_low_threads_free(&threads[UDP_LOW_THREAD]);
 	generic_l2_threads_free(g2_threads);
-	log_via_mqtt_thread_free(log_via_mqtt_thread);
+	log_mqtt_thread_free(log_mqtt_thread);
 	log_thread_free(log_thread);
 
 	histogram_free();
 	stat_free();
 	log_free();
-	log_via_mqtt_free();
+	log_mqtt_free();
 	config_free();
 	free(threads);
 

@@ -15,7 +15,7 @@
 #include "config.h"
 #include "hist.h"
 #include "log.h"
-#include "logviamqtt.h"
+#include "log_mqtt.h"
 #include "stat.h"
 #include "thread.h"
 #include "utils.h"

@@ -128,15 +128,15 @@ struct application_config {
 	size_t stats_histogram_file_length;
 	uint64_t stats_collection_interval_ns;
 	/* Log through MQTT */
-	bool log_via_mqtt;
-	int log_via_mqtt_thread_priority;
-	int log_via_mqtt_thread_cpu;
-	size_t log_via_mqtt_broker_ip_length;
-	char *log_via_mqtt_broker_ip;
-	int log_via_mqtt_broker_port;
-	int log_via_mqtt_keep_alive_secs;
-	size_t log_via_mqtt_measurement_name_length;
-	char *log_via_mqtt_measurement_name;
+	bool log_mqtt;
+	int log_mqtt_thread_priority;
+	int log_mqtt_thread_cpu;
+	size_t log_mqtt_broker_ip_length;
+	char *log_mqtt_broker_ip;
+	int log_mqtt_broker_port;
+	int log_mqtt_keep_alive_secs;
+	size_t log_mqtt_measurement_name_length;
+	char *log_mqtt_measurement_name;
 };
 
 extern struct application_config app_config;
