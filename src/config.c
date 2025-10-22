@@ -490,6 +490,14 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_STRING_PARAM(LogMqttMeasurementName,
 						  log_mqtt_measurement_name);
 
+			CONFIG_STORE_BOOL_PARAM(LogJson, log_json);
+			CONFIG_STORE_INT_PARAM(LogJsonThreadPriority, log_json_thread_priority);
+			CONFIG_STORE_INT_PARAM(LogJsonThreadCpu, log_json_thread_cpu);
+			CONFIG_STORE_STRING_PARAM(LogJsonHost, log_json_host);
+			CONFIG_STORE_STRING_PARAM(LogJsonPort, log_json_port);
+			CONFIG_STORE_STRING_PARAM(LogJsonMeasurementName,
+						  log_json_measurement_name);
+
 			if (!strcmp(key, "ApplicationBaseStartTimeNS"))
 				base_time_seen = true;
 
@@ -877,6 +885,15 @@ void config_print_values(void)
 	printf("LogMqttMeasurementName=%s\n", app_config.log_mqtt_measurement_name);
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
+
+	printf("LogJson=%s\n", app_config.log_json ? "True" : "False");
+	printf("LogJsonThreadPriority=%d\n", app_config.log_json_thread_priority);
+	printf("LogJsonThreadCpu=%d\n", app_config.log_json_thread_cpu);
+	printf("LogJsonHost=%s\n", app_config.log_json_host);
+	printf("LogJsonPort=%s\n", app_config.log_json_port);
+	printf("LogJsonMeasurementName=%s\n", app_config.log_json_measurement_name);
+	printf("--------------------------------------------------------------------------------"
+	       "\n");
 }
 
 int config_set_defaults(bool mirror_enabled)
@@ -892,7 +909,9 @@ int config_set_defaults(bool mirror_enabled)
 	static const char *default_udp_low_source = "192.168.2.119";
 	static const char *default_payload_pattern = "Payload";
 	static const char *default_hist_file = "histogram.txt";
+	static const char *default_json_host = "localhost";
 	static const char *default_udp_low_port = "6666";
+	static const char *default_json_port = "58415";
 	static const char *default_log_level = "Debug";
 	struct traffic_class_config *conf;
 	struct timespec current;
@@ -1233,10 +1252,23 @@ int config_set_defaults(bool mirror_enabled)
 	app_config.log_mqtt_broker_ip = strdup(default_log_mqtt_broker_ip);
 	if (!app_config.log_mqtt_broker_ip)
 		goto out;
-
 	app_config.log_mqtt_measurement_name = strdup(default_log_mqtt_measurement_name);
 	if (!app_config.log_mqtt_measurement_name)
 		goto out;
+
+	app_config.log_json = false;
+	app_config.log_json_thread_cpu = 0;
+	app_config.log_json_thread_priority = 1;
+	app_config.log_json_host = strdup(default_json_host);
+	if (!app_config.log_json_host)
+		goto out;
+	app_config.log_json_port = strdup(default_json_port);
+	if (!app_config.log_json_port)
+		goto out;
+	app_config.log_json_measurement_name = strdup(default_log_mqtt_measurement_name);
+	if (!app_config.log_json_measurement_name)
+		goto out;
+
 	return 0;
 out:
 	config_free();
@@ -1510,4 +1542,8 @@ void config_free(void)
 
 	free(app_config.log_mqtt_broker_ip);
 	free(app_config.log_mqtt_measurement_name);
+
+	free(app_config.log_json_host);
+	free(app_config.log_json_port);
+	free(app_config.log_json_measurement_name);
 }

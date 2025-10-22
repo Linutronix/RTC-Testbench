@@ -137,6 +137,16 @@ struct application_config {
 	int log_mqtt_keep_alive_secs;
 	size_t log_mqtt_measurement_name_length;
 	char *log_mqtt_measurement_name;
+	/* Log through JSON/UDP */
+	bool log_json;
+	int log_json_thread_priority;
+	int log_json_thread_cpu;
+	size_t log_json_host_length;
+	char *log_json_host;
+	size_t log_json_port_length;
+	char *log_json_port;
+	size_t log_json_measurement_name_length;
+	char *log_json_measurement_name;
 };
 
 extern struct application_config app_config;
