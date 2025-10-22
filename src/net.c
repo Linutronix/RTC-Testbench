@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2024 Linutronix GmbH
+ * Copyright (C) 2020-2025 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -705,5 +705,20 @@ err_bind:
 	close(socket_fd);
 err_dns2:
 err_dns1:
+	return ret;
+}
+
+int create_udp_cl_socket(const char *udp_destination, const char *udp_port,
+			 struct sockaddr_storage *destination)
+{
+	int ret, socket = -1;
+
+	ret = dns_lookup(udp_destination, udp_port, destination, &socket);
+	if (ret)
+		goto err;
+
+	return socket;
+
+err:
 	return ret;
 }
