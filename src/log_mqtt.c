@@ -21,12 +21,9 @@
 
 #include "config.h"
 #include "log_mqtt.h"
-#include "ring_buffer.h"
 #include "stat.h"
 #include "thread.h"
 #include "utils.h"
-
-#define LOGVIAMQTT_BUFFER_SIZE (8 * 1024)
 
 #ifndef WITH_MQTT
 struct log_mqtt_thread_context *log_mqtt_thread_create(void)
@@ -42,18 +39,9 @@ void log_mqtt_thread_free(struct log_mqtt_thread_context *thread_context)
 {
 }
 
-void log_mqtt_free(void)
-{
-}
-
 #else
 
 static struct statistics statistics_per_period[NUM_FRAME_TYPES];
-
-int log_mqtt_init(void)
-{
-	return 0;
-}
 
 static void log_mqtt_add_traffic_class(struct mosquitto *mosq, const char *mqtt_base_topic_name,
 				       struct statistics *stat, const char *name)
@@ -225,7 +213,7 @@ err_time:
 struct log_mqtt_thread_context *log_mqtt_thread_create(void)
 {
 	struct log_mqtt_thread_context *mqtt_context;
-	int init_val, ret = 0;
+	int ret = 0;
 
 	if (!app_config.log_mqtt)
 		return NULL;
@@ -233,10 +221,6 @@ struct log_mqtt_thread_context *log_mqtt_thread_create(void)
 	mqtt_context = calloc(1, sizeof(*mqtt_context));
 	if (!mqtt_context)
 		return NULL;
-
-	init_val = log_mqtt_init();
-	if (init_val != 0)
-		goto err_thread;
 
 	ret = create_rt_thread(&mqtt_context->mqtt_log_task_id, "LoggerGraph",
 			       app_config.log_mqtt_thread_priority, app_config.log_mqtt_thread_cpu,
@@ -273,10 +257,6 @@ void log_mqtt_thread_stop(struct log_mqtt_thread_context *thread_context)
 
 	thread_context->stop = 1;
 	pthread_join(thread_context->mqtt_log_task_id, NULL);
-}
-
-void log_mqtt_free(void)
-{
 }
 
 void log_mqtt_thread_wait_for_finish(struct log_mqtt_thread_context *thread_context)

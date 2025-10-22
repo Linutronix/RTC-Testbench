@@ -295,7 +295,6 @@ int main(int argc, char *argv[])
 
 	stat_free();
 	log_free();
-	log_mqtt_free();
 	config_free();
 	free(threads);
 
