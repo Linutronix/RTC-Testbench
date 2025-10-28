@@ -599,7 +599,6 @@ void config_print_values(void)
 	printf("TsnHighRxWorkloadArguments=%s\n", conf->workload_arguments);
 	printf("TsnHighRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
 	printf("TsnHighRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
-	printf("\n");
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
 
