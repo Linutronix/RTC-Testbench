@@ -185,6 +185,24 @@ Possible parameters include:
    * - LogMqttMeasurementName (String)
      - Used to distinguish measurements coming from different machines.
 
+   * - LogJson (Boolean)
+     - Enable and disable JSON logging
+
+   * - LogJsonThreadPriority (Integer)
+     - Thread priority for the logging thread, usually low < 7
+
+   * - LogJsonThreadCpu (Integer)
+     - Thread CPU affinity
+
+   * - LogJsonHost (IP Address)
+     - IP address or host name where JSON/UDP messages should be sent to
+
+   * - LogJsonPort (Integer)
+     - Port used for JSON/UDP messages
+
+   * - LogJsonMeasurementName (String)
+     - Used to distinguish measurements coming from different machines
+
    * - DebugStopTraceOnOutlier (Integer)
      - Stop Linux kernel tracing if round trip or oneway time exceeds expected value
 
