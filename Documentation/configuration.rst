@@ -73,7 +73,7 @@ Possible parameters include:
    * - <Class>TxTimeOffsetNS (Integer)
      - Optional Tx Launch Time offset relative to Qbv schedule and cycle time
 
-   * - <Class>TxHwTstampEnabled (Boolean)
+   * - <Class>TxTimeStampEnabled (Boolean)
      - Enable TX hardware timestamping for latency measurement (requires TX_TIMESTAMP build option)
 
    * - <Class>IgnoreRxErrors (Boolean)
