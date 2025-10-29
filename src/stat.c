@@ -768,9 +768,83 @@ void stat_frame_workload(enum stat_frame_type frame_type, uint64_t cycle_number,
 	/* Update stats per collection interval */
 	stat_frame_workload_per_period(frame_type, workload_time);
 }
+
 void stat_inc_workload_outlier(enum stat_frame_type frame_type)
 {
 	struct statistics *stat = &global_statistics[frame_type];
 
 	stat->rx_workload_outliers++;
+}
+
+void stat_to_json(char *json, size_t len, const struct statistics *stat, const char *tc,
+		  const char *measurement)
+{
+	int written;
+	char *p;
+
+	p = json;
+	len--;
+	written = snprintf(p, len,
+			   "{\"%s\" :\n"
+			   "\t{\"Timestamp\" : %" PRIu64 ",\n"
+			   "\t \"MeasurementName\" : \"%s\"",
+			   "reference", stat->time_stamp, measurement);
+
+	p += written;
+	len -= written;
+
+	written = snprintf(
+		p, len,
+		",\n\t\t\"%s\" : \n\t\t{\n"
+		"\t\t\t\"TCName\" : \"%s\",\n"
+		"\t\t\t\"FramesSent\" : %" PRIu64 ",\n"
+		"\t\t\t\"FramesReceived\" : %" PRIu64 ",\n"
+		"\t\t\t\"RoundTripTimeMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"RoundTripMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"RoundTripAv\" : %lf,\n"
+		"\t\t\t\"OnewayMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"OnewayMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"OnewayAv\" : %lf,\n"
+		"\t\t\t\"ProcFirstMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"ProcFirstMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"ProcFirstAv\" : %lf,\n"
+		"\t\t\t\"ProcBatchMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"ProcBatchMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"ProcBatchAv\" : %lf,\n"
+		"\t\t\t\"RxMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"RxMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"RxAv\" : %lf,\n"
+		"\t\t\t\"RxHw2XdpMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"RxHw2XdpMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"RxHw2XdpAv\" : %lf,\n"
+		"\t\t\t\"RxXdp2AppMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"RxXdp2AppMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"RxXdp2AppAv\" : %lf,\n"
+		"\t\t\t\"RxWorkloadMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"RxWorkloadMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"RxWorkloadAv\" : %lf,\n"
+		"\t\t\t\"TxMin\" : %" PRIu64 ",\n"
+		"\t\t\t\"TxMax\" : %" PRIu64 ",\n"
+		"\t\t\t\"TxAv\" : %lf,\n"
+		"\t\t\t\"TxHwTimestampMissing\" : %" PRIu64 ",\n"
+		"\t\t\t\"OutofOrderErrors\" : %" PRIu64 ",\n"
+		"\t\t\t\"FrameIdErrors\" : %" PRIu64 ",\n"
+		"\t\t\t\"PayloadErrors\" : %" PRIu64 ",\n"
+		"\t\t\t\"RoundTripOutliers\" : %" PRIu64 ",\n"
+		"\t\t\t\"OnewayOutliers\" : %" PRIu64 "\n\t\t}",
+		"stats", tc, stat->frames_sent, stat->frames_received, stat->round_trip_min,
+		stat->round_trip_max, stat->round_trip_avg, stat->oneway_min, stat->oneway_max,
+		stat->oneway_avg, stat->proc_first_min, stat->proc_first_max, stat->proc_first_avg,
+		stat->proc_batch_min, stat->proc_batch_max, stat->proc_batch_avg, stat->rx_min,
+		stat->rx_max, stat->rx_avg, stat->rx_hw2xdp_min, stat->rx_hw2xdp_max,
+		stat->rx_hw2xdp_avg, stat->rx_xdp2app_min, stat->rx_xdp2app_max,
+		stat->rx_xdp2app_avg, stat->rx_workload_min, stat->rx_workload_max,
+		stat->rx_workload_avg, stat->tx_min, stat->tx_max, stat->tx_avg,
+		stat->tx_hw_timestamp_missing, stat->out_of_order_errors, stat->frame_id_errors,
+		stat->payload_errors, stat->round_trip_outliers, stat->oneway_outliers);
+
+	p += written;
+	len -= written;
+
+	written = snprintf(p, len, "\t\t\n}\t\n}\n");
 }

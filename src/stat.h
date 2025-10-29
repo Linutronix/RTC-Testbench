@@ -145,6 +145,8 @@ void stat_proc_first_latency(enum stat_frame_type frame_type, uint64_t cycle_num
 			     uint64_t tx_hw_timestamp);
 void stat_proc_batch_latency(enum stat_frame_type frame_type, uint64_t cycle_number,
 			     uint64_t last_tx_hw_timestamp);
+void stat_to_json(char *json, size_t len, const struct statistics *stat, const char *tc,
+		  const char *measurement);
 
 extern volatile sig_atomic_t reset_stats;
 extern struct round_trip_context round_trip_contexts[NUM_FRAME_TYPES];
