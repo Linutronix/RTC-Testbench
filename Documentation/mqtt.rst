@@ -6,6 +6,8 @@
 .. Testbench documentation MQTT Integration file.
 ..
 
+.. _MQTT:
+
 MQTT and Grafana Integration
 ============================
 
