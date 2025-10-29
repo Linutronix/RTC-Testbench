@@ -177,7 +177,7 @@ Possible parameters include:
      - IP address where MQTT broker is running
 
    * - LogMqttBrokerPort (Integer)
-     - Port used by the MQTT Broker, default value is
+     - Port used by the MQTT Broker, default value is 1883
 
    * - LogMqttKeepAliveSecs (Integer)
      - Keep alive time for the connection, default value 60s
