@@ -1,0 +1,305 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statistics &mdash; Linux RealTime Communication Testbench v5.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b27cedc7"></script>
+      <script src="_static/doctools.js?v=888ff710"></script>
+      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Security" href="security.html" />
+    <link rel="prev" title="Configuration" href="configuration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Linux RealTime Communication Testbench
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contribution</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="build.html">Build</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Statistics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id2">Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#file-log">File log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mqtt-grafana">MQTT / Grafana</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#json-udp">JSON/UDP</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="security.html">Security</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mqtt.html">MQTT and Grafana Integration</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="histogram.html">Histograms</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="test.html">Test runs</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="workload.html">Real Time Compute Workloads</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="wireshark.html">Wireshark</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="qa.html">Quality Assurance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Linux RealTime Communication Testbench</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Statistics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/statistics.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="statistics">
+<span id="id1"></span><h1>Statistics<a class="headerlink" href="#statistics" title="Permalink to this heading"></a></h1>
+<p>While running the RTC <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> it collects statistics about various aspects including round
+trip and one way times, errors, processing and workload execution. This sections explains what
+statistics are collected and how they can be obtained and visualized.</p>
+<section id="id2">
+<h2>Statistics<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
+<p>The following table shows all gathered statistics. All statistics are collected per traffic class.</p>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Statistics</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 33.3%" />
+<col style="width: 66.7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>FrameIdErrors</p></td>
+<td><p>Is incremented if a traffic class receives a packet with wrong Profinet frame id. This could
+happen e.g., due to a wrong XDP eBPF program. Should be zero.</p></td>
+</tr>
+<tr class="row-odd"><td><p>FramesReceived</p></td>
+<td><p>How many frames have been received and processed.</p></td>
+</tr>
+<tr class="row-even"><td><p>FramesSent</p></td>
+<td><p>How many frames have been transmitted.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Oneway[Min,Max,Av] [us]</p></td>
+<td><p>One way time measures the time between sending a packet from reference to mirror (or the
+other way around) and receiving it on the other side. The time stamps for this are taken in
+software on the application level.</p></td>
+</tr>
+<tr class="row-even"><td><p>OnewayOutliers</p></td>
+<td><p>Incremented if one way time is greater than cycle time. Should be zero.</p></td>
+</tr>
+<tr class="row-odd"><td><p>OutofOrderErrors</p></td>
+<td><p>Is incremented if a frame does not have the expected sequence number. This can indicate out
+of order transmission, but will also be increased if a packet is lost. Should be zero.</p></td>
+</tr>
+<tr class="row-even"><td><p>PayloadErrors</p></td>
+<td><p>Is incremented if a frame does not have the expected payload. May happen due to driver
+bugs. Should be zero.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ProcBatch[Min,Max,Av] [us]</p></td>
+<td><p>Latency from the first RX hardware timestamp to the last TX hardware timestamp (batch
+processing latency per cycle).</p></td>
+</tr>
+<tr class="row-even"><td><p>ProcFirst[Min,Max,Av] [us]</p></td>
+<td><p>Latency from the first RX hardware timestamp to the first TX hardware timestamp (first-frame
+processing latency per cycle).</p></td>
+</tr>
+<tr class="row-odd"><td><p>RoundTrip[Min,Max,Av] [us]</p></td>
+<td><p>Round trip delay measures the time from reference to mirror and back. The delay is calculated
+based on software timestamps. Also the mirror sends back the frame not immediately, but
+rather in next cycle. Therefore, the round trip time should be less than 2 * cycle time.</p></td>
+</tr>
+<tr class="row-even"><td><p>RoundTripOutliers [us]</p></td>
+<td><p>Is increment if a round trip time is greater than 2 * cycle time. This usually indicates some
+real time issue (e.g., kernel, driver, hardware, …). Should be zero.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Rx[Min,Max,Av] [us]</p></td>
+<td><p>Latency from NIC hardware to user space based on hardware timestamps.</p></td>
+</tr>
+<tr class="row-even"><td><p>RxHw2Xdp[Min,Max,Av] [us]</p></td>
+<td><p>Latency from NIC hardware to XDP program based on hardware timestamps.</p></td>
+</tr>
+<tr class="row-odd"><td><p>RxWorkload[Min,Max,Av] [us]</p></td>
+<td><p>Duration of workload execution.</p></td>
+</tr>
+<tr class="row-even"><td><p>RxXdp2App[Min,Max,Av] [us]</p></td>
+<td><p>Latency from XDP program to user space.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Tx[Min,Max,Av] [us]</p></td>
+<td><p>Latency from user space enqueue to hardware transmit based on hardware timestamps.</p></td>
+</tr>
+<tr class="row-even"><td><p>TxHwTimestampMissing</p></td>
+<td><p>Is incremented if hardware timestamp requested, but only software timestamp available.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Some statistics (e.g., ones based on hardware timestamps) are only available in
+combination with XDP.</p>
+</div>
+</section>
+<section id="file-log">
+<h2>File log<a class="headerlink" href="#file-log" title="Permalink to this heading"></a></h2>
+<p>All statistics are logged once per collection interval into a file log in text form.</p>
+</section>
+<section id="mqtt-grafana">
+<h2>MQTT / Grafana<a class="headerlink" href="#mqtt-grafana" title="Permalink to this heading"></a></h2>
+<p>Furthermore, the statistics can be submitted with MQTT and visualized with Grafana.</p>
+<p>See <a class="reference internal" href="mqtt.html#mqtt"><span class="std std-ref">MQTT and Grafana Integration</span></a> for more information.</p>
+</section>
+<section id="json-udp">
+<h2>JSON/UDP<a class="headerlink" href="#json-udp" title="Permalink to this heading"></a></h2>
+<p>In addition, there is a JSON/UDP logger. This one submits the statistics in JSON representation per
+UDP once per collection interval. This is useful to get the statistics into other tools.</p>
+<p>In order to use the JSON/UDP logging, the following configuration parameters can be used:</p>
+<table class="docutils align-default" id="id4">
+<caption><span class="caption-text">JSON/UDP configuration options</span><a class="headerlink" href="#id4" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 33.3%" />
+<col style="width: 66.7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>StatsCollectionIntervalNS</p></td>
+<td><p>Interval in which a summary of the data is generated, typically 1s</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogJson</p></td>
+<td><p>Enable and/or disable JSON logging</p></td>
+</tr>
+<tr class="row-even"><td><p>LogJsonThreadPriority</p></td>
+<td><p>Thread priority for the logging thread, usually low &lt; 7</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogJsonThreadCpu</p></td>
+<td><p>Thread CPU affinity</p></td>
+</tr>
+<tr class="row-even"><td><p>LogJsonHost</p></td>
+<td><p>IP address/host name where to send the JSON/UDP packets</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogJsonPort</p></td>
+<td><p>Port used by the UDP communication</p></td>
+</tr>
+<tr class="row-even"><td><p>LogJsonMeasurementName</p></td>
+<td><p>Used to distinguish measurements coming from different machines</p></td>
+</tr>
+</tbody>
+</table>
+<p>The code base contains a script to collect and print the statistics data. The user has to provide
+the measurement name and the statistics of interest.</p>
+<p>Example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/stat.pl<span class="w"> </span>-p<span class="w"> </span><span class="m">8888</span><span class="w"> </span>-m<span class="w"> </span>testbench1<span class="w"> </span>-t<span class="w"> </span>TsnHigh<span class="w"> </span>-s<span class="w"> </span>FramesSent<span class="w"> </span>-s<span class="w"> </span>FramesReceived<span class="w"> </span>-s<span class="w"> </span>Workload*
+Measurement:<span class="w"> </span>testbench1<span class="w"> </span>--<span class="w"> </span>TC:<span class="w"> </span>TsnHigh
+<span class="w">  </span>FramesReceived:<span class="w"> </span><span class="m">0</span>
+<span class="w">  </span>FramesSent:<span class="w"> </span><span class="m">24016</span>
+<span class="w">  </span>RxWorkloadAv:<span class="w"> </span><span class="m">0</span>
+<span class="w">  </span>RxWorkloadMax:<span class="w"> </span><span class="m">0</span>
+<span class="w">  </span>RxWorkloadMin:<span class="w"> </span><span class="m">18446744073709551615</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="configuration.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="security.html" class="btn btn-neutral float-right" title="Security" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025, Linutronix GmbH.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

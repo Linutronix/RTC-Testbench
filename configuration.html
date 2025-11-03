@@ -19,7 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Security" href="security.html" />
+    <link rel="next" title="Statistics" href="statistics.html" />
     <link rel="prev" title="Usage" href="usage.html" /> 
 </head>
 
@@ -64,6 +64,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#udp-communication">UDP communication</a></li>
 </ul>
 </li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="security.html">Security</a></li>
@@ -179,7 +182,7 @@ XDP)</p></td>
 <tr class="row-odd"><td><p>&lt;Class&gt;TxTimeOffsetNS (Integer)</p></td>
 <td><p>Optional Tx Launch Time offset relative to Qbv schedule and cycle time</p></td>
 </tr>
-<tr class="row-even"><td><p>&lt;Class&gt;TxHwTstampEnabled (Boolean)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;TxTimeStampEnabled (Boolean)</p></td>
 <td><p>Enable TX hardware timestamping for latency measurement (requires TX_TIMESTAMP build option)</p></td>
 </tr>
 <tr class="row-odd"><td><p>&lt;Class&gt;IgnoreRxErrors (Boolean)</p></td>
@@ -270,26 +273,44 @@ is smaller than the frame size, zero padding is added.</p></td>
 <tr class="row-even"><td><p>StatsHistogramFile (String)</p></td>
 <td><p>Path to file where to store the histogram after run</p></td>
 </tr>
-<tr class="row-odd"><td><p>LogViaMQTT (Boolean)</p></td>
+<tr class="row-odd"><td><p>LogMqtt (Boolean)</p></td>
 <td><p>Enable and disable MQTT logging</p></td>
 </tr>
-<tr class="row-even"><td><p>LogViaMQTTThreadPriority (Integer)</p></td>
+<tr class="row-even"><td><p>LogMqttThreadPriority (Integer)</p></td>
 <td><p>Thread priority for the logging thread, usually low &lt; 7</p></td>
 </tr>
-<tr class="row-odd"><td><p>LogViaMQTTThreadCpu (Integer)</p></td>
+<tr class="row-odd"><td><p>LogMqttThreadCpu (Integer)</p></td>
 <td><p>Thread CPU affinity</p></td>
 </tr>
-<tr class="row-even"><td><p>LogViaMQTTBrokerIP (IP Address)</p></td>
+<tr class="row-even"><td><p>LogMqttBrokerIP (IP Address)</p></td>
 <td><p>IP address where MQTT broker is running</p></td>
 </tr>
-<tr class="row-odd"><td><p>LogViaMQTTBrokerPort (Integer)</p></td>
-<td><p>Port used by the MQTT Broker, default value is</p></td>
+<tr class="row-odd"><td><p>LogMqttBrokerPort (Integer)</p></td>
+<td><p>Port used by the MQTT Broker, default value is 1883</p></td>
 </tr>
-<tr class="row-even"><td><p>LogViaMQTTKeepAliveSecs (Integer)</p></td>
+<tr class="row-even"><td><p>LogMqttKeepAliveSecs (Integer)</p></td>
 <td><p>Keep alive time for the connection, default value 60s</p></td>
 </tr>
-<tr class="row-odd"><td><p>LogViaMQTTMeasurementName (String)</p></td>
+<tr class="row-odd"><td><p>LogMqttMeasurementName (String)</p></td>
 <td><p>Used to distinguish measurements coming from different machines.</p></td>
+</tr>
+<tr class="row-even"><td><p>LogJson (Boolean)</p></td>
+<td><p>Enable and disable JSON logging</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogJsonThreadPriority (Integer)</p></td>
+<td><p>Thread priority for the logging thread, usually low &lt; 7</p></td>
+</tr>
+<tr class="row-even"><td><p>LogJsonThreadCpu (Integer)</p></td>
+<td><p>Thread CPU affinity</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogJsonHost (IP Address)</p></td>
+<td><p>IP address or host name where JSON/UDP messages should be sent to</p></td>
+</tr>
+<tr class="row-even"><td><p>LogJsonPort (Integer)</p></td>
+<td><p>Port used for JSON/UDP messages</p></td>
+</tr>
+<tr class="row-odd"><td><p>LogJsonMeasurementName (String)</p></td>
+<td><p>Used to distinguish measurements coming from different machines</p></td>
 </tr>
 <tr class="row-even"><td><p>DebugStopTraceOnOutlier (Integer)</p></td>
 <td><p>Stop Linux kernel tracing if round trip or oneway time exceeds expected value</p></td>
@@ -408,7 +429,7 @@ communication on the configured ports.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="usage.html" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="security.html" class="btn btn-neutral float-right" title="Security" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="statistics.html" class="btn btn-neutral float-right" title="Statistics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -73,7 +73,7 @@ Possible parameters include:
    * - <Class>TxTimeOffsetNS (Integer)
      - Optional Tx Launch Time offset relative to Qbv schedule and cycle time
 
-   * - <Class>TxHwTstampEnabled (Boolean)
+   * - <Class>TxTimeStampEnabled (Boolean)
      - Enable TX hardware timestamping for latency measurement (requires TX_TIMESTAMP build option)
 
    * - <Class>IgnoreRxErrors (Boolean)
@@ -164,26 +164,44 @@ Possible parameters include:
    * - StatsHistogramFile (String)
      - Path to file where to store the histogram after run
 
-   * - LogViaMQTT (Boolean)
+   * - LogMqtt (Boolean)
      - Enable and disable MQTT logging
 
-   * - LogViaMQTTThreadPriority (Integer)
+   * - LogMqttThreadPriority (Integer)
      - Thread priority for the logging thread, usually low < 7
 
-   * - LogViaMQTTThreadCpu (Integer)
+   * - LogMqttThreadCpu (Integer)
      - Thread CPU affinity
 
-   * - LogViaMQTTBrokerIP (IP Address)
+   * - LogMqttBrokerIP (IP Address)
      - IP address where MQTT broker is running
 
-   * - LogViaMQTTBrokerPort (Integer)
-     - Port used by the MQTT Broker, default value is
+   * - LogMqttBrokerPort (Integer)
+     - Port used by the MQTT Broker, default value is 1883
 
-   * - LogViaMQTTKeepAliveSecs (Integer)
+   * - LogMqttKeepAliveSecs (Integer)
      - Keep alive time for the connection, default value 60s
 
-   * - LogViaMQTTMeasurementName (String)
+   * - LogMqttMeasurementName (String)
      - Used to distinguish measurements coming from different machines.
+
+   * - LogJson (Boolean)
+     - Enable and disable JSON logging
+
+   * - LogJsonThreadPriority (Integer)
+     - Thread priority for the logging thread, usually low < 7
+
+   * - LogJsonThreadCpu (Integer)
+     - Thread CPU affinity
+
+   * - LogJsonHost (IP Address)
+     - IP address or host name where JSON/UDP messages should be sent to
+
+   * - LogJsonPort (Integer)
+     - Port used for JSON/UDP messages
+
+   * - LogJsonMeasurementName (String)
+     - Used to distinguish measurements coming from different machines
 
    * - DebugStopTraceOnOutlier (Integer)
      - Stop Linux kernel tracing if round trip or oneway time exceeds expected value
