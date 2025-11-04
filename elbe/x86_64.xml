@@ -132,6 +132,7 @@ Run 'elbe initvm -v <hdd|sd> submit x86_64.xml' to build it.
       <pkg>locales-all</pkg>
       <pkg>libssl-dev</pkg>
       <pkg>dwarves</pkg>
+      <pkg>zstd</pkg>
       <!-- Firmware -->
       <pkg>firmware-linux</pkg>
     </pkg-list>
