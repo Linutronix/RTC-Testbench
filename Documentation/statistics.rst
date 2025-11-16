@@ -54,11 +54,11 @@ The following table shows all gathered statistics. All statistics are collected 
 
    * - ProcBatch[Min,Max,Av] [us]
      - Latency from the first RX hardware timestamp to the last TX hardware timestamp (batch
-       processing latency per cycle).
+       processing latency per cycle). See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
    * - ProcFirst[Min,Max,Av] [us]
      - Latency from the first RX hardware timestamp to the first TX hardware timestamp (first-frame
-       processing latency per cycle).
+       processing latency per cycle). See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
    * - RoundTrip[Min,Max,Av] [us]
      - Round trip delay measures the time from reference to mirror and back. The delay is calculated
@@ -71,24 +71,30 @@ The following table shows all gathered statistics. All statistics are collected 
 
    * - Rx[Min,Max,Av] [us]
      - Latency from NIC hardware to user space based on hardware timestamps.
+       See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
    * - RxHw2Xdp[Min,Max,Av] [us]
      - Latency from NIC hardware to XDP program based on hardware timestamps.
+       See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
    * - RxWorkload[Min,Max,Av] [us]
      - Duration of workload execution.
 
    * - RxXdp2App[Min,Max,Av] [us]
      - Latency from XDP program to user space.
+       See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
    * - Tx[Min,Max,Av] [us]
      - Latency from user space enqueue to hardware transmit based on hardware timestamps.
+       See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
    * - TxHwTimestampMissing
      - Is incremented if hardware timestamp requested, but only software timestamp available.
+       See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
 .. Note:: Some statistics (e.g., ones based on hardware timestamps) are only available in
-          combination with XDP.
+          combination with XDP. For detailed information about hardware timestamping, 
+          configuration requirements, and troubleshooting, see :ref:`Processing Latency <ProcessingLatency>`.
 
 File log
 ^^^^^^^^
