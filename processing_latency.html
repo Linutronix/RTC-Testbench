@@ -1,0 +1,457 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Processing Latency &mdash; Linux RealTime Communication Testbench v5.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=b27cedc7"></script>
+      <script src="_static/doctools.js?v=888ff710"></script>
+      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Security" href="security.html" />
+    <link rel="prev" title="Statistics" href="statistics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Linux RealTime Communication Testbench
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contribution</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="build.html">Build</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Processing Latency</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#timestamp-flow">Timestamp Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#timestamp-details">Timestamp Details</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#processing-latency-metrics">Processing Latency Metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dependencies">Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-configuration">Build Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#example-output">Example Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#additional-monitoring-points">Additional Monitoring Points</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="security.html">Security</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mqtt.html">MQTT and Grafana Integration</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="histogram.html">Histograms</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="test.html">Test runs</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="workload.html">Real Time Compute Workloads</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="wireshark.html">Wireshark</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="qa.html">Quality Assurance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Linux RealTime Communication Testbench</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Processing Latency</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/processing_latency.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="processing-latency">
+<span id="processinglatency"></span><h1>Processing Latency<a class="headerlink" href="#processing-latency" title="Permalink to this heading"></a></h1>
+<p>Processing latency metrics quantify how long the Mirror DUT takes to process a full cycle
+of packets. It is measured from the hardware RX timestamp of the first packet in the cycle
+to the hardware TX timestamp of the response packet(s). These measurements work only in
+Mirror mode and only when AF_XDP and hardware timestamping are enabled.</p>
+<p>These metrics allow evaluating Mirror-side timing behavior for both:</p>
+<ul class="simple">
+<li><p>Pure forwarding scenarios (no workload)</p></li>
+<li><p>Sense-compute-actuate scenarios (once-per-cycle workload execution)</p></li>
+</ul>
+<section id="timestamp-flow">
+<h2>Timestamp Flow<a class="headerlink" href="#timestamp-flow" title="Permalink to this heading"></a></h2>
+<p>The following diagram shows where timestamps are captured and what the processing
+latency metrics measure:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>RX Path                     Processing                   TX Path
+--------                    ----------                   -------
+
+[Wire] ──&gt; [NIC] ────&gt; [XDP] ────&gt; [Mirror App] ────&gt; [NIC] ────&gt; [Wire]
+             |            |          │       │           │
+             |            |           Workload           │
+             |       RX SW TS        (optional)          |
+             |                       |       |           |
+             |                       |       |           |
+             RX HW TS         RX App TS    TX SW TS     TX HW TS
+             |                                           |
+             |                                           |
+         [Pkt 1 RX] ◄────────── ProcFirst ──────────► [Pkt 1 TX]
+         [Pkt 1 RX] ◄────────── ProcBatch ──────────► [Pkt N TX]
+</pre></div>
+</div>
+</section>
+<section id="timestamp-details">
+<h2>Timestamp Details<a class="headerlink" href="#timestamp-details" title="Permalink to this heading"></a></h2>
+<p>The table below provides precise details for each timestamp capture point:</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Timestamp Capture Points</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 12.0%" />
+<col style="width: 18.0%" />
+<col style="width: 20.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Timestamp</p></th>
+<th class="head"><p>Capture Location</p></th>
+<th class="head"><p>When Captured</p></th>
+<th class="head"><p>Technical Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>RX HW TS</strong></p></td>
+<td><p>NIC Hardware</p></td>
+<td><p>Packet arrival</p></td>
+<td><p>HW timestamp at NIC</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>RX SW TS</strong></p></td>
+<td><p>XDP Hook</p></td>
+<td><p>After DMA completion</p></td>
+<td><p>XDP program timestamp</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>RX App TS</strong></p></td>
+<td><p>Userspace</p></td>
+<td><p>After XSK polling</p></td>
+<td><p>App extraction timestamp</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>TX SW TS</strong></p></td>
+<td><p>Userspace</p></td>
+<td><p>After TX ring submit</p></td>
+<td><p>Pre-wakeup timestamp</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>TX HW TS</strong></p></td>
+<td><p>NIC Hardware</p></td>
+<td><p>Packet transmission</p></td>
+<td><p>HW timestamp at NIC</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>RX HW TS:</strong> Exact hardware capture point varies by NIC (MAC layer, PHY, or DMA descriptor write).</p>
+<p><strong>RX SW TS:</strong> Timestamp is taken when the XDP program executes after the NIC DMA completes.</p>
+<p><strong>RX App TS:</strong> Timestamp is captured at stat_frame_received(), after userspace dequeues the packet.</p>
+<p><strong>TX SW TS:</strong> Timestamp represents the moment the TX descriptors are submitted to the TX ring.</p>
+<p><strong>TX HW TS:</strong> Exact capture point varies by NIC (MAC egress, PHY, or descriptor completion).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>On the RX path, an intermediate software timestamp (RX SW TS) is available because,
+in AF_XDP mode, all packets are processed by the XDP program before they are
+delivered to userspace.</p>
+<p>On the TX path there is no equivalent midpoint timestamp: with AF_XDP, packets are
+transmitted directly from userspace via the TX ring, so only the userspace
+submission timestamp (TX SW TS) and the NIC hardware transmit timestamp (TX HW TS)
+are available.</p>
+</div>
+</section>
+<section id="processing-latency-metrics">
+<h2>Processing Latency Metrics<a class="headerlink" href="#processing-latency-metrics" title="Permalink to this heading"></a></h2>
+<p>The following metrics are available in Mirror mode with AF_XDP when both RX and TX
+hardware timestamping are enabled:</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Primary Processing Latency Metrics</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 30.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Metric</p></th>
+<th class="head"><p>Calculation</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>ProcFirst</strong></p></td>
+<td><p>First TX HW TS - First RX HW TS</p></td>
+<td><p>First-packet processing latency</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>ProcBatch</strong></p></td>
+<td><p>Last TX HW TS - First RX HW TS</p></td>
+<td><p>Full-cycle processing latency</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>ProcFirst:</strong>
+Measures how long the Mirror DUT takes to process the <em>first</em> packet of each cycle,
+from the first RX hardware timestamp to the first TX hardware timestamp.
+This is the primary metric for evaluating the DUT’s internal end-to-end processing
+responsiveness.</p>
+<p><strong>ProcBatch:</strong>
+Measures the total processing time for the entire batch of packets in the cycle,
+from the first RX hardware timestamp to the last TX hardware timestamp.
+Useful for scenarios with multiple packets per cycle where overall cycle-completion
+time matters.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For cycles that contain only one packet, only <code class="docutils literal notranslate"><span class="pre">ProcFirst</span></code> is reported.
+<code class="docutils literal notranslate"><span class="pre">ProcBatch</span></code> is omitted because it would be identical to <code class="docutils literal notranslate"><span class="pre">ProcFirst</span></code>.</p>
+</div>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h2>
+<section id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading"></a></h3>
+<p>Processing latency metrics require both RX and TX hardware timestamp support.
+The following table summarizes all dependencies:</p>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Hardware Timestamp Dependencies</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 27.3%" />
+<col style="width: 36.4%" />
+<col style="width: 36.4%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head"><p>RX Hardware Timestamp</p></th>
+<th class="head"><p>TX Hardware Timestamp</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Linux Kernel</strong></p></td>
+<td><p>&gt;= 6.3</p></td>
+<td><p>&gt;= 6.8</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>libbpf</strong></p></td>
+<td><p>&gt;= 1.2</p></td>
+<td><p>Any version</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>libxdp</strong></p></td>
+<td><p>Any version</p></td>
+<td><p>&gt;= 1.4.1</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>NIC Driver Feature</strong></p></td>
+<td><p>bpf_xdp_metadata_rx_timestamp()</p></td>
+<td><p>XDP_TXMD_FLAGS_TIMESTAMP</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The minimum Linux kernel versions listed in the table indicate when the XDP
+timestamping capabilities first became available in the kernel. Real support
+depends on NIC driver implementation.</p>
+</div>
+</section>
+<section id="build-configuration">
+<h3>Build Configuration<a class="headerlink" href="#build-configuration" title="Permalink to this heading"></a></h3>
+<p>To enable processing latency metrics, build with both RX and TX timestamp support:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DRX_TIMESTAMP<span class="o">=</span>TRUE<span class="w"> </span>-DTX_TIMESTAMP<span class="o">=</span>TRUE<span class="w"> </span>..
+</pre></div>
+</div>
+<p>Enable TX hardware timestamping for your traffic class in the YAML configuration.
+For example, to enable it for TsnHigh:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">TsnHighXdpEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">TsnHighTxTimeStampEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Hardware timestamping must be supported by the NIC. If unsupported,
+ProcFirst and ProcBatch will not populate. Check <code class="docutils literal notranslate"><span class="pre">ethtool</span> <span class="pre">-T</span> <span class="pre">&lt;interface&gt;</span></code>
+to verify hardware timestamping capabilities.</p>
+</div>
+</section>
+</section>
+<section id="example-output">
+<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
+<p>Example Mirror-mode log output with processing latency metrics (3 TsnHigh packets
+per cycle):</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># Processing Latency Metrics
+TsnHighProcFirstMin=999 [us]
+TsnHighProcFirstMax=1001 [us]
+TsnHighProcFirstAvg=999.198684 [us]
+
+TsnHighProcBatchMin=1002 [us]
+TsnHighProcBatchMax=1003 [us]
+TsnHighProcBatchAvg=1002.000087 [us]
+</pre></div>
+</div>
+</section>
+<section id="additional-monitoring-points">
+<h2>Additional Monitoring Points<a class="headerlink" href="#additional-monitoring-points" title="Permalink to this heading"></a></h2>
+<p>For advanced debugging and system optimization, additional timestamp metrics are
+available. These metrics are derived from the timestamp capture points detailed in
+the Timestamp Details table above:</p>
+<table class="docutils align-default" id="id4">
+<caption><span class="caption-text">Debugging and Optimization Metrics</span><a class="headerlink" href="#id4" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 25.7%" />
+<col style="width: 31.4%" />
+<col style="width: 42.9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Metric</p></th>
+<th class="head"><p>Calculation</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Rx</strong></p></td>
+<td><p>RX App TS - RX HW TS</p></td>
+<td><p>Total RX path latency</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>RxHw2Xdp</strong></p></td>
+<td><p>RX SW TS - RX HW TS</p></td>
+<td><p>NIC HW to XDP hook latency</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>RxXdp2App</strong></p></td>
+<td><p>RX App TS - RX SW TS</p></td>
+<td><p>XDP hook to userspace latency</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Tx</strong></p></td>
+<td><p>TX HW TS - TX SW TS</p></td>
+<td><p>TX ring to NIC HW latency</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>TxHwTimestampMissing</strong></p></td>
+<td><p>Count</p></td>
+<td><p>Missing or invalid TX HW timestamps</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rx:</strong>
+Measures total receive-path latency from NIC hardware timestamp to the userspace
+timestamp captured when the application processes the received frame.
+Useful for assessing overall RX path performance.</p>
+<p><strong>RxHw2Xdp:</strong>
+Measures latency from where the NIC records the hardware timestamp
+(MAC / PHY / DMA write depending on NIC implementation) to execution of the XDP program.
+Useful for debugging NIC to kernel boundary delays.</p>
+<p><strong>RxXdp2App:</strong>
+Measures latency between the XDP program and the application’s receive handler.
+Includes XSK ring polling and packet extraction.
+Useful for debugging kernel to userspace delays.</p>
+<p><strong>Tx:</strong>
+Measures latency from software submission to the TX ring to when the NIC hardware
+transmits the frame and produces a hardware timestamp.
+Useful for analyzing TX ring congestion, DMA delays, or NIC scheduling.</p>
+<p><strong>TxHwTimestampMissing:</strong>
+Counts cycles where no valid TX hardware timestamp is available.
+Covers cases such as:</p>
+<ul class="simple">
+<li><p>NIC timestamp FIFO overflow</p></li>
+<li><p>driver unable to match timestamp</p></li>
+<li><p>timestamp not ready before app queries</p></li>
+<li><p>invalid timestamp (e.g., TX HW TS ≤ TX SW TS)</p></li>
+</ul>
+<p>Useful for evaluating timestamp reliability and NIC/driver behavior.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These debugging metrics apply to both Mirror and Reference modes.
+(ProcFirst/ProcBatch remain Mirror-only.)</p>
+</div>
+<p>These metrics help drill down into specific bottlenecks when processing latencies
+indicate performance issues. Each metric corresponds to a specific segment of the
+timestamp flow shown in the diagram above.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="statistics.html" class="btn btn-neutral float-left" title="Statistics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="security.html" class="btn btn-neutral float-right" title="Security" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025, Linutronix GmbH.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

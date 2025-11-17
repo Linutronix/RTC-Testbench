@@ -19,7 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Security" href="security.html" />
+    <link rel="next" title="Processing Latency" href="processing_latency.html" />
     <link rel="prev" title="Configuration" href="configuration.html" /> 
 </head>
 
@@ -68,6 +68,9 @@
 <li class="toctree-l2"><a class="reference internal" href="#json-udp">JSON/UDP</a></li>
 </ul>
 </li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="processing_latency.html">Processing Latency</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="security.html">Security</a></li>
@@ -166,11 +169,11 @@ bugs. Should be zero.</p></td>
 </tr>
 <tr class="row-odd"><td><p>ProcBatch[Min,Max,Av] [us]</p></td>
 <td><p>Latency from the first RX hardware timestamp to the last TX hardware timestamp (batch
-processing latency per cycle).</p></td>
+processing latency per cycle). See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-even"><td><p>ProcFirst[Min,Max,Av] [us]</p></td>
 <td><p>Latency from the first RX hardware timestamp to the first TX hardware timestamp (first-frame
-processing latency per cycle).</p></td>
+processing latency per cycle). See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-odd"><td><p>RoundTrip[Min,Max,Av] [us]</p></td>
 <td><p>Round trip delay measures the time from reference to mirror and back. The delay is calculated
@@ -182,29 +185,35 @@ rather in next cycle. Therefore, the round trip time should be less than 2 * cyc
 real time issue (e.g., kernel, driver, hardware, …). Should be zero.</p></td>
 </tr>
 <tr class="row-odd"><td><p>Rx[Min,Max,Av] [us]</p></td>
-<td><p>Latency from NIC hardware to user space based on hardware timestamps.</p></td>
+<td><p>Latency from NIC hardware to user space based on hardware timestamps.
+See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-even"><td><p>RxHw2Xdp[Min,Max,Av] [us]</p></td>
-<td><p>Latency from NIC hardware to XDP program based on hardware timestamps.</p></td>
+<td><p>Latency from NIC hardware to XDP program based on hardware timestamps.
+See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-odd"><td><p>RxWorkload[Min,Max,Av] [us]</p></td>
 <td><p>Duration of workload execution.</p></td>
 </tr>
 <tr class="row-even"><td><p>RxXdp2App[Min,Max,Av] [us]</p></td>
-<td><p>Latency from XDP program to user space.</p></td>
+<td><p>Latency from XDP program to user space.
+See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-odd"><td><p>Tx[Min,Max,Av] [us]</p></td>
-<td><p>Latency from user space enqueue to hardware transmit based on hardware timestamps.</p></td>
+<td><p>Latency from user space enqueue to hardware transmit based on hardware timestamps.
+See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-even"><td><p>TxHwTimestampMissing</p></td>
-<td><p>Is incremented if hardware timestamp requested, but only software timestamp available.</p></td>
+<td><p>Is incremented if hardware timestamp requested, but only software timestamp available.
+See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 </tbody>
 </table>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Some statistics (e.g., ones based on hardware timestamps) are only available in
-combination with XDP.</p>
+combination with XDP. For detailed information about hardware timestamping,
+configuration requirements, and troubleshooting, see <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a>.</p>
 </div>
 </section>
 <section id="file-log">
@@ -276,7 +285,7 @@ Measurement:<span class="w"> </span>testbench1<span class="w"> </span>--<span cl
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="configuration.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="security.html" class="btn btn-neutral float-right" title="Security" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="processing_latency.html" class="btn btn-neutral float-right" title="Processing Latency" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
