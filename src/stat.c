@@ -776,75 +776,211 @@ void stat_inc_workload_outlier(enum stat_frame_type frame_type)
 	stat->rx_workload_outliers++;
 }
 
-void stat_to_json(char *json, size_t len, const struct statistics *stat, const char *tc,
-		  const char *measurement)
+static int json_err_handling(char **buffer, size_t *len, int ret)
 {
-	int written;
-	char *p;
+	/* Error? */
+	if (ret < 0)
+		return -EINVAL;
 
-	p = json;
-	len--;
-	written = snprintf(p, len,
-			   "{\"%s\" :\n"
-			   "\t{\"Timestamp\" : %" PRIu64 ",\n"
-			   "\t \"MeasurementName\" : \"%s\"",
-			   "reference", stat->time_stamp, measurement);
+	/* Buffer too small? */
+	if (ret >= *len)
+		return -EINVAL;
 
-	p += written;
-	len -= written;
+	/* All good */
+	*buffer += ret;
+	*len -= ret;
 
-	written = snprintf(
-		p, len,
-		",\n\t\t\"%s\" : \n\t\t{\n"
-		"\t\t\t\"TCName\" : \"%s\",\n"
-		"\t\t\t\"FramesSent\" : %" PRIu64 ",\n"
-		"\t\t\t\"FramesReceived\" : %" PRIu64 ",\n"
-		"\t\t\t\"RoundTripTimeMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"RoundTripMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"RoundTripAv\" : %lf,\n"
-		"\t\t\t\"OnewayMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"OnewayMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"OnewayAv\" : %lf,\n"
-		"\t\t\t\"ProcFirstMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"ProcFirstMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"ProcFirstAv\" : %lf,\n"
-		"\t\t\t\"ProcBatchMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"ProcBatchMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"ProcBatchAv\" : %lf,\n"
-		"\t\t\t\"RxMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"RxMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"RxAv\" : %lf,\n"
-		"\t\t\t\"RxHw2XdpMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"RxHw2XdpMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"RxHw2XdpAv\" : %lf,\n"
-		"\t\t\t\"RxXdp2AppMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"RxXdp2AppMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"RxXdp2AppAv\" : %lf,\n"
-		"\t\t\t\"RxWorkloadMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"RxWorkloadMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"RxWorkloadAv\" : %lf,\n"
-		"\t\t\t\"TxMin\" : %" PRIu64 ",\n"
-		"\t\t\t\"TxMax\" : %" PRIu64 ",\n"
-		"\t\t\t\"TxAv\" : %lf,\n"
-		"\t\t\t\"TxHwTimestampMissing\" : %" PRIu64 ",\n"
-		"\t\t\t\"OutofOrderErrors\" : %" PRIu64 ",\n"
-		"\t\t\t\"FrameIdErrors\" : %" PRIu64 ",\n"
-		"\t\t\t\"PayloadErrors\" : %" PRIu64 ",\n"
-		"\t\t\t\"RoundTripOutliers\" : %" PRIu64 ",\n"
-		"\t\t\t\"OnewayOutliers\" : %" PRIu64 "\n\t\t}",
-		"stats", tc, stat->frames_sent, stat->frames_received, stat->round_trip_min,
-		stat->round_trip_max, stat->round_trip_avg, stat->oneway_min, stat->oneway_max,
-		stat->oneway_avg, stat->proc_first_min, stat->proc_first_max, stat->proc_first_avg,
-		stat->proc_batch_min, stat->proc_batch_max, stat->proc_batch_avg, stat->rx_min,
-		stat->rx_max, stat->rx_avg, stat->rx_hw2xdp_min, stat->rx_hw2xdp_max,
-		stat->rx_hw2xdp_avg, stat->rx_xdp2app_min, stat->rx_xdp2app_max,
-		stat->rx_xdp2app_avg, stat->rx_workload_min, stat->rx_workload_max,
-		stat->rx_workload_avg, stat->tx_min, stat->tx_max, stat->tx_avg,
-		stat->tx_hw_timestamp_missing, stat->out_of_order_errors, stat->frame_id_errors,
-		stat->payload_errors, stat->round_trip_outliers, stat->oneway_outliers);
+	return 0;
+}
 
-	p += written;
-	len -= written;
+static int append_jlog_u64(char **buffer, size_t *len, const char *stat, uint64_t value)
+{
+	int ret;
 
-	written = snprintf(p, len, "\t\t\n}\t\n}\n");
+	ret = snprintf(*buffer, *len, "\"%s\": %" PRIu64 ",\n", stat, value);
+
+	return json_err_handling(buffer, len, ret);
+}
+
+static int last_jlog_u64(char **buffer, size_t *len, const char *stat, uint64_t value)
+{
+	int ret;
+
+	ret = snprintf(*buffer, *len, "\"%s\": %" PRIu64 "\n", stat, value);
+
+	return json_err_handling(buffer, len, ret);
+}
+
+static int append_jlog_float(char **buffer, size_t *len, const char *stat, float value)
+{
+	int ret;
+
+	ret = snprintf(*buffer, *len, "\"%s\": %lf,\n", stat, value);
+
+	return json_err_handling(buffer, len, ret);
+}
+
+int stat_to_json(char *json, size_t len, const struct statistics *stat, const char *tc,
+		 const char *measurement)
+{
+	int ret;
+
+	/* JSON header */
+	ret = snprintf(json, len,
+		       "{\"reference\" :\n"
+		       "{\"Timestamp\" : %" PRIu64 ",\n"
+		       "\"MeasurementName\" : \"%s\",\n"
+		       "\"stats\" : \n"
+		       "{\n"
+		       "\"TCName\" : \"%s\",\n",
+		       stat->time_stamp, measurement, tc);
+	ret = json_err_handling(&json, &len, ret);
+	if (ret)
+		return ret;
+
+	/* JSON statistics */
+	ret = append_jlog_u64(&json, &len, "FramesSent", stat->frames_sent);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "FramesReceived", stat->frames_received);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RoundTripTimeMin", stat->round_trip_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RoundTripMax", stat->round_trip_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "RoundTripAv", stat->round_trip_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "OnewayMin", stat->oneway_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "OnewayMax", stat->oneway_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "OnewayAv", stat->oneway_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "ProcFirstMin", stat->proc_first_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "ProcFirstMax", stat->proc_first_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "ProcFirstAv", stat->proc_first_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "ProcBatchMin", stat->proc_batch_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "ProcBatchMax", stat->proc_batch_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "ProcBatchAv", stat->proc_batch_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RxMin", stat->rx_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RxMax", stat->rx_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "RxAv", stat->rx_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RxHw2XdpMin", stat->rx_hw2xdp_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RxHw2XdpMax", stat->rx_hw2xdp_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "RxHw2XdpAv", stat->rx_hw2xdp_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RxXdp2AppMin", stat->rx_xdp2app_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RxXdp2AppMax", stat->rx_xdp2app_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "RxXdp2AppAv", stat->rx_xdp2app_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RxWorkloadMin", stat->rx_workload_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RxWorkloadMax", stat->rx_workload_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "RxWorkloadAv", stat->rx_workload_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "TxMin", stat->tx_min);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "TxMax", stat->tx_max);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_float(&json, &len, "TxAv", stat->tx_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "TxHwTimestampMissing", stat->tx_hw_timestamp_missing);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "OutofOrderErrors", stat->out_of_order_errors);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "FrameIdErrors", stat->frame_id_errors);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "PayloadErrors", stat->payload_errors);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "RoundTripOutliers", stat->round_trip_outliers);
+	if (ret)
+		return ret;
+
+	ret = last_jlog_u64(&json, &len, "OnewayOutliers", stat->oneway_outliers);
+	if (ret)
+		return ret;
+
+	/* JSON footer */
+	ret = snprintf(json, len, "}\n}\n}\n");
+
+	return json_err_handling(&json, &len, ret);
 }

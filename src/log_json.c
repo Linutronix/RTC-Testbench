@@ -26,12 +26,17 @@
 static void log_json_add_traffic_class(struct log_json_thread_context *ctx,
 				       const struct statistics *stat, const char *tc)
 {
-	char stat_message[4096] = {};
+	char stat_message[4096];
 	int ret;
 
 	/* Convert stats to json */
-	stat_to_json(stat_message, sizeof(stat_message), stat, tc,
-		     app_config.log_json_measurement_name);
+	ret = stat_to_json(stat_message, sizeof(stat_message), stat, tc,
+			   app_config.log_json_measurement_name);
+	if (ret) {
+		log_message(LOG_LEVEL_DEBUG, "JsonTx: Failed to compose JSON message: %s\n",
+			    strerror(errno));
+		return;
+	}
 
 	/* Send it via UDP */
 	switch (ctx->dest.ss_family) {
