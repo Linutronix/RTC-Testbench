@@ -38,6 +38,27 @@ napi_defer_hard_irqs() {
 }
 
 #
+# napi_defer_hard_irqs_queue($napictl, $interface, $cycle_time_ns, $queue)
+#
+# Same as napi_defer_hard_irqs(), but does it only for a specific queue.
+#
+napi_defer_hard_irqs_queue() {
+  local napictl=$1
+  local interface=$2
+  local cycle_time=$3
+  local queue=$4
+  local gro_flush_timeout
+
+  if ! [ -x "$napictl" ]; then
+    echo "$napictl not found!"
+    return 1
+  fi
+
+  gro_flush_timeout=$(echo "$cycle_time * 2" | bc)
+  $napictl -i "${interface}" -q "${queue}" -d 10 -g "${gro_flush_timeout}"
+}
+
+#
 # setup_threaded_napi($interface)
 #
 # Enable NAPI threaded mode: This allows the NAPI processing being executed in dedicated kernel
