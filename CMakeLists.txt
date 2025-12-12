@@ -12,6 +12,7 @@ set(VERSION "5.4")
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
+include(CheckCSourceCompiles)
 include(GNUInstallDirs)
 
 find_package(PkgConfig REQUIRED)
@@ -23,12 +24,36 @@ pkg_search_module(YAML yaml-0.1 REQUIRED)
 pkg_search_module(LIBBPF libbpf REQUIRED)
 pkg_search_module(LIBXDP libxdp REQUIRED)
 pkg_search_module(LIBCRYPTO libcrypto>=3.0 REQUIRED)
+pkg_search_module(LIBNL3 libnl-3.0)
+pkg_search_module(LIBNL_GENL3 libnl-genl-3.0)
 
 check_symbol_exists(SO_BUSY_POLL "sys/socket.h" HAVE_SO_BUSY_POLL)
 check_symbol_exists(SO_PREFER_BUSY_POLL "sys/socket.h" HAVE_SO_PREFER_BUSY_POLL)
 check_symbol_exists(SO_BUSY_POLL_BUDGET "sys/socket.h" HAVE_SO_BUSY_POLL_BUDGET)
 check_symbol_exists(XDP_TXMD_FLAGS_LAUNCH_TIME "linux/if_xdp.h" HAVE_XDP_FLAGS_TX_TIME)
 check_symbol_exists(XDP_TXMD_FLAGS_TIMESTAMP "linux/if_xdp.h" HAVE_XDP_FLAGS_TX_HWTSTAMP)
+
+#
+# NETDEV_CMD_QUEUE_GET and NETDEV_CMD_NAPI_SET are enums. So check_symbol_exists() does not work
+# here. Use test programs instead.
+#
+check_c_source_compiles("
+  #include <linux/netdev.h>
+
+  int main() {
+    int i = NETDEV_CMD_QUEUE_GET;
+    return 0;
+  }"
+  HAVE_CMD_QUEUE_GET)
+
+check_c_source_compiles("
+  #include <linux/netdev.h>
+
+  int main() {
+    int i = NETDEV_CMD_NAPI_SET;
+    return 0;
+  }"
+  HAVE_CMD_NAPI_SET)
 
 add_executable(reference
   src/reference.c
@@ -119,6 +144,27 @@ if (WITH_ASAN)
 
   target_link_options(reference PRIVATE -fsanitize=address)
   target_link_options(mirror PRIVATE -fsanitize=address)
+endif()
+
+if ((${LIBNL3_FOUND}) AND (${LIBNL_GENL3_FOUND}) AND
+    (${HAVE_CMD_QUEUE_GET}) AND (${HAVE_CMD_NAPI_SET}))
+  message(STATUS "Found libnl3: Building napictl configuration tool")
+
+  add_executable(napictl src/napictl.c)
+  target_compile_options(napictl PRIVATE -Wall -Wshadow -std=gnu99 -Wvla)
+  target_compile_definitions(napictl PRIVATE -D_GNU_SOURCE)
+
+  target_link_libraries(napictl ${LIBNL3_LIBRARIES})
+  target_link_libraries(napictl ${LIBNL_GENL3_LIBRARIES})
+  target_include_directories(napictl PUBLIC ${LIBNL3_INCLUDE_DIRS})
+  target_include_directories(napictl PUBLIC ${LIBNL_GENL3_INCLUDE_DIRS})
+
+  if (WITH_ASAN)
+    target_compile_options(napictl PRIVATE -fsanitize=address)
+    target_link_options(napictl PRIVATE -fsanitize=address)
+  endif()
+else()
+  message(STATUS "Building napictl configuration tool requires kernel v6.13+")
 endif()
 
 # Export symbols for dynamically loaded workloads
