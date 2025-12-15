@@ -15,11 +15,11 @@ cd "$(dirname "$0")"
 sleep 30
 
 # Configure flow
-./flow_apl.sh enp2s0
+./flow.sh enp2s0
 sleep 30
 
 # Start one instance of mirror application
 cp ../../build/xdp_kern_*.o .
-../../build/mirror -c mirror_vid100_apl.yaml >mirror1.log &
+../../build/mirror -c mirror.yaml >mirror.log &
 
 exit 0

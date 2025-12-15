@@ -51,11 +51,11 @@ This step has to be done only once.
    :caption: Configure traffic flow for network interface on both machines
 
    host1: cd tests/profinet
-   host1: ./flow_cml.sh enp3s0
+   host1: ./flow.sh enp3s0
    host1: journalctl -f               # Verify that PTP is running and stable
 
    host2: cd tests/profinet
-   host2: ./flow_cml.sh enp3s0
+   host2: ./flow.sh enp3s0
    host2: journalctl -f               # Verify that PTP is running and stable
 
 This step has to be done only once.
@@ -67,7 +67,7 @@ This step has to be done only once.
 
    host2: cd tests/profinet
    host2: cp ../../build/xdp_kern_*.o .
-   host2: ../../build/mirror -c mirror_vid100_cml.yaml
+   host2: ../../build/mirror -c mirror.yaml
    host2: tail -f /var/log/mirror_vid100.log           # Verify that mirror application runs
 
 4. Reference
@@ -77,7 +77,7 @@ This step has to be done only once.
 
    host1: cd tests/profinet
    host1: cp ../../build/xdp_kern_*.o .
-   host1: ../../build/reference -c reference_vid100_cml.yaml
+   host1: ../../build/reference -c reference.yaml
    host1: tail -f /var/log/reference_vid100.log              # Check statistics
 
 The ``reference`` and ``mirror`` applications can be stopped with Ctrl-C and started again e.g. for

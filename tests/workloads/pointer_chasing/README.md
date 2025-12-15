@@ -65,7 +65,7 @@ In the `tests/busypolling_1ms_rtworkload` example, the following values are used
 
 ## Example RTC-Testbench configuration file for pointer chasing
 
-See `tests/busypolling_1ms_rtworkload/mirror_vid100_cml.yaml`.
+See `tests/busypolling_1ms_rtworkload/mirror.yaml`.
 
 ## Build Instructions
 
