@@ -65,7 +65,7 @@ int generate_linked_list(ptr_chaser_t *ptr_chaser, unsigned int seed)
 	ptr_node *head;
 
 	srand(seed);
-	head = createLinkedList();
+	head = create_linked_list();
 
 	if (head == NULL) {
 		log_message(LOG_LEVEL_INFO, "[pointer_chasing]: Creating Linked List failed.\n");
@@ -82,7 +82,7 @@ int random_int(int max)
 	return (rand() % max);
 }
 
-ptr_node *createLinkedList(void)
+ptr_node *create_linked_list(void)
 {
 	ptr_node *ptr, *head;
 	uint64_t i, nr_nodes;

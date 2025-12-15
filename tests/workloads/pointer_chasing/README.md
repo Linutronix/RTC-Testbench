@@ -26,7 +26,7 @@ or sized sufficiently large for main memory.
    - Span size: Used in conjunction with `CACHE_LINE_SIZE` to determine how many linked list nodes
      are traversed
 
-3. **Linked List Generation (`createLinkedList`)**
+3. **Linked List Generation (`create_linked_list`)**
 
    - Creates a pseudo-random chain of pointers within the specified span
    - Uses a seeded random number generator for reproducible results
