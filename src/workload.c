@@ -10,7 +10,7 @@
  * Parse input for arguments store them in argc for count and argv for vector
  * of arguments.
  */
-void string_to_argc_argv(const char *input, int *argc, char ***argv)
+static void string_to_argc_argv(const char *input, int *argc, char ***argv)
 {
 	char *token;
 	int count = 1;

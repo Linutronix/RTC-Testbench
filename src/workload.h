@@ -36,6 +36,4 @@ void workload_context_init(struct thread_context *thread_context, char *workload
 void workload_thread_free(struct thread_context *thread_context);
 void workload_thread_wait_for_finish(struct thread_context *thread_context);
 
-void string_to_argc_argv(const char *input, int *argc, char ***argv);
-
 #endif /* _WORKLOAD_H_ */
