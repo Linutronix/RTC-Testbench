@@ -619,7 +619,7 @@ static void *tsn_xdp_rx_thread_routine(void *data)
 			/* Run workload if we received frames or prewarm is enabled */
 			if (received || thread_context->conf->rx_workload_prewarm) {
 				thread_context->workload->workload_run = 1;
-				pthread_cond_signal(&(thread_context->workload->workload_cond));
+				pthread_cond_signal(&thread_context->workload->workload_cond);
 			}
 		}
 	}
@@ -765,7 +765,6 @@ int tsn_threads_create(struct thread_context *thread_context)
 	/* Create workload thread for execution after network RX */
 	if (tsn_config->rx_workload_enabled) {
 		thread_context->workload = calloc(1, sizeof(struct workload_config));
-
 		if (!thread_context->workload) {
 			fprintf(stderr, "Failed to allocate workload!\n");
 			ret = -ENOMEM;
@@ -854,7 +853,7 @@ static void tsn_threads_free(struct thread_context *thread_context)
 		xdp_close_socket(thread_context->xsk, tsn_config->interface,
 				 tsn_config->xdp_skb_mode);
 
-	if (thread_context->workload != NULL && thread_context->workload->workload_task_id)
+	if (thread_context->workload && thread_context->workload->workload_task_id)
 		workload_thread_free(thread_context);
 }
 
@@ -863,7 +862,7 @@ static void tsn_threads_wait_for_finish(struct thread_context *thread_context)
 	if (!thread_context)
 		return;
 
-	if (thread_context->workload != NULL && thread_context->workload->workload_task_id)
+	if (thread_context->workload && thread_context->workload->workload_task_id)
 		pthread_join(thread_context->workload->workload_task_id, NULL);
 	if (thread_context->rx_task_id)
 		pthread_join(thread_context->rx_task_id, NULL);

@@ -2,9 +2,10 @@
 /*
  * Copyright (c) 2025 Intel Corporation
  */
-#include "workload.h"
-#include "stat.h"
 #include <dlfcn.h>
+
+#include "stat.h"
+#include "workload.h"
 
 /*
  * Parse input for arguments store them in argc for count and argv for vector
@@ -12,13 +13,13 @@
  */
 static void string_to_argc_argv(const char *input, int *argc, char ***argv)
 {
-	char *token;
-	int count = 1;
 	char *temp_input = strdup(input); /* Duplicate to avoid modifying original */
+	int count = 1, i = 1;
+	char *token;
 
 	/* First pass: count the number of arguments */
 	token = strtok(temp_input, " ");
-	while (token != NULL) {
+	while (token) {
 		count++;
 		token = strtok(NULL, " ");
 	}
@@ -32,9 +33,8 @@ static void string_to_argc_argv(const char *input, int *argc, char ***argv)
 
 	/* Second pass: populate argv */
 	strcpy(temp_input, input); /* Reset temp_input with original input */
-	int i = 1;
 	token = strtok(temp_input, " ");
-	while (token != NULL) {
+	while (token) {
 		(*argv)[i++] = strdup(token); /* Duplicate token and assign */
 		token = strtok(NULL, " ");
 	}
@@ -86,7 +86,7 @@ void workload_context_init(struct thread_context *thread_context, char *workload
 		exit(EXIT_FAILURE);
 	}
 
-	if (workload_setup_function != NULL) {
+	if (workload_setup_function) {
 		wl_cfg->workload_setup_function =
 			dlsym(wl_cfg->workload_handler, workload_setup_function);
 		if (!wl_cfg->workload_setup_function) {
@@ -102,17 +102,17 @@ void workload_context_init(struct thread_context *thread_context, char *workload
 		exit(EXIT_FAILURE);
 	}
 
-	if (workload_arguments != NULL) {
-		string_to_argc_argv(workload_arguments, &(wl_cfg->workload_argc),
-				    &(wl_cfg->workload_argv));
+	if (workload_arguments) {
+		string_to_argc_argv(workload_arguments, &wl_cfg->workload_argc,
+				    &wl_cfg->workload_argv);
 	} else {
 		wl_cfg->workload_argc = 0;
 		wl_cfg->workload_argv = NULL;
 	}
 
-	if (workload_setup_arguments != NULL) {
-		string_to_argc_argv(workload_setup_arguments, &(wl_cfg->workload_setup_argc),
-				    &(wl_cfg->workload_setup_argv));
+	if (workload_setup_arguments) {
+		string_to_argc_argv(workload_setup_arguments, &wl_cfg->workload_setup_argc,
+				    &wl_cfg->workload_setup_argv);
 	} else {
 		wl_cfg->workload_setup_argc = 0;
 		wl_cfg->workload_setup_argv = NULL;
@@ -124,10 +124,9 @@ void workload_context_init(struct thread_context *thread_context, char *workload
 	wl_cfg->associated_frame = frame_type;
 
 	/* Call the setup function if it exists */
-	if (wl_cfg->workload_setup_function != NULL) {
+	if (wl_cfg->workload_setup_function)
 		wl_cfg->workload_setup_function(wl_cfg->workload_setup_argc,
 						wl_cfg->workload_setup_argv);
-	}
 }
 
 void workload_thread_free(struct thread_context *thread_context)
