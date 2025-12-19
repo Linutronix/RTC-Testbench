@@ -136,12 +136,3 @@ void workload_thread_free(struct thread_context *thread_context)
 	dlclose(thread_context->workload->workload_handler);
 	free(thread_context->workload);
 }
-
-void workload_thread_wait_for_finish(struct thread_context *thread_context)
-{
-	thread_context->stop = 1;
-	if (!thread_context)
-		return;
-
-	pthread_join(thread_context->workload->workload_task_id, NULL);
-}
