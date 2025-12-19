@@ -29,10 +29,10 @@ struct workload_config {
 };
 
 void *workload_thread_routine(void *data);
-void workload_context_init(struct thread_context *thread_context, char *workload_file,
-			   char *workload_function, char *workload_argument,
-			   char *workload_setup_function, char *workload_setup_argument,
-			   enum stat_frame_type frame_type);
+int workload_context_init(struct thread_context *thread_context, char *workload_file,
+			  char *workload_function, char *workload_argument,
+			  char *workload_setup_function, char *workload_setup_argument,
+			  enum stat_frame_type frame_type);
 void workload_thread_free(struct thread_context *thread_context);
 
 #endif /* _WORKLOAD_H_ */

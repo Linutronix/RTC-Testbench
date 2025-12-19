@@ -87,20 +87,20 @@ void *workload_thread_routine(void *data)
 	return NULL;
 }
 
-void workload_context_init(struct thread_context *thread_context, char *workload_file,
-			   char *workload_function, char *workload_arguments,
-			   char *workload_setup_function, char *workload_setup_arguments,
-			   enum stat_frame_type frame_type)
+int workload_context_init(struct thread_context *thread_context, char *workload_file,
+			  char *workload_function, char *workload_arguments,
+			  char *workload_setup_function, char *workload_setup_arguments,
+			  enum stat_frame_type frame_type)
 {
 	struct workload_config *wl_cfg = thread_context->workload;
 	char *error;
+	int ret;
 
 	wl_cfg->workload_handler = dlopen(workload_file, RTLD_NOW | RTLD_GLOBAL);
-
 	if (!wl_cfg->workload_handler) {
 		error = dlerror();
-		fprintf(stderr, "Error: Unable to open workload: %s. %s\n", workload_file, error);
-		exit(EXIT_FAILURE);
+		fprintf(stderr, "Error: Unable to open workload '%s': %s\n", workload_file, error);
+		return -EINVAL;
 	}
 
 	if (workload_setup_function) {
@@ -109,30 +109,34 @@ void workload_context_init(struct thread_context *thread_context, char *workload
 		if (!wl_cfg->workload_setup_function) {
 			fprintf(stderr, "Error: Unable to find setup function: %s\n",
 				workload_setup_function);
-			exit(EXIT_FAILURE);
+			ret = -EINVAL;
+			goto out;
 		}
 	}
 
 	wl_cfg->workload_function = dlsym(wl_cfg->workload_handler, workload_function);
 	if (!wl_cfg->workload_function) {
 		fprintf(stderr, "Error: Unable to find function: %s\n", workload_function);
-		exit(EXIT_FAILURE);
+		ret = -EINVAL;
+		goto out;
 	}
 
+	wl_cfg->workload_argc = 0;
+	wl_cfg->workload_argv = NULL;
 	if (workload_arguments) {
-		string_to_argc_argv(workload_arguments, &wl_cfg->workload_argc,
-				    &wl_cfg->workload_argv);
-	} else {
-		wl_cfg->workload_argc = 0;
-		wl_cfg->workload_argv = NULL;
+		ret = string_to_argc_argv(workload_arguments, &wl_cfg->workload_argc,
+					  &wl_cfg->workload_argv);
+		if (ret)
+			goto out;
 	}
 
+	wl_cfg->workload_setup_argc = 0;
+	wl_cfg->workload_setup_argv = NULL;
 	if (workload_setup_arguments) {
-		string_to_argc_argv(workload_setup_arguments, &wl_cfg->workload_setup_argc,
-				    &wl_cfg->workload_setup_argv);
-	} else {
-		wl_cfg->workload_setup_argc = 0;
-		wl_cfg->workload_setup_argv = NULL;
+		ret = string_to_argc_argv(workload_setup_arguments, &wl_cfg->workload_setup_argc,
+					  &wl_cfg->workload_setup_argv);
+		if (ret)
+			goto out;
 	}
 
 	pthread_mutex_init(&wl_cfg->workload_mutex, NULL);
@@ -144,6 +148,12 @@ void workload_context_init(struct thread_context *thread_context, char *workload
 	if (wl_cfg->workload_setup_function)
 		wl_cfg->workload_setup_function(wl_cfg->workload_setup_argc,
 						wl_cfg->workload_setup_argv);
+
+	return 0;
+
+out:
+	dlclose(thread_context->workload->workload_handler);
+	return ret;
 }
 
 void workload_thread_free(struct thread_context *thread_context)
