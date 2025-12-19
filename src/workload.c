@@ -3,6 +3,8 @@
  * Copyright (c) 2025 Intel Corporation
  */
 #include <dlfcn.h>
+#include <errno.h>
+#include <string.h>
 
 #include "stat.h"
 #include "workload.h"
@@ -11,11 +13,14 @@
  * Parse input for arguments store them in argc for count and argv for vector
  * of arguments.
  */
-static void string_to_argc_argv(const char *input, int *argc, char ***argv)
+static int string_to_argc_argv(const char *input, int *argc, char ***argv)
 {
 	char *temp_input = strdup(input); /* Duplicate to avoid modifying original */
-	int count = 1, i = 1;
+	int count = 1, i = 1, ret;
 	char *token;
+
+	if (!temp_input)
+		return -ENOMEM;
 
 	/* First pass: count the number of arguments */
 	token = strtok(temp_input, " ");
@@ -27,8 +32,8 @@ static void string_to_argc_argv(const char *input, int *argc, char ***argv)
 	/* Allocate memory for argv array */
 	*argv = malloc(count * sizeof(char *));
 	if (*argv == NULL) {
-		fprintf(stderr, "Memory allocation failed\n");
-		exit(1);
+		ret = -ENOMEM;
+		goto err_argv;
 	}
 
 	/* Second pass: populate argv */
@@ -39,9 +44,21 @@ static void string_to_argc_argv(const char *input, int *argc, char ***argv)
 		token = strtok(NULL, " ");
 	}
 	(*argv)[0] = strdup("Workload");
+	if ((*argv)[0] == NULL) {
+		ret = -ENOMEM;
+		goto err_workload;
+	}
 
-	*argc = count;    /* Set argc to the number of arguments */
+	*argc = count; /* Set argc to the number of arguments */
+
+	free(temp_input);
+	return 0;
+
+err_workload:
+	free(*argv);
+err_argv:
 	free(temp_input); /* Free the temporary input string */
+	return ret;
 }
 
 void *workload_thread_routine(void *data)
