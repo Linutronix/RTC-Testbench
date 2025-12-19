@@ -23,8 +23,7 @@ struct workload_config {
 	int (*workload_setup_function)(int argc, char **argv);
 	int workload_setup_argc;
 	char **workload_setup_argv;
-	volatile int workload_run;
-	volatile int workload_done;
+	int workload_done;
 	enum stat_frame_type associated_frame;
 };
 

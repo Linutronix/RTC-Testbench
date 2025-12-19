@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (c) 2025 Intel Corporation
+ * Copyright (c) 2025 Linutronix GmbH
  */
 #include <dlfcn.h>
 #include <errno.h>
 #include <string.h>
 
 #include "stat.h"
+#include "thread.h"
 #include "workload.h"
 
 /*
@@ -73,25 +75,38 @@ void *workload_thread_routine(void *data)
 {
 	struct thread_context *thread_context = data;
 	struct workload_config *wl_cfg = thread_context->workload;
-	struct timespec start_ts, timeout;
 
-	pthread_mutex_lock(&wl_cfg->workload_mutex);
-	/* Run until we are ready to stop */
+	/* Run until we are ready to stop. */
 	while (!thread_context->stop) {
-		clock_gettime(app_config.application_clock_id, &start_ts);
-		timeout = start_ts;
+		struct timespec start_ts, timeout;
+		int ret;
+
+		clock_gettime(CLOCK_MONOTONIC, &timeout);
 		timeout.tv_sec++;
-		/* Check for spurious wakeups */
-		if (wl_cfg->workload_run) {
-			wl_cfg->workload_function(wl_cfg->workload_argc, wl_cfg->workload_argv);
-			wl_cfg->workload_done = 1;
-			wl_cfg->workload_run = 0;
-			stat_frame_workload(wl_cfg->associated_frame,
-					    wl_cfg->workload_sequence_counter, start_ts);
-			wl_cfg->workload_sequence_counter++;
-		}
-		pthread_cond_timedwait(&wl_cfg->workload_cond, &wl_cfg->workload_mutex, &timeout);
+
+		/* Wait for workload to be run. Signaled by Rx threads. */
+		pthread_mutex_lock(&wl_cfg->workload_mutex);
+		ret = pthread_cond_timedwait(&wl_cfg->workload_cond, &wl_cfg->workload_mutex,
+					     &timeout);
+		pthread_mutex_unlock(&wl_cfg->workload_mutex);
+
+		/* In case of timeout, check !stop again. */
+		if (ret == ETIMEDOUT)
+			continue;
+
+		clock_gettime(app_config.application_clock_id, &start_ts);
+		wl_cfg->workload_function(wl_cfg->workload_argc, wl_cfg->workload_argv);
+
+		/* workload_done is checked by Tx threads to indicate workload time overruns. */
+		pthread_mutex_lock(&wl_cfg->workload_mutex);
+		wl_cfg->workload_done = 1;
+		pthread_mutex_unlock(&wl_cfg->workload_mutex);
+
+		stat_frame_workload(wl_cfg->associated_frame, wl_cfg->workload_sequence_counter,
+				    start_ts);
+		wl_cfg->workload_sequence_counter++;
 	}
+
 	return NULL;
 }
 
@@ -147,8 +162,8 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 			goto argv;
 	}
 
-	pthread_mutex_init(&wl_cfg->workload_mutex, NULL);
-	pthread_cond_init(&wl_cfg->workload_cond, NULL);
+	init_mutex(&wl_cfg->workload_mutex);
+	init_condition_variable(&wl_cfg->workload_cond);
 
 	wl_cfg->associated_frame = frame_type;
 

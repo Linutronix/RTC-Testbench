@@ -442,12 +442,13 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 
 			/* Increment workload outlier count if workload did not finish. */
 			if (tsn_config->rx_workload_enabled) {
+				pthread_mutex_lock(&thread_context->workload->workload_mutex);
 				if (thread_context->workload->workload_done == 0 &&
 				    sequence_counter) {
 					stat_inc_workload_outlier(thread_context->frame_type);
 					log_message(LOG_LEVEL_DEBUG, "Workload did not finish!\n");
-				} else
-					thread_context->workload->workload_done = 0;
+				}
+				pthread_mutex_unlock(&thread_context->workload->workload_mutex);
 			}
 
 			/*
@@ -618,8 +619,10 @@ static void *tsn_xdp_rx_thread_routine(void *data)
 		if (thread_context->conf->rx_workload_enabled && mirror_enabled) {
 			/* Run workload if we received frames or prewarm is enabled */
 			if (received || thread_context->conf->rx_workload_prewarm) {
-				thread_context->workload->workload_run = 1;
+				pthread_mutex_lock(&thread_context->workload->workload_mutex);
+				thread_context->workload->workload_done = 0;
 				pthread_cond_signal(&thread_context->workload->workload_cond);
+				pthread_mutex_unlock(&thread_context->workload->workload_mutex);
 			}
 		}
 	}
