@@ -600,7 +600,7 @@ void configure_cpu_latency(void)
 
 	ret = write(fd, &lat, sizeof(lat));
 	if (ret != sizeof(lat)) {
-		close(latency_fd);
+		close(fd);
 		return;
 	}
 
