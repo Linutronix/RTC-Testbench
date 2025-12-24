@@ -273,7 +273,7 @@ struct log_thread_context *log_thread_create(void)
 	if (!log_context)
 		return NULL;
 
-	log_context->log_data = calloc(LOG_BUFFER_SIZE, sizeof(char));
+	log_context->log_data = calloc(LOG_BUFFER_SIZE, sizeof(unsigned char));
 	if (!log_context->log_data)
 		goto err_log_data;
 

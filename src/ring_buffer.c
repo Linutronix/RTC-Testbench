@@ -20,7 +20,7 @@ struct ring_buffer *ring_buffer_allocate(size_t buffer_size)
 	if (!ring_buffer)
 		return NULL;
 
-	ring_buffer->data = calloc(buffer_size, sizeof(char));
+	ring_buffer->data = calloc(buffer_size, sizeof(unsigned char));
 	if (!ring_buffer->data) {
 		free(ring_buffer);
 		return NULL;
