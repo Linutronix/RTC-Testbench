@@ -18,7 +18,3 @@ License: BSD-2-Clause
 Files: docker/mqtt-composer/*
 Copyright: 2024 Intel Corporation
 License: BSD-2-Clause
-
-Files: tests/workloads/pointer_chasing/README.md
-Copyright: 2025 Intel Corporation
-License: BSD-2-Clause
