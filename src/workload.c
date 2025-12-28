@@ -61,6 +61,14 @@ err_argv:
 	return ret;
 }
 
+/* Free argv array allocated by string_to_argc_argv() with strdup(). */
+static void free_argv(int argc, char **argv)
+{
+	for (int i = 0; i < argc; i++)
+		free(argv[i]);
+	free(argv);
+}
+
 void *workload_thread_routine(void *data)
 {
 	struct thread_context *thread_context = data;
@@ -110,7 +118,7 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 			fprintf(stderr, "Error: Unable to find setup function: %s\n",
 				workload_setup_function);
 			ret = -EINVAL;
-			goto out;
+			goto dl;
 		}
 	}
 
@@ -118,7 +126,7 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 	if (!wl_cfg->workload_function) {
 		fprintf(stderr, "Error: Unable to find function: %s\n", workload_function);
 		ret = -EINVAL;
-		goto out;
+		goto dl;
 	}
 
 	wl_cfg->workload_argc = 0;
@@ -127,7 +135,7 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 		ret = string_to_argc_argv(workload_arguments, &wl_cfg->workload_argc,
 					  &wl_cfg->workload_argv);
 		if (ret)
-			goto out;
+			goto dl;
 	}
 
 	wl_cfg->workload_setup_argc = 0;
@@ -136,7 +144,7 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 		ret = string_to_argc_argv(workload_setup_arguments, &wl_cfg->workload_setup_argc,
 					  &wl_cfg->workload_setup_argv);
 		if (ret)
-			goto out;
+			goto argv;
 	}
 
 	pthread_mutex_init(&wl_cfg->workload_mutex, NULL);
@@ -151,15 +159,26 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 
 	return 0;
 
-out:
+argv:
+	free_argv(wl_cfg->workload_argc, wl_cfg->workload_argv);
+dl:
 	dlclose(thread_context->workload->workload_handler);
 	return ret;
 }
 
 void workload_thread_free(struct thread_context *thread_context)
 {
+	struct workload_config *wl_cfg;
+
 	if (!thread_context)
 		return;
-	dlclose(thread_context->workload->workload_handler);
+
+	wl_cfg = thread_context->workload;
+
+	free_argv(wl_cfg->workload_argc, wl_cfg->workload_argv);
+	free_argv(wl_cfg->workload_setup_argc, wl_cfg->workload_setup_argv);
+
+	dlclose(wl_cfg->workload_handler);
+
 	free(thread_context->workload);
 }
