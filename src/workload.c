@@ -87,9 +87,9 @@ void *workload_thread_routine(void *data)
 	return NULL;
 }
 
-int workload_context_init(struct thread_context *thread_context, char *workload_file,
-			  char *workload_function, char *workload_arguments,
-			  char *workload_setup_function, char *workload_setup_arguments,
+int workload_context_init(struct thread_context *thread_context, const char *workload_file,
+			  const char *workload_function, const char *workload_arguments,
+			  const char *workload_setup_function, const char *workload_setup_arguments,
 			  enum stat_frame_type frame_type)
 {
 	struct workload_config *wl_cfg = thread_context->workload;

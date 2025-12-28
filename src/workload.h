@@ -29,9 +29,9 @@ struct workload_config {
 };
 
 void *workload_thread_routine(void *data);
-int workload_context_init(struct thread_context *thread_context, char *workload_file,
-			  char *workload_function, char *workload_argument,
-			  char *workload_setup_function, char *workload_setup_argument,
+int workload_context_init(struct thread_context *thread_context, const char *workload_file,
+			  const char *workload_function, const char *workload_argument,
+			  const char *workload_setup_function, const char *workload_setup_argument,
 			  enum stat_frame_type frame_type);
 void workload_thread_free(struct thread_context *thread_context);
 
