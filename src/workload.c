@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include "log.h"
 #include "stat.h"
 #include "thread.h"
 #include "workload.h"
@@ -95,7 +96,10 @@ void *workload_thread_routine(void *data)
 			continue;
 
 		clock_gettime(app_config.application_clock_id, &start_ts);
-		wl_cfg->workload_function(wl_cfg->workload_argc, wl_cfg->workload_argv);
+		ret = wl_cfg->workload_function(wl_cfg->workload_argc, wl_cfg->workload_argv);
+		if (ret)
+			log_message(LOG_LEVEL_WARNING,
+				    "Workload: Workload function returned error %d\n", ret);
 
 		/* workload_done is checked by Tx threads to indicate workload time overruns. */
 		pthread_mutex_lock(&wl_cfg->workload_mutex);
