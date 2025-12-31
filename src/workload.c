@@ -153,12 +153,21 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 	wl_cfg->associated_frame = frame_type;
 
 	/* Call the setup function if it exists */
-	if (wl_cfg->workload_setup_function)
-		wl_cfg->workload_setup_function(wl_cfg->workload_setup_argc,
-						wl_cfg->workload_setup_argv);
+	if (wl_cfg->workload_setup_function) {
+		ret = wl_cfg->workload_setup_function(wl_cfg->workload_setup_argc,
+						      wl_cfg->workload_setup_argv);
+		if (ret) {
+			fprintf(stderr,
+				"Workload setup function '%s' return with failure code: %d\n",
+				workload_setup_function, ret);
+			goto setup;
+		}
+	}
 
 	return 0;
 
+setup:
+	free_argv(wl_cfg->workload_setup_argc, wl_cfg->workload_setup_argv);
 argv:
 	free_argv(wl_cfg->workload_argc, wl_cfg->workload_argv);
 dl:
