@@ -52,9 +52,14 @@ int ptr_chase_setup(int argc, char *argv[])
 	return 0;
 }
 
-void run_ptr_chasing(void)
+int run_ptr_chasing(int argc, char *argv[])
 {
+	(void)argc;
+	(void)argv;
+
 	__ptr_chasing_run_workload(ptr_chaser);
+
+	return 0;
 }
 
 int generate_linked_list(ptr_chaser_t *ptr_chaser, unsigned int seed)

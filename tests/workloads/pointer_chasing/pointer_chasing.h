@@ -49,7 +49,11 @@ static __attribute__((always_inline)) inline void __ptr_chasing_run_workload(
 
 int generate_linked_list(ptr_chaser_t *ptr_chaser, unsigned int seed);
 union ptr_node *create_linked_list(void);
+
+/* Setup function */
 int ptr_chase_setup(int argc, char *argv[]);
-void run_ptr_chasing(void);
+
+/* Run time function */
+int run_ptr_chasing(int argc, char *argv[]);
 
 #endif /* _POINTER_CHASING_H_ */
