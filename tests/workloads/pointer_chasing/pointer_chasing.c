@@ -120,9 +120,35 @@ int ptr_chase_setup(int argc, char *argv[])
 		return ret;
 	}
 
+#ifdef __x86_64__
 	ptr_chaser->workload = (void *)__chasing_code_loop;
+#endif
 
 	return 0;
+}
+
+/*
+ * Generic ptr_chasing workload function in plain C:
+ *
+ * Compiles to the following code on x86_64 with gcc 14.2.0:
+ *   ptr_loop:
+ *     movq       (%rax), %rax ; CODE XREF=run_ptr_chasing+38
+ *     testq      %rax, %rax
+ *     jne        ptr_loop
+ *
+ * ARM64 looks similar:
+ *   ptr_loop:
+ *     ldr        x0, [x0]     ; CODE XREF=run_ptr_chasing+24
+ *     cbnz       x0, ptr_loop
+ */
+static void __attribute__((unused)) * __ptr_chasing_run_workload(ptr_chaser_t *ptr_chaser)
+{
+	ptr_node *p = ptr_chaser->head;
+
+	while (p)
+		p = p->next;
+
+	return p;
 }
 
 int run_ptr_chasing(int argc, char *argv[])
@@ -130,7 +156,13 @@ int run_ptr_chasing(int argc, char *argv[])
 	(void)argc;
 	(void)argv;
 
+#ifdef __x86_64__
+	/* Hand written version for x86_64 */
+	__ptr_chasing_run_workload_x86_64(ptr_chaser);
+#else
+	/* For all other architectures */
 	__ptr_chasing_run_workload(ptr_chaser);
+#endif
 
 	return 0;
 }

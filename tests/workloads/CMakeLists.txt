@@ -56,8 +56,8 @@ file(GLOB WORKLOAD_DIRS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*")
 foreach(WORKLOAD_DIR ${WORKLOAD_DIRS})
     set(FULL_WORKLOAD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${WORKLOAD_DIR}")
 
-    # Check if it's a directory (not a file) and currently only for x86_64
-    if(IS_DIRECTORY "${FULL_WORKLOAD_DIR}" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
+    # Check if it's a directory (not a file)
+    if(IS_DIRECTORY "${FULL_WORKLOAD_DIR}")
         # Use the directory name as the workload name
         add_workload_library("${WORKLOAD_DIR}" "${FULL_WORKLOAD_DIR}")
     endif()
