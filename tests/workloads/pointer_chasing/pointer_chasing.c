@@ -74,6 +74,7 @@ static int generate_linked_list(ptr_chaser_t *ptr_chaser, unsigned int seed)
 int ptr_chase_setup(int argc, char *argv[])
 {
 	uint64_t buff, span;
+	char *endptr;
 	int ret = 0;
 
 	if (argc != 3) {
@@ -82,8 +83,18 @@ int ptr_chase_setup(int argc, char *argv[])
 		return -EINVAL;
 	}
 
-	buff = strtoull(argv[1], NULL, 16);
-	span = strtoull(argv[2], NULL, 16);
+	errno = 0;
+	buff = strtoull(argv[1], &endptr, 16);
+	if (errno != 0 || endptr == argv[1] || *endptr != '\0') {
+		fprintf(stderr, "[pointer_chasing]: Invalid buffer size.\n");
+		return -ERANGE;
+	}
+
+	span = strtoull(argv[2], &endptr, 16);
+	if (errno != 0 || endptr == argv[2] || *endptr != '\0') {
+		fprintf(stderr, "[pointer_chasing]: Invalid span size.\n");
+		return -ERANGE;
+	}
 
 	fprintf(stderr, "[pointer_chasing]: buff: 0x%" PRIx64 ", span: 0x%" PRIx64 "\n", buff,
 		span);
@@ -102,8 +113,11 @@ int ptr_chase_setup(int argc, char *argv[])
 	ptr_chaser->buff = buff;
 	ptr_chaser->span = span;
 	ret = generate_linked_list(ptr_chaser, 0xdeadbeef);
-	if (ret)
+	if (ret) {
+		free(ptr_chaser);
+		ptr_chaser = NULL;
 		return ret;
+	}
 
 	ptr_chaser->workload = (void *)__chasing_code_loop;
 
