@@ -12,6 +12,7 @@
 #include "pointer_chasing.h"
 
 ptr_chaser_t *ptr_chaser;
+ptr_node *mem;
 
 /* Get random int in a range of [0, max) */
 static int random_int(int max)
@@ -28,7 +29,7 @@ static ptr_node *create_linked_list(void)
 	nr_nodes = ptr_chaser->span / sizeof(ptr_node);
 
 	/* Allocate large buffer that we will read randomly from */
-	ptr_node *mem = (ptr_node *)malloc(ptr_chaser->buff * sizeof(ptr_node));
+	mem = (ptr_node *)malloc(ptr_chaser->buff * sizeof(ptr_node));
 	if (!mem) {
 		fprintf(stderr,
 			"[pointer_chasing]: Memory allocation failed. Consider reducing size "
@@ -136,6 +137,7 @@ int run_ptr_chasing(int argc, char *argv[])
 
 __attribute__((destructor)) int ptr_chaser_finish(void)
 {
+	free(mem);
 	free(ptr_chaser);
 	return 0;
 }
