@@ -15,7 +15,7 @@ typedef union ptr_node {
 		union ptr_node *next;
 		int val;
 	};
-	uint8_t bytes[64];
+	uint8_t bytes[CACHE_LINE_SIZE];
 } ptr_node;
 
 typedef struct ptr_chaser {
