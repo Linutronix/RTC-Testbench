@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (c) 2025 Intel Corporation
+ * Copyright (c) 2026 Linutronix GmbH
  */
 
 #ifndef _POINTER_CHASING_H_
