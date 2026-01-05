@@ -45,7 +45,7 @@ TsnHigh:
   TsnHighRxWorkloadPrewarm: false
   TsnHighRxWorkloadSkipCount: 100
   TsnHighRxWorkloadThreadCpu: 2
-  TsnHighRxWorkloadThreadPriority: 98
+  TsnHighRxWorkloadThreadPriority: 80
 Log:
   LogThreadPriority: 1
   LogThreadCpu: 0
