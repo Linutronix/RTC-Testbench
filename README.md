@@ -86,7 +86,6 @@ Linux RealTime Communication `Testbench` features include:
 
 The following list contains ideas for further development:
 
-- Rework busy polling configuration
 - Add configurations for other hardware platforms (hybrid!) and NIC(s)
 - Add integration with `ClockManager`
 - Package for Debian
