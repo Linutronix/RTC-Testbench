@@ -67,6 +67,7 @@ struct thread_context {
 	struct security_context *rx_security_context; /* Rx context for Auth and Crypt */
 	unsigned char *payload_pattern;               /* Frame payload pattern used for AE */
 	size_t payload_pattern_length;                /* Length of payload pattern */
+	unsigned char *frame_copy;                    /* Frame copy for AE */
 
 	/* Traffic class related */
 	struct traffic_class_config *conf; /* Pointer to traffic class configuration */

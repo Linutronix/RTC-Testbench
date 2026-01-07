@@ -241,13 +241,8 @@ static void *tsn_tx_thread_routine(void *data)
 			      tsn_config->num_frames_per_cycle, source, tsn_config->l2_destination);
 
 	prepare_openssl(security_context);
-	tsn_initialize_frames(thread_context, thread_context->payload_pattern, 1, source,
+	tsn_initialize_frames(thread_context, thread_context->frame_copy, 1, source,
 			      tsn_config->l2_destination);
-	thread_context->payload_pattern +=
-		sizeof(struct vlan_ethernet_header) + sizeof(struct profinet_secure_header);
-	thread_context->payload_pattern_length =
-		tsn_config->frame_length - sizeof(struct vlan_ethernet_header) -
-		sizeof(struct profinet_secure_header) - sizeof(struct security_checksum);
 
 	ret = get_thread_start_time(app_config.application_tx_base_offset_ns, &wakeup_time);
 	if (ret) {
@@ -374,13 +369,8 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 			      tsn_config->l2_destination);
 
 	prepare_openssl(security_context);
-	tsn_initialize_frames(thread_context, thread_context->payload_pattern, 1, source,
+	tsn_initialize_frames(thread_context, thread_context->frame_copy, 1, source,
 			      tsn_config->l2_destination);
-	thread_context->payload_pattern +=
-		sizeof(struct vlan_ethernet_header) + sizeof(struct profinet_secure_header);
-	thread_context->payload_pattern_length =
-		tsn_config->frame_length - sizeof(struct vlan_ethernet_header) -
-		sizeof(struct profinet_secure_header) - sizeof(struct security_checksum);
 
 	ret = get_thread_start_time(app_config.application_tx_base_offset_ns, &wakeup_time);
 	if (ret) {
@@ -673,13 +663,20 @@ int tsn_threads_create(struct thread_context *thread_context)
 		}
 	}
 
-	thread_context->payload_pattern = calloc(1, MAX_FRAME_SIZE);
-	if (!thread_context->payload_pattern) {
-		fprintf(stderr, "Failed to allocate TsnPayloadPattern!\n");
+	/* Initialize data structures for AE */
+	thread_context->frame_copy = calloc(1, MAX_FRAME_SIZE);
+	if (!thread_context->frame_copy) {
+		fprintf(stderr, "Failed to allocate TsnPayloadPattern for AE!\n");
 		ret = -ENOMEM;
 		goto err_payload;
 	}
-	thread_context->payload_pattern_length = MAX_FRAME_SIZE;
+
+	thread_context->payload_pattern = thread_context->frame_copy +
+					  sizeof(struct vlan_ethernet_header) +
+					  sizeof(struct profinet_secure_header);
+	thread_context->payload_pattern_length =
+		tsn_config->frame_length - sizeof(struct vlan_ethernet_header) -
+		sizeof(struct profinet_secure_header) - sizeof(struct security_checksum);
 
 	/* For XDP a AF_XDP socket is allocated. Otherwise a Linux raw socket is used. */
 	if (tsn_config->xdp_enabled) {
@@ -817,7 +814,7 @@ err_buffer:
 		xdp_close_socket(thread_context->xsk, tsn_config->interface,
 				 tsn_config->xdp_skb_mode);
 err_socket:
-	free(thread_context->payload_pattern);
+	free(thread_context->frame_copy);
 err_payload:
 	free(thread_context->rx_frame_data);
 err_rx:
@@ -838,11 +835,7 @@ static void tsn_threads_free(struct thread_context *thread_context)
 
 	tsn_config = thread_context->conf;
 
-	if (thread_context->payload_pattern) {
-		thread_context->payload_pattern -=
-			sizeof(struct vlan_ethernet_header) + sizeof(struct profinet_secure_header);
-		free(thread_context->payload_pattern);
-	}
+	free(thread_context->frame_copy);
 
 	security_exit(thread_context->tx_security_context);
 	security_exit(thread_context->rx_security_context);

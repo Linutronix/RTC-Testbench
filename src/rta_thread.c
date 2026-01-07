@@ -207,13 +207,8 @@ static void *rta_tx_thread_routine(void *data)
 			      rta_config->num_frames_per_cycle, source, rta_config->l2_destination);
 
 	prepare_openssl(security_context);
-	rta_initialize_frames(thread_context, thread_context->payload_pattern, 1, source,
+	rta_initialize_frames(thread_context, thread_context->frame_copy, 1, source,
 			      rta_config->l2_destination);
-	thread_context->payload_pattern +=
-		sizeof(struct vlan_ethernet_header) + sizeof(struct profinet_secure_header);
-	thread_context->payload_pattern_length =
-		rta_config->frame_length - sizeof(struct vlan_ethernet_header) -
-		sizeof(struct profinet_secure_header) - sizeof(struct security_checksum);
 
 	while (!thread_context->stop) {
 		struct timespec timeout;
@@ -317,13 +312,8 @@ static void *rta_xdp_tx_thread_routine(void *data)
 			      rta_config->l2_destination);
 
 	prepare_openssl(security_context);
-	rta_initialize_frames(thread_context, thread_context->payload_pattern, 1, source,
+	rta_initialize_frames(thread_context, thread_context->frame_copy, 1, source,
 			      rta_config->l2_destination);
-	thread_context->payload_pattern +=
-		sizeof(struct vlan_ethernet_header) + sizeof(struct profinet_secure_header);
-	thread_context->payload_pattern_length =
-		rta_config->frame_length - sizeof(struct vlan_ethernet_header) -
-		sizeof(struct profinet_secure_header) - sizeof(struct security_checksum);
 
 	while (!thread_context->stop) {
 		struct timespec timeout;
@@ -607,13 +597,20 @@ int rta_threads_create(struct thread_context *thread_context)
 		}
 	}
 
-	thread_context->payload_pattern = calloc(1, MAX_FRAME_SIZE);
-	if (!thread_context->payload_pattern) {
-		fprintf(stderr, "Failed to allocate RtaPayloadPattern!\n");
+	/* Initialize data structures for AE */
+	thread_context->frame_copy = calloc(1, MAX_FRAME_SIZE);
+	if (!thread_context->frame_copy) {
+		fprintf(stderr, "Failed to allocate RtaPayloadPattern for AE!\n");
 		ret = -ENOMEM;
 		goto err_payload;
 	}
-	thread_context->payload_pattern_length = MAX_FRAME_SIZE;
+
+	thread_context->payload_pattern = thread_context->frame_copy +
+					  sizeof(struct vlan_ethernet_header) +
+					  sizeof(struct profinet_secure_header);
+	thread_context->payload_pattern_length =
+		rta_config->frame_length - sizeof(struct vlan_ethernet_header) -
+		sizeof(struct profinet_secure_header) - sizeof(struct security_checksum);
 
 	/* For XDP a AF_XDP socket is allocated. Otherwise a Linux raw socket is used. */
 	if (rta_config->xdp_enabled) {
@@ -727,7 +724,7 @@ err_buffer:
 		xdp_close_socket(thread_context->xsk, rta_config->interface,
 				 rta_config->xdp_skb_mode);
 err_socket:
-	free(thread_context->payload_pattern);
+	free(thread_context->frame_copy);
 err_payload:
 	free(thread_context->rx_frame_data);
 err_rx:
@@ -747,11 +744,7 @@ void rta_threads_free(struct thread_context *thread_context)
 
 	rta_config = thread_context->conf;
 
-	if (thread_context->payload_pattern) {
-		thread_context->payload_pattern -=
-			sizeof(struct vlan_ethernet_header) + sizeof(struct profinet_secure_header);
-		free(thread_context->payload_pattern);
-	}
+	free(thread_context->frame_copy);
 
 	security_exit(thread_context->tx_security_context);
 	security_exit(thread_context->rx_security_context);
