@@ -561,294 +561,320 @@ void config_print_values(void)
 	       "\n");
 
 	conf = &app_config.classes[TSN_HIGH_FRAME_TYPE];
-	printf("TsnHighEnabled=%s\n", conf->enabled ? "True" : "False");
-	printf("TsnHighRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("TsnHighXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
-	printf("TsnHighXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
-	printf("TsnHighXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
-	printf("TsnHighXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
-	printf("TsnHighXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
-	printf("TsnHighTxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
-	printf("TsnHighIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("TsnHighTxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
-	printf("TsnHighTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
-	printf("TsnHighVid=%d\n", conf->vid);
-	printf("TsnHighPcp=%d\n", conf->pcp);
-	printf("TsnHighNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("TsnHighPayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("TsnHighFrameLength=%zu\n", conf->frame_length);
-	printf("TsnHighSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
-	printf("TsnHighSecurityAlgorithm=%s\n",
-	       security_algorithm_to_string(conf->security_algorithm));
-	printf("TsnHighSecurityKey=%s\n", conf->security_key);
-	printf("TsnHighSecurityIvPrefix=%s\n", conf->security_iv_prefix);
-	printf("TsnHighRxQueue=%d\n", conf->rx_queue);
-	printf("TsnHighTxQueue=%d\n", conf->tx_queue);
-	printf("TsnHighSocketPriority=%d\n", conf->socket_priority);
-	printf("TsnHighTxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("TsnHighRxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("TsnHighTxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("TsnHighRxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("TsnHighInterface=%s\n", conf->interface);
-	printf("TsnHighDestination=");
-	print_mac_address(conf->l2_destination);
-	printf("\n");
-	printf("TsnHighRxWorkloadEnabled=%s\n", conf->rx_workload_enabled ? "True" : "False");
-	printf("TsnHighRxWorkloadPrewarm=%s\n", conf->rx_workload_prewarm ? "True" : "False");
-	printf("TsnHighRxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
-	printf("TsnHighRxWorkloadFile=%s\n", conf->workload_file);
-	printf("TsnHighRxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
-	printf("TsnHighRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
-	printf("TsnHighRxWorkloadFunction=%s\n", conf->workload_function);
-	printf("TsnHighRxWorkloadArguments=%s\n", conf->workload_arguments);
-	printf("TsnHighRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
-	printf("TsnHighRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("TsnHigh")) {
+		printf("TsnHighEnabled=%s\n", conf->enabled ? "True" : "False");
+		printf("TsnHighRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("TsnHighXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
+		printf("TsnHighXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
+		printf("TsnHighXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
+		printf("TsnHighXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
+		printf("TsnHighXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
+		printf("TsnHighTxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
+		printf("TsnHighIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("TsnHighTxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
+		printf("TsnHighTxTimeStampEnabled=%s\n",
+		       conf->tx_hwtstamp_enabled ? "True" : "False");
+		printf("TsnHighVid=%d\n", conf->vid);
+		printf("TsnHighPcp=%d\n", conf->pcp);
+		printf("TsnHighNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("TsnHighPayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("TsnHighFrameLength=%zu\n", conf->frame_length);
+		printf("TsnHighSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
+		printf("TsnHighSecurityAlgorithm=%s\n",
+		       security_algorithm_to_string(conf->security_algorithm));
+		printf("TsnHighSecurityKey=%s\n", conf->security_key);
+		printf("TsnHighSecurityIvPrefix=%s\n", conf->security_iv_prefix);
+		printf("TsnHighRxQueue=%d\n", conf->rx_queue);
+		printf("TsnHighTxQueue=%d\n", conf->tx_queue);
+		printf("TsnHighSocketPriority=%d\n", conf->socket_priority);
+		printf("TsnHighTxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("TsnHighRxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("TsnHighTxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("TsnHighRxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("TsnHighInterface=%s\n", conf->interface);
+		printf("TsnHighDestination=");
+		print_mac_address(conf->l2_destination);
+		printf("\n");
+		printf("TsnHighRxWorkloadEnabled=%s\n",
+		       conf->rx_workload_enabled ? "True" : "False");
+		printf("TsnHighRxWorkloadPrewarm=%s\n",
+		       conf->rx_workload_prewarm ? "True" : "False");
+		printf("TsnHighRxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
+		printf("TsnHighRxWorkloadFile=%s\n", conf->workload_file);
+		printf("TsnHighRxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
+		printf("TsnHighRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
+		printf("TsnHighRxWorkloadFunction=%s\n", conf->workload_function);
+		printf("TsnHighRxWorkloadArguments=%s\n", conf->workload_arguments);
+		printf("TsnHighRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
+		printf("TsnHighRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	conf = &app_config.classes[TSN_LOW_FRAME_TYPE];
-	printf("TsnLowEnabled=%s\n", conf->enabled ? "True" : "False");
-	printf("TsnLowRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("TsnLowXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
-	printf("TsnLowXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
-	printf("TsnLowXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
-	printf("TsnLowXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
-	printf("TsnLowXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
-	printf("TsnLowTxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
-	printf("TsnLowIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("TsnLowTxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
-	printf("TsnLowTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
-	printf("TsnLowVid=%d\n", conf->vid);
-	printf("TsnLowPcp=%d\n", conf->pcp);
-	printf("TsnLowNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("TsnLowPayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("TsnLowFrameLength=%zu\n", conf->frame_length);
-	printf("TsnLowSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
-	printf("TsnLowSecurityAlgorithm=%s\n",
-	       security_algorithm_to_string(conf->security_algorithm));
-	printf("TsnLowSecurityKey=%s\n", conf->security_key);
-	printf("TsnLowSecurityIvPrefix=%s\n", conf->security_iv_prefix);
-	printf("TsnLowRxQueue=%d\n", conf->rx_queue);
-	printf("TsnLowTxQueue=%d\n", conf->tx_queue);
-	printf("TsnLowSocketPriority=%d\n", conf->socket_priority);
-	printf("TsnLowTxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("TsnLowRxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("TsnLowTxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("TsnLowRxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("TsnLowInterface=%s\n", conf->interface);
-	printf("TsnLowDestination=");
-	print_mac_address(conf->l2_destination);
-	printf("\n");
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("TsnLow")) {
+		printf("TsnLowEnabled=%s\n", conf->enabled ? "True" : "False");
+		printf("TsnLowRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("TsnLowXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
+		printf("TsnLowXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
+		printf("TsnLowXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
+		printf("TsnLowXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
+		printf("TsnLowXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
+		printf("TsnLowTxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
+		printf("TsnLowIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("TsnLowTxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
+		printf("TsnLowTxTimeStampEnabled=%s\n",
+		       conf->tx_hwtstamp_enabled ? "True" : "False");
+		printf("TsnLowVid=%d\n", conf->vid);
+		printf("TsnLowPcp=%d\n", conf->pcp);
+		printf("TsnLowNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("TsnLowPayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("TsnLowFrameLength=%zu\n", conf->frame_length);
+		printf("TsnLowSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
+		printf("TsnLowSecurityAlgorithm=%s\n",
+		       security_algorithm_to_string(conf->security_algorithm));
+		printf("TsnLowSecurityKey=%s\n", conf->security_key);
+		printf("TsnLowSecurityIvPrefix=%s\n", conf->security_iv_prefix);
+		printf("TsnLowRxQueue=%d\n", conf->rx_queue);
+		printf("TsnLowTxQueue=%d\n", conf->tx_queue);
+		printf("TsnLowSocketPriority=%d\n", conf->socket_priority);
+		printf("TsnLowTxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("TsnLowRxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("TsnLowTxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("TsnLowRxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("TsnLowInterface=%s\n", conf->interface);
+		printf("TsnLowDestination=");
+		print_mac_address(conf->l2_destination);
+		printf("\n");
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	conf = &app_config.classes[RTC_FRAME_TYPE];
-	printf("RtcEnabled=%s\n", conf->enabled ? "True" : "False");
-	printf("RtcRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("RtcXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
-	printf("RtcXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
-	printf("RtcXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
-	printf("RtcXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
-	printf("RtcXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
-	printf("RtcIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("RtcTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
-	printf("RtcVid=%d\n", conf->vid);
-	printf("RtcPcp=%d\n", conf->pcp);
-	printf("RtcNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("RtcPayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("RtcFrameLength=%zu\n", conf->frame_length);
-	printf("RtcSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
-	printf("RtcSecurityAlgorithm=%s\n", security_algorithm_to_string(conf->security_algorithm));
-	printf("RtcSecurityKey=%s\n", conf->security_key);
-	printf("RtcSecurityIvPrefix=%s\n", conf->security_iv_prefix);
-	printf("RtcRxQueue=%d\n", conf->rx_queue);
-	printf("RtcTxQueue=%d\n", conf->tx_queue);
-	printf("RtcSocketPriority=%d\n", conf->socket_priority);
-	printf("RtcTxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("RtcRxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("RtcTxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("RtcRxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("RtcInterface=%s\n", conf->interface);
-	printf("RtcDestination=");
-	print_mac_address(conf->l2_destination);
-	printf("\n");
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("Rtc")) {
+		printf("RtcEnabled=%s\n", conf->enabled ? "True" : "False");
+		printf("RtcRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("RtcXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
+		printf("RtcXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
+		printf("RtcXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
+		printf("RtcXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
+		printf("RtcXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
+		printf("RtcIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("RtcTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
+		printf("RtcVid=%d\n", conf->vid);
+		printf("RtcPcp=%d\n", conf->pcp);
+		printf("RtcNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("RtcPayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("RtcFrameLength=%zu\n", conf->frame_length);
+		printf("RtcSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
+		printf("RtcSecurityAlgorithm=%s\n",
+		       security_algorithm_to_string(conf->security_algorithm));
+		printf("RtcSecurityKey=%s\n", conf->security_key);
+		printf("RtcSecurityIvPrefix=%s\n", conf->security_iv_prefix);
+		printf("RtcRxQueue=%d\n", conf->rx_queue);
+		printf("RtcTxQueue=%d\n", conf->tx_queue);
+		printf("RtcSocketPriority=%d\n", conf->socket_priority);
+		printf("RtcTxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("RtcRxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("RtcTxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("RtcRxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("RtcInterface=%s\n", conf->interface);
+		printf("RtcDestination=");
+		print_mac_address(conf->l2_destination);
+		printf("\n");
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	conf = &app_config.classes[RTA_FRAME_TYPE];
-	printf("RtaEnabled=%s\n", conf->enabled ? "True" : "False");
-	printf("RtaRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("RtaXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
-	printf("RtaXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
-	printf("RtaXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
-	printf("RtaXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
-	printf("RtaXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
-	printf("RtaIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("RtaTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
-	printf("RtaVid=%d\n", conf->vid);
-	printf("RtaPcp=%d\n", conf->pcp);
-	printf("RtaBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
-	printf("RtaNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("RtaPayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("RtaFrameLength=%zu\n", conf->frame_length);
-	printf("RtaSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
-	printf("RtaSecurityAlgorithm=%s\n", security_algorithm_to_string(conf->security_algorithm));
-	printf("RtaSecurityKey=%s\n", conf->security_key);
-	printf("RtaSecurityIvPrefix=%s\n", conf->security_iv_prefix);
-	printf("RtaRxQueue=%d\n", conf->rx_queue);
-	printf("RtaTxQueue=%d\n", conf->tx_queue);
-	printf("RtaSocketPriority=%d\n", conf->socket_priority);
-	printf("RtaTxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("RtaRxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("RtaTxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("RtaRxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("RtaInterface=%s\n", conf->interface);
-	printf("RtaDestination=");
-	print_mac_address(conf->l2_destination);
-	printf("\n");
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("Rta")) {
+		printf("RtaEnabled=%s\n", conf->enabled ? "True" : "False");
+		printf("RtaRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("RtaXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
+		printf("RtaXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
+		printf("RtaXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
+		printf("RtaXdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
+		printf("RtaXdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
+		printf("RtaIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("RtaTxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
+		printf("RtaVid=%d\n", conf->vid);
+		printf("RtaPcp=%d\n", conf->pcp);
+		printf("RtaBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
+		printf("RtaNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("RtaPayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("RtaFrameLength=%zu\n", conf->frame_length);
+		printf("RtaSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
+		printf("RtaSecurityAlgorithm=%s\n",
+		       security_algorithm_to_string(conf->security_algorithm));
+		printf("RtaSecurityKey=%s\n", conf->security_key);
+		printf("RtaSecurityIvPrefix=%s\n", conf->security_iv_prefix);
+		printf("RtaRxQueue=%d\n", conf->rx_queue);
+		printf("RtaTxQueue=%d\n", conf->tx_queue);
+		printf("RtaSocketPriority=%d\n", conf->socket_priority);
+		printf("RtaTxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("RtaRxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("RtaTxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("RtaRxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("RtaInterface=%s\n", conf->interface);
+		printf("RtaDestination=");
+		print_mac_address(conf->l2_destination);
+		printf("\n");
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	conf = &app_config.classes[DCP_FRAME_TYPE];
-	printf("DcpEnabled=%s\n", conf->enabled ? "True" : "False");
-	printf("DcpRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("DcpIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("DcpVid=%d\n", conf->vid);
-	printf("DcpPcp=%d\n", conf->pcp);
-	printf("DcpBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
-	printf("DcpNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("DcpPayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("DcpFrameLength=%zu\n", conf->frame_length);
-	printf("DcpRxQueue=%d\n", conf->rx_queue);
-	printf("DcpTxQueue=%d\n", conf->tx_queue);
-	printf("DcpSocketPriority=%d\n", conf->socket_priority);
-	printf("DcpTxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("DcpRxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("DcpTxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("DcpRxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("DcpInterface=%s\n", conf->interface);
-	printf("DcpDestination=");
-	print_mac_address(conf->l2_destination);
-	printf("\n");
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("Dcp")) {
+		printf("DcpEnabled=%s\n", conf->enabled ? "True" : "False");
+		printf("DcpRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("DcpIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("DcpVid=%d\n", conf->vid);
+		printf("DcpPcp=%d\n", conf->pcp);
+		printf("DcpBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
+		printf("DcpNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("DcpPayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("DcpFrameLength=%zu\n", conf->frame_length);
+		printf("DcpRxQueue=%d\n", conf->rx_queue);
+		printf("DcpTxQueue=%d\n", conf->tx_queue);
+		printf("DcpSocketPriority=%d\n", conf->socket_priority);
+		printf("DcpTxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("DcpRxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("DcpTxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("DcpRxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("DcpInterface=%s\n", conf->interface);
+		printf("DcpDestination=");
+		print_mac_address(conf->l2_destination);
+		printf("\n");
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	conf = &app_config.classes[LLDP_FRAME_TYPE];
-	printf("LldpEnabled=%s\n", conf->enabled ? "True" : "False");
-	printf("LldpRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("LldpIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("LldpBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
-	printf("LldpNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("LldpPayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("LldpFrameLength=%zu\n", conf->frame_length);
-	printf("LldpRxQueue=%d\n", conf->rx_queue);
-	printf("LldpTxQueue=%d\n", conf->tx_queue);
-	printf("LldpSocketPriority=%d\n", conf->socket_priority);
-	printf("LldpTxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("LldpRxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("LldpTxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("LldpRxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("LldpInterface=%s\n", conf->interface);
-	printf("LldpDestination=");
-	print_mac_address(conf->l2_destination);
-	printf("\n");
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("Lldp")) {
+		printf("LldpEnabled=%s\n", conf->enabled ? "True" : "False");
+		printf("LldpRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("LldpIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("LldpBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
+		printf("LldpNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("LldpPayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("LldpFrameLength=%zu\n", conf->frame_length);
+		printf("LldpRxQueue=%d\n", conf->rx_queue);
+		printf("LldpTxQueue=%d\n", conf->tx_queue);
+		printf("LldpSocketPriority=%d\n", conf->socket_priority);
+		printf("LldpTxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("LldpRxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("LldpTxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("LldpRxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("LldpInterface=%s\n", conf->interface);
+		printf("LldpDestination=");
+		print_mac_address(conf->l2_destination);
+		printf("\n");
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	conf = &app_config.classes[UDP_HIGH_FRAME_TYPE];
-	printf("UdpHighEnabled=%s\n", conf->enabled ? "True" : "False");
-	printf("UdpHighRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("UdpHighIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("UdpHighBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
-	printf("UdpHighNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("UdpHighPayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("UdpHighFrameLength=%zu\n", conf->frame_length);
-	printf("UdpHighRxQueue=%d\n", conf->rx_queue);
-	printf("UdpHighTxQueue=%d\n", conf->tx_queue);
-	printf("UdpHighSocketPriority=%d\n", conf->socket_priority);
-	printf("UdpHighTxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("UdpHighRxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("UdpHighTxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("UdpHighRxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("UdpHighInterface=%s\n", conf->interface);
-	printf("UdpHighPort=%s\n", conf->l3_port);
-	printf("UdpHighDestination=%s\n", conf->l3_destination);
-	printf("UdpHighSource=%s\n", conf->l3_source);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("UdpHigh")) {
+		printf("UdpHighEnabled=%s\n", conf->enabled ? "True" : "False");
+		printf("UdpHighRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("UdpHighIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("UdpHighBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
+		printf("UdpHighNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("UdpHighPayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("UdpHighFrameLength=%zu\n", conf->frame_length);
+		printf("UdpHighRxQueue=%d\n", conf->rx_queue);
+		printf("UdpHighTxQueue=%d\n", conf->tx_queue);
+		printf("UdpHighSocketPriority=%d\n", conf->socket_priority);
+		printf("UdpHighTxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("UdpHighRxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("UdpHighTxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("UdpHighRxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("UdpHighInterface=%s\n", conf->interface);
+		printf("UdpHighPort=%s\n", conf->l3_port);
+		printf("UdpHighDestination=%s\n", conf->l3_destination);
+		printf("UdpHighSource=%s\n", conf->l3_source);
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	conf = &app_config.classes[UDP_LOW_FRAME_TYPE];
-	printf("UdpLowEnabled=%s\n", conf->enabled ? "True" : "False");
-	printf("UdpLowRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("UdpLowIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("UdpLowBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
-	printf("UdpLowNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("UdpLowPayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("UdpLowFrameLength=%zu\n", conf->frame_length);
-	printf("UdpLowRxQueue=%d\n", conf->rx_queue);
-	printf("UdpLowTxQueue=%d\n", conf->tx_queue);
-	printf("UdpLowSocketPriority=%d\n", conf->socket_priority);
-	printf("UdpLowTxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("UdpLowRxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("UdpLowTxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("UdpLowRxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("UdpLowInterface=%s\n", conf->interface);
-	printf("UdpLowPort=%s\n", conf->l3_port);
-	printf("UdpLowDestination=%s\n", conf->l3_destination);
-	printf("UdpLowSource=%s\n", conf->l3_source);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("UdpLow")) {
+		printf("UdpLowEnabled=%s\n", conf->enabled ? "True" : "False");
+		printf("UdpLowRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("UdpLowIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("UdpLowBurstPeriodNS=%" PRIu64 "\n", conf->burst_period_ns);
+		printf("UdpLowNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("UdpLowPayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("UdpLowFrameLength=%zu\n", conf->frame_length);
+		printf("UdpLowRxQueue=%d\n", conf->rx_queue);
+		printf("UdpLowTxQueue=%d\n", conf->tx_queue);
+		printf("UdpLowSocketPriority=%d\n", conf->socket_priority);
+		printf("UdpLowTxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("UdpLowRxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("UdpLowTxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("UdpLowRxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("UdpLowInterface=%s\n", conf->interface);
+		printf("UdpLowPort=%s\n", conf->l3_port);
+		printf("UdpLowDestination=%s\n", conf->l3_destination);
+		printf("UdpLowSource=%s\n", conf->l3_source);
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	conf = &app_config.classes[GENERICL2_FRAME_TYPE];
-	printf("GenericL2Name=%s\n", conf->name);
-	printf("GenericL2Enabled=%s\n", conf->enabled ? "True" : "False");
-	printf("GenericL2RxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
-	printf("GenericL2XdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
-	printf("GenericL2XdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
-	printf("GenericL2XdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
-	printf("GenericL2XdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
-	printf("GenericL2XdpBusyPollMode=%s\n", conf->xdp_busy_poll_mode ? "True" : "False");
-	printf("GenericL2TxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
-	printf("GenericL2IgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
-	printf("GenericL2TxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
-	printf("GenericL2TxTimeStampEnabled=%s\n", conf->tx_hwtstamp_enabled ? "True" : "False");
-	printf("GenericL2Vid=%d\n", conf->vid);
-	printf("GenericL2Pcp=%d\n", conf->pcp);
-	printf("GenericL2EtherType=0x%04x\n", conf->ether_type);
-	printf("GenericL2NumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
-	printf("GenericL2PayloadPattern=");
-	print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-	printf("\n");
-	printf("GenericL2FrameLength=%zu\n", conf->frame_length);
-	printf("GenericL2RxQueue=%d\n", conf->rx_queue);
-	printf("GenericL2TxQueue=%d\n", conf->tx_queue);
-	printf("GenericL2SocketPriority=%d\n", conf->socket_priority);
-	printf("GenericL2TxThreadPriority=%d\n", conf->tx_thread_priority);
-	printf("GenericL2RxThreadPriority=%d\n", conf->rx_thread_priority);
-	printf("GenericL2TxThreadCpu=%d\n", conf->tx_thread_cpu);
-	printf("GenericL2RxThreadCpu=%d\n", conf->rx_thread_cpu);
-	printf("GenericL2Interface=%s\n", conf->interface);
-	printf("GenericL2Destination=");
-	print_mac_address(conf->l2_destination);
-	printf("\n");
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (config_is_traffic_class_active("GenericL2")) {
+		printf("GenericL2Name=%s\n", conf->name);
+		printf("GenericL2Enabled=%s\n", conf->enabled ? "True" : "False");
+		printf("GenericL2RxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("GenericL2XdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
+		printf("GenericL2XdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
+		printf("GenericL2XdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
+		printf("GenericL2XdpWakeupMode=%s\n", conf->xdp_wakeup_mode ? "True" : "False");
+		printf("GenericL2XdpBusyPollMode=%s\n",
+		       conf->xdp_busy_poll_mode ? "True" : "False");
+		printf("GenericL2TxTimeEnabled=%s\n", conf->tx_time_enabled ? "True" : "False");
+		printf("GenericL2IgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
+		printf("GenericL2TxTimeOffsetNS=%" PRIu64 "\n", conf->tx_time_offset_ns);
+		printf("GenericL2TxTimeStampEnabled=%s\n",
+		       conf->tx_hwtstamp_enabled ? "True" : "False");
+		printf("GenericL2Vid=%d\n", conf->vid);
+		printf("GenericL2Pcp=%d\n", conf->pcp);
+		printf("GenericL2EtherType=0x%04x\n", conf->ether_type);
+		printf("GenericL2NumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
+		printf("GenericL2PayloadPattern=");
+		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
+		printf("\n");
+		printf("GenericL2FrameLength=%zu\n", conf->frame_length);
+		printf("GenericL2RxQueue=%d\n", conf->rx_queue);
+		printf("GenericL2TxQueue=%d\n", conf->tx_queue);
+		printf("GenericL2SocketPriority=%d\n", conf->socket_priority);
+		printf("GenericL2TxThreadPriority=%d\n", conf->tx_thread_priority);
+		printf("GenericL2RxThreadPriority=%d\n", conf->rx_thread_priority);
+		printf("GenericL2TxThreadCpu=%d\n", conf->tx_thread_cpu);
+		printf("GenericL2RxThreadCpu=%d\n", conf->rx_thread_cpu);
+		printf("GenericL2Interface=%s\n", conf->interface);
+		printf("GenericL2Destination=");
+		print_mac_address(conf->l2_destination);
+		printf("\n");
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
 	printf("LogThreadPriority=%d\n", app_config.log_thread_priority);
 	printf("LogThreadCpu=%d\n", app_config.log_thread_cpu);
@@ -868,32 +894,42 @@ void config_print_values(void)
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
 
-	printf("StatsHistogramEnabled=%s\n", app_config.stats_histogram_enabled ? "True" : "False");
-	printf("StatsHistogramMinimumNS=%" PRIu64 "\n", app_config.stats_histogram_minimum_ns);
-	printf("StatsHistogramMaximumNS=%" PRIu64 "\n", app_config.stats_histogram_maximum_ns);
-	printf("StatsHistogramFile=%s\n", app_config.stats_histogram_file);
-	printf("StatsCollectionIntervalNS=%" PRIu64 "\n", app_config.stats_collection_interval_ns);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (app_config.stats_histogram_enabled) {
+		printf("StatsHistogramEnabled=%s\n",
+		       app_config.stats_histogram_enabled ? "True" : "False");
+		printf("StatsHistogramMinimumNS=%" PRIu64 "\n",
+		       app_config.stats_histogram_minimum_ns);
+		printf("StatsHistogramMaximumNS=%" PRIu64 "\n",
+		       app_config.stats_histogram_maximum_ns);
+		printf("StatsHistogramFile=%s\n", app_config.stats_histogram_file);
+		printf("StatsCollectionIntervalNS=%" PRIu64 "\n",
+		       app_config.stats_collection_interval_ns);
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
-	printf("LogMqtt=%s\n", app_config.log_mqtt ? "True" : "False");
-	printf("LogMqttThreadPriority=%d\n", app_config.log_mqtt_thread_priority);
-	printf("LogMqttThreadCpu=%d\n", app_config.log_mqtt_thread_cpu);
-	printf("LogMqttBrokerIP=%s\n", app_config.log_mqtt_broker_ip);
-	printf("LogMqttBrokerPort=%d\n", app_config.log_mqtt_broker_port);
-	printf("LogMqttKeepAliveSecs=%d\n", app_config.log_mqtt_keep_alive_secs);
-	printf("LogMqttMeasurementName=%s\n", app_config.log_mqtt_measurement_name);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (app_config.log_mqtt) {
+		printf("LogMqtt=%s\n", app_config.log_mqtt ? "True" : "False");
+		printf("LogMqttThreadPriority=%d\n", app_config.log_mqtt_thread_priority);
+		printf("LogMqttThreadCpu=%d\n", app_config.log_mqtt_thread_cpu);
+		printf("LogMqttBrokerIP=%s\n", app_config.log_mqtt_broker_ip);
+		printf("LogMqttBrokerPort=%d\n", app_config.log_mqtt_broker_port);
+		printf("LogMqttKeepAliveSecs=%d\n", app_config.log_mqtt_keep_alive_secs);
+		printf("LogMqttMeasurementName=%s\n", app_config.log_mqtt_measurement_name);
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 
-	printf("LogJson=%s\n", app_config.log_json ? "True" : "False");
-	printf("LogJsonThreadPriority=%d\n", app_config.log_json_thread_priority);
-	printf("LogJsonThreadCpu=%d\n", app_config.log_json_thread_cpu);
-	printf("LogJsonHost=%s\n", app_config.log_json_host);
-	printf("LogJsonPort=%s\n", app_config.log_json_port);
-	printf("LogJsonMeasurementName=%s\n", app_config.log_json_measurement_name);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	if (app_config.log_json) {
+		printf("LogJson=%s\n", app_config.log_json ? "True" : "False");
+		printf("LogJsonThreadPriority=%d\n", app_config.log_json_thread_priority);
+		printf("LogJsonThreadCpu=%d\n", app_config.log_json_thread_cpu);
+		printf("LogJsonHost=%s\n", app_config.log_json_host);
+		printf("LogJsonPort=%s\n", app_config.log_json_port);
+		printf("LogJsonMeasurementName=%s\n", app_config.log_json_measurement_name);
+		printf("---------------------------------------------------------------------------"
+		       "-----\n");
+	}
 }
 
 int config_set_defaults(bool mirror_enabled)
