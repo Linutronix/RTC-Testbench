@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "Linux RealTime Communication Testbench"
-copyright = "2022-2025, Linutronix GmbH"
+copyright = "2022-2026, Linutronix GmbH"
 author = "Kurt Kanzenbach"
 
 # The full version, including alpha/beta/rc tags

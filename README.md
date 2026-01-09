@@ -104,7 +104,7 @@ Supported by Siemens AG and Intel Corporation
 
 ## Copyright
 
-Copyright (C) 2020-2025 Linutronix GmbH
+Copyright (C) 2020-2026 Linutronix GmbH
 
 Copyright (C) 2024 Intel Corporation
 
