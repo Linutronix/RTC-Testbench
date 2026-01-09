@@ -19,6 +19,7 @@ reuse lint
 
 echo "Checking coding style with clang-format ..."
 clang-format --Werror --dry-run src/*.c src/*.h
+clang-format --Werror --dry-run tests/workloads/*/*.c tests/workloads/*/*.h
 
 echo "Checking naming style with clang-tidy ..."
 mkdir build
