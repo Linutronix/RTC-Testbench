@@ -81,8 +81,21 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Real Time Compute Workloads</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#workload-integration">Workload Integration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#available-workloads">Available Workloads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#workload-integration">Workload Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#specifying-a-workload">Specifying a workload</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#pointer-chasing-workload">Pointer Chasing Workload</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#core-concept">Core Concept</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#key-components">Key Components</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#assembly-implementation">Assembly Implementation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ptr-chase-setup-parameters">ptr_chase_setup parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-rtc-testbench-configuration-file-for-pointer-chasing">Example RTC-Testbench configuration file for pointer chasing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-instructions">Build Instructions</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -130,13 +143,148 @@ between Rx and Tx. This allows to simulate the compute part in addition to the n
 </section>
 <section id="workload-integration">
 <h2>Workload Integration<a class="headerlink" href="#workload-integration" title="Permalink to this heading"></a></h2>
-<p>The workload integration guide is documented on Github:</p>
-<p><a class="reference external" href="https://github.com/Linutronix/RTC-Testbench/tree/main/tests/workloads">Workloads</a></p>
+<p>This section describes the requirements for implementing a workload that can be dynamically loaded
+into the RTC-Testbench framework.</p>
+<section id="requirements">
+<h3>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading"></a></h3>
+<p>To be compatible with RTC-Testbench, a workload must:</p>
+<ol class="arabic simple">
+<li><p>Be compiled as a shared object with position independent code (using the <code class="docutils literal notranslate"><span class="pre">-fPIC</span></code> GCC compiler
+flag).</p></li>
+<li><p>Implement a runtime function to be called each cycle after completion of the network RX routine.</p></li>
+<li><p>(Optional) Implement a setup function to perform initialization tasks, such as memory allocation,
+to avoid doing them in the time critical path.</p></li>
+</ol>
 </section>
-<section id="available-workloads">
-<h2>Available Workloads<a class="headerlink" href="#available-workloads" title="Permalink to this heading"></a></h2>
-<p>There is one example workload provided: <code class="docutils literal notranslate"><span class="pre">pointer_chasing</span></code>:</p>
-<p><a class="reference external" href="https://github.com/Linutronix/RTC-Testbench/tree/main/tests/workloads/pointer_chasing">Pointer Chasing</a></p>
+<section id="specifying-a-workload">
+<h3>Specifying a workload<a class="headerlink" href="#specifying-a-workload" title="Permalink to this heading"></a></h3>
+<p>The following options are used to configure a TsnHigh RX workload:</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">TsnHigh configuration options</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 33.3%" />
+<col style="width: 66.7%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>TsnHighRxWorkloadEnabled (Boolean)</p></td>
+<td><p>Enable/disable workload execution for TSN High traffic class</p></td>
+</tr>
+<tr class="row-odd"><td><p>TsnHighRxWorkloadFile (String)</p></td>
+<td><p>Path to the shared library containing the workload</p></td>
+</tr>
+<tr class="row-even"><td><p>TsnHighRxWorkloadSetupFunction (String)</p></td>
+<td><p>Name of the setup function to call during initialization</p></td>
+</tr>
+<tr class="row-odd"><td><p>TsnHighRxWorkloadSetupArguments (String)</p></td>
+<td><p>Arguments passed to the setup function (space-separated string)</p></td>
+</tr>
+<tr class="row-even"><td><p>TsnHighRxWorkloadFunction (String)</p></td>
+<td><p>Name of the runtime function called each cycle</p></td>
+</tr>
+<tr class="row-odd"><td><p>TsnHighRxWorkloadArguments (String)</p></td>
+<td><p>Arguments passed to the runtime function</p></td>
+</tr>
+<tr class="row-even"><td><p>TsnHighRxWorkloadPrewarm (Boolean)</p></td>
+<td><p>Execute workload immediately when threads spawn (true) or wait for network traffic (false)</p></td>
+</tr>
+<tr class="row-odd"><td><p>TsnHighRxWorkloadSkipCount (Integer)</p></td>
+<td><p>Skip min/max statistics updates for the first N workload iterations</p></td>
+</tr>
+<tr class="row-even"><td><p>TsnHighRxWorkloadThreadCpu (Integer)</p></td>
+<td><p>CPU core number to pin the workload thread to</p></td>
+</tr>
+<tr class="row-odd"><td><p>TsnHighRxWorkloadThreadPriority (Integer)</p></td>
+<td><p>Real-time thread priority (1-99, higher values = higher priority)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="pointer-chasing-workload">
+<h2>Pointer Chasing Workload<a class="headerlink" href="#pointer-chasing-workload" title="Permalink to this heading"></a></h2>
+<section id="overview">
+<h3>Overview<a class="headerlink" href="#overview" title="Permalink to this heading"></a></h3>
+<p>The pointer chasing workload is designed to stress the CPU’s memory hierarchy by following a chain
+of pointers through memory in a pseudo-random pattern.</p>
+</section>
+<section id="core-concept">
+<h3>Core Concept<a class="headerlink" href="#core-concept" title="Permalink to this heading"></a></h3>
+<p>The workload creates a linked list where nodes are distributed randomly throughout a large memory
+buffer. When executed, the CPU must follow pointer chains, causing cache misses and memory stalls.
+The buffer and span sizes can be customized to target specific hierarchies in the cache subsystem,
+or sized sufficiently large for main memory.</p>
+</section>
+<section id="key-components">
+<h3>Key Components<a class="headerlink" href="#key-components" title="Permalink to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Data Structure (ptr_node)</strong></p>
+<ul class="simple">
+<li><p>64-byte aligned union containing a pointer to the next node and a value</p></li>
+</ul>
+</li>
+<li><p><strong>Setup Phase (ptr_chase_setup)</strong></p>
+<ul class="simple">
+<li><p>Parses buffer size and span size from command line arguments</p></li>
+<li><p>Allocates memory and creates a randomized linked list</p></li>
+<li><p>Buffer size: Total memory allocated</p></li>
+<li><p>Span size: Used in conjunction with <code class="docutils literal notranslate"><span class="pre">CACHE_LINE_SIZE</span></code> to determine how many linked list nodes
+are traversed</p></li>
+</ul>
+</li>
+<li><p><strong>Linked List Generation (create_linked_list)</strong></p>
+<ul class="simple">
+<li><p>Creates a pseudo-random chain of pointers within the specified span</p></li>
+<li><p>Uses a seeded random number generator for reproducible results</p></li>
+<li><p>Ensures each node is visited exactly once</p></li>
+</ul>
+</li>
+<li><p><strong>Execution (run_ptr_chasing)</strong>
+- Follows the pointer chain using optimized assembly code
+- Assembly loop continues until reaching a NULL pointer</p></li>
+</ol>
+</section>
+<section id="assembly-implementation">
+<h3>Assembly Implementation<a class="headerlink" href="#assembly-implementation" title="Permalink to this heading"></a></h3>
+<p>The core loop is implemented in assembly for precise control:</p>
+<div class="highlight-NASM notranslate"><div class="highlight"><pre><span></span><span class="nl">__chasing_code_loop:</span>
+<span class="w">    </span><span class="nf">mov</span><span class="w"> </span><span class="p">(</span><span class="o">%</span><span class="nb">rax</span><span class="p">),</span><span class="w"> </span><span class="o">%</span><span class="nb">rax</span><span class="w">        </span><span class="c1">; Load next pointer</span>
+<span class="w">    </span><span class="nf">test</span><span class="w"> </span><span class="o">%</span><span class="nb">rax</span><span class="p">,</span><span class="w"> </span><span class="o">%</span><span class="nb">rax</span><span class="w">         </span><span class="c1">; Check if NULL</span>
+<span class="w">    </span><span class="nf">jne</span><span class="w"> </span><span class="nv">__chasing_code_loop</span><span class="w"> </span><span class="c1">; Continue if not NULL</span>
+<span class="w">    </span><span class="nf">ret</span><span class="w">                     </span><span class="c1">; Return when done</span>
+</pre></div>
+</div>
+</section>
+<section id="ptr-chase-setup-parameters">
+<h3>ptr_chase_setup parameters<a class="headerlink" href="#ptr-chase-setup-parameters" title="Permalink to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">ptr_chase_setup</span></code> function expects two arguments:</p>
+<ul class="simple">
+<li><p><strong>Buffer Size</strong>: Total memory allocated (in hexadecimal)</p></li>
+<li><p><strong>Span Size</strong>: Used in conjunction with <code class="docutils literal notranslate"><span class="pre">CACHE_LINE_SIZE</span></code> to determine how many linked list
+nodes are traversed. As span size approaches buffer size, it will take longer to create the
+LinkedList. Recommended to keep buffer size slightly larger than span size.</p></li>
+</ul>
+<p>In the <code class="docutils literal notranslate"><span class="pre">tests/busypolling_1ms_rtworkload</span></code> example, the following values are used:</p>
+<ul class="simple">
+<li><p>Buffer size: 0x4A4000 (~4.6MB total allocation)</p></li>
+<li><p>Span size: 0x129000 (~1.2MB used for linked list)</p></li>
+</ul>
+</section>
+<section id="example-rtc-testbench-configuration-file-for-pointer-chasing">
+<h3>Example RTC-Testbench configuration file for pointer chasing<a class="headerlink" href="#example-rtc-testbench-configuration-file-for-pointer-chasing" title="Permalink to this heading"></a></h3>
+<p>See <code class="docutils literal notranslate"><span class="pre">tests/busypolling_1ms_rtworkload/mirror.yaml</span></code>.</p>
+</section>
+<section id="build-instructions">
+<h3>Build Instructions<a class="headerlink" href="#build-instructions" title="Permalink to this heading"></a></h3>
+<p>From the main project build directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>pointer_chasing<span class="w">                   </span><span class="c1"># Build shared library</span>
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 
@@ -151,7 +299,7 @@ between Rx and Tx. This allows to simulate the compute part in addition to the n
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022-2025, Linutronix GmbH.</p>
+    <p>&#169; Copyright 2022-2026, Linutronix GmbH.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

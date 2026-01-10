@@ -170,11 +170,11 @@ host2:<span class="w"> </span>journalctl<span class="w"> </span>-f<span class="w
 <div class="literal-block-wrapper docutils container" id="id2">
 <div class="code-block-caption"><span class="caption-text">Configure traffic flow for network interface on both machines</span><a class="headerlink" href="#id2" title="Permalink to this code"></a></div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host1:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/profinet
-host1:<span class="w"> </span>./flow_cml.sh<span class="w"> </span>enp3s0
+host1:<span class="w"> </span>./flow.sh<span class="w"> </span>enp3s0
 host1:<span class="w"> </span>journalctl<span class="w"> </span>-f<span class="w">               </span><span class="c1"># Verify that PTP is running and stable</span>
 
 host2:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/profinet
-host2:<span class="w"> </span>./flow_cml.sh<span class="w"> </span>enp3s0
+host2:<span class="w"> </span>./flow.sh<span class="w"> </span>enp3s0
 host2:<span class="w"> </span>journalctl<span class="w"> </span>-f<span class="w">               </span><span class="c1"># Verify that PTP is running and stable</span>
 </pre></div>
 </div>
@@ -187,7 +187,7 @@ host2:<span class="w"> </span>journalctl<span class="w"> </span>-f<span class="w
 <div class="code-block-caption"><span class="caption-text">Start mirror application on second device</span><a class="headerlink" href="#id3" title="Permalink to this code"></a></div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host2:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/profinet
 host2:<span class="w"> </span>cp<span class="w"> </span>../../build/xdp_kern_*.o<span class="w"> </span>.
-host2:<span class="w"> </span>../../build/mirror<span class="w"> </span>-c<span class="w"> </span>mirror_vid100_cml.yaml
+host2:<span class="w"> </span>../../build/mirror<span class="w"> </span>-c<span class="w"> </span>mirror.yaml
 host2:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>/var/log/mirror_vid100.log<span class="w">           </span><span class="c1"># Verify that mirror application runs</span>
 </pre></div>
 </div>
@@ -199,7 +199,7 @@ host2:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </s
 <div class="code-block-caption"><span class="caption-text">Start reference application on first device</span><a class="headerlink" href="#id4" title="Permalink to this code"></a></div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host1:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/profinet
 host1:<span class="w"> </span>cp<span class="w"> </span>../../build/xdp_kern_*.o<span class="w"> </span>.
-host1:<span class="w"> </span>../../build/reference<span class="w"> </span>-c<span class="w"> </span>reference_vid100_cml.yaml
+host1:<span class="w"> </span>../../build/reference<span class="w"> </span>-c<span class="w"> </span>reference.yaml
 host1:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </span>/var/log/reference_vid100.log<span class="w">              </span><span class="c1"># Check statistics</span>
 </pre></div>
 </div>
@@ -695,7 +695,7 @@ confuse the applications and the switches. Still LLDP can be enabled in the whol
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022-2025, Linutronix GmbH.</p>
+    <p>&#169; Copyright 2022-2026, Linutronix GmbH.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
