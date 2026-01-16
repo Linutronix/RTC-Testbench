@@ -343,7 +343,7 @@ int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len)
 	if (class_config->xdp_enabled) {
 		/* Re-add vlan tag */
 		if (vlan_tag_missing)
-			insert_vlan_tag(frame_data, len,
+			insert_vlan_tag(frame_data, len, ETH_P_PROFINET_RT,
 					class_config->vid | class_config->pcp << VLAN_PCP_SHIFT);
 
 		/* Swap mac addresses inline */

@@ -58,7 +58,7 @@ void swap_mac_addresses(void *buffer, size_t len)
 	memcpy(eth->h_dest, tmp, sizeof(tmp));
 }
 
-void insert_vlan_tag(void *buffer, size_t len, uint16_t vlan_tci)
+void insert_vlan_tag(void *buffer, size_t len, uint16_t ether_type, uint16_t vlan_tci)
 {
 	struct vlan_ethernet_header *veth;
 
@@ -70,7 +70,7 @@ void insert_vlan_tag(void *buffer, size_t len, uint16_t vlan_tci)
 
 	veth = buffer;
 
-	veth->vlan_encapsulated_proto = htons(ETH_P_PROFINET_RT);
+	veth->vlan_encapsulated_proto = htons(ether_type);
 	veth->vlan_proto = htons(ETH_P_8021Q);
 	veth->vlantci = htons(vlan_tci);
 }

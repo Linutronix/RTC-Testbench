@@ -528,7 +528,7 @@ static int generic_l2_rx_frame(void *data, unsigned char *frame_data, size_t len
 	if (l2_config->xdp_enabled) {
 		/* Re-add vlan tag */
 		if (vlan_tag_missing)
-			insert_vlan_tag(frame_data, len,
+			insert_vlan_tag(frame_data, len, l2_config->ether_type,
 					l2_config->vid | l2_config->pcp << VLAN_PCP_SHIFT);
 
 		/* Swap mac addresses inline */
