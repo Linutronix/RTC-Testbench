@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2021-2025 Linutronix GmbH
+ * Copyright (C) 2021-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -425,22 +425,13 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 			unsigned int received;
 			uint64_t i;
 
+			workload_check_finished(thread_context);
+
 			pthread_mutex_lock(&thread_context->xdp_data_mutex);
 
 			received = thread_context->received_frames;
 
 			sequence_counter = thread_context->rx_sequence_counter - received;
-
-			/* Increment workload outlier count if workload did not finish. */
-			if (tsn_config->rx_workload_enabled) {
-				pthread_mutex_lock(&thread_context->workload->workload_mutex);
-				if (thread_context->workload->workload_done == 0 &&
-				    sequence_counter) {
-					stat_inc_workload_outlier(thread_context->frame_type);
-					log_message(LOG_LEVEL_DEBUG, "Workload did not finish!\n");
-				}
-				pthread_mutex_unlock(&thread_context->workload->workload_mutex);
-			}
 
 			/*
 			 * The XDP receiver stored the frames within the umem area and populated the
@@ -607,15 +598,7 @@ static void *tsn_xdp_rx_thread_routine(void *data)
 		thread_context->received_frames = received;
 		pthread_mutex_unlock(&thread_context->xdp_data_mutex);
 
-		if (thread_context->conf->rx_workload_enabled && mirror_enabled) {
-			/* Run workload if we received frames or prewarm is enabled */
-			if (received || thread_context->conf->rx_workload_prewarm) {
-				pthread_mutex_lock(&thread_context->workload->workload_mutex);
-				thread_context->workload->workload_done = 0;
-				pthread_cond_signal(&thread_context->workload->workload_cond);
-				pthread_mutex_unlock(&thread_context->workload->workload_mutex);
-			}
-		}
+		workload_signal(thread_context, received);
 	}
 
 	return NULL;

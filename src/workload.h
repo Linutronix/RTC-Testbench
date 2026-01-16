@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (c) 2025 Intel Corporation
+ * Copyright (c) 2026 Linutronix GmbH
  */
 #ifndef _WORKLOAD_H_
 #define _WORKLOAD_H_
@@ -23,7 +24,7 @@ struct workload_config {
 	int (*workload_setup_function)(int argc, char **argv);
 	int workload_setup_argc;
 	char **workload_setup_argv;
-	int workload_done;
+	int workload_running;
 	enum stat_frame_type associated_frame;
 };
 
@@ -33,5 +34,8 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 			  const char *workload_setup_function, const char *workload_setup_argument,
 			  enum stat_frame_type frame_type);
 void workload_thread_free(struct thread_context *thread_context);
+
+void workload_check_finished(struct thread_context *thread_context);
+void workload_signal(struct thread_context *thread_context, unsigned int received);
 
 #endif /* _WORKLOAD_H_ */

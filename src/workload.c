@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
  * Copyright (c) 2025 Intel Corporation
- * Copyright (c) 2025 Linutronix GmbH
+ * Copyright (c) 2025-2026 Linutronix GmbH
  */
 #include <dlfcn.h>
 #include <errno.h>
+#include <pthread.h>
 #include <string.h>
 
 #include "log.h"
@@ -101,9 +102,9 @@ void *workload_thread_routine(void *data)
 			log_message(LOG_LEVEL_WARNING,
 				    "Workload: Workload function returned error %d\n", ret);
 
-		/* workload_done is checked by Tx threads to indicate workload time overruns. */
+		/* workload_running is checked by Tx threads to indicate workload time overruns. */
 		pthread_mutex_lock(&wl_cfg->workload_mutex);
-		wl_cfg->workload_done = 1;
+		wl_cfg->workload_running = 0;
 		pthread_mutex_unlock(&wl_cfg->workload_mutex);
 
 		stat_frame_workload(wl_cfg->associated_frame, wl_cfg->workload_sequence_counter,
@@ -209,4 +210,38 @@ void workload_thread_free(struct thread_context *thread_context)
 	dlclose(wl_cfg->workload_handler);
 
 	free(thread_context->workload);
+}
+
+void workload_check_finished(struct thread_context *thread_context)
+{
+	const struct traffic_class_config *conf = thread_context->conf;
+	struct workload_config *wl_cfg = thread_context->workload;
+
+	if (!conf->rx_workload_enabled)
+		return;
+
+	/* Increment workload outlier count if workload did not finish. */
+	pthread_mutex_lock(&wl_cfg->workload_mutex);
+	if (wl_cfg->workload_running) {
+		stat_inc_workload_outlier(thread_context->frame_type);
+		log_message(LOG_LEVEL_DEBUG, "Workload did not finish!\n");
+	}
+	pthread_mutex_unlock(&wl_cfg->workload_mutex);
+}
+
+void workload_signal(struct thread_context *thread_context, unsigned int received)
+{
+	const struct traffic_class_config *conf = thread_context->conf;
+	struct workload_config *wl_cfg = thread_context->workload;
+
+	if (!conf->rx_workload_enabled || !conf->rx_mirror_enabled)
+		return;
+
+	/* Run workload if we received frames or prewarm is enabled */
+	if (received || conf->rx_workload_prewarm) {
+		pthread_mutex_lock(&wl_cfg->workload_mutex);
+		wl_cfg->workload_running = 1;
+		pthread_cond_signal(&wl_cfg->workload_cond);
+		pthread_mutex_unlock(&wl_cfg->workload_mutex);
+	}
 }
