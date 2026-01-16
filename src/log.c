@@ -42,7 +42,7 @@ int log_init(void)
 		current_log_level = LOG_LEVEL_ERROR;
 
 	if (app_config.debug_stop_trace_on_error) {
-		file_tracing_on = fopen("/sys/kernel/debug/tracing/tracing_on", "w");
+		file_tracing_on = fopen("/sys/kernel/tracing/tracing_on", "w");
 		if (!file_tracing_on)
 			return -errno;
 	}

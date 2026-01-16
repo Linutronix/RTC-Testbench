@@ -117,10 +117,10 @@ int stat_init(enum log_stat_options log_selection)
 	}
 
 	if (app_config.debug_stop_trace_on_outlier) {
-		file_tracing_on = fopen("/sys/kernel/debug/tracing/tracing_on", "w");
+		file_tracing_on = fopen("/sys/kernel/tracing/tracing_on", "w");
 		if (!file_tracing_on)
 			return -errno;
-		file_trace_marker = fopen("/sys/kernel/debug/tracing/trace_marker", "w");
+		file_trace_marker = fopen("/sys/kernel/tracing/trace_marker", "w");
 		if (!file_trace_marker) {
 			fclose(file_tracing_on);
 			return -errno;
