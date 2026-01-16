@@ -24,6 +24,7 @@
 #include "log.h"
 #include "net.h"
 #include "packet.h"
+#include "profinet.h"
 #include "security.h"
 #include "stat.h"
 #include "utils.h"

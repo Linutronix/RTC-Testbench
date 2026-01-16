@@ -28,6 +28,7 @@
 #include "net.h"
 #include "net_def.h"
 #include "packet.h"
+#include "profinet.h"
 #include "security.h"
 #include "stat.h"
 #include "thread.h"

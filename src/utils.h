@@ -54,25 +54,6 @@ void build_vlan_frame_from_rx(const unsigned char *old_frame, size_t old_frame_l
 			      uint16_t vlan_tci);
 
 /*
- * This function initializes an PROFINET Ethernet frame. The Ethernet header, PROFINET header and
- * payload is initialized. The sequenceCounter is set to zero.
- *
- * In case the SecurityMode is AE or AO, the PROFINET Ethernet frames will contain the
- * SecurityHeader after the FrameID.
- */
-void initialize_profinet_frame(enum security_mode mode, unsigned char *frame_data,
-			       size_t frame_length, const unsigned char *source,
-			       const unsigned char *destination, const char *payload_pattern,
-			       size_t payload_pattern_length, uint16_t vlan_tci, uint16_t frame_id);
-
-/*
- * This function receives a Profinet frame. It performs all required tests such as checking sequence
- * counters, payload, checksums, etc. This is used for TSN, RTC and RTA as well as by packet and xdp
- * code.
- */
-int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len);
-
-/*
  * The following function prepares an already initialized PROFINET Ethernet frame for final
  * transmission. Depending on traffic class and security modes, different actions have to be taken
  * e.g., adjusting the cycle counter and perform authentifcation and/or encryption.
