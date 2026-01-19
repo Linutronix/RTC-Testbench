@@ -37,6 +37,15 @@ TsnHigh:
   TsnHighRxThreadCpu: 1
   TsnHighInterface: enp3s0
   TsnHighDestination: a8:74:1d:9d:98:d8
+  TsnHighRxWorkloadEnabled: true
+  TsnHighRxWorkloadFile: ../workloads/pointer_chasing/pointer_chasing.so
+  TsnHighRxWorkloadSetupFunction: ptr_chase_setup
+  TsnHighRxWorkloadSetupArguments: "0x4A4000 0x129000"
+  TsnHighRxWorkloadFunction: run_ptr_chasing
+  TsnHighRxWorkloadPrewarm: false
+  TsnHighRxWorkloadSkipCount: 100
+  TsnHighRxWorkloadThreadCpu: 1
+  TsnHighRxWorkloadThreadPriority: 80
 Log:
   LogThreadPriority: 1
   LogThreadCpu: 0
