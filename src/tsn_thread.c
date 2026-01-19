@@ -283,6 +283,8 @@ static void *tsn_tx_thread_routine(void *data)
 			}
 		}
 
+		workload_check_finished(thread_context);
+
 		/*
 		 * Send TsnFrames, two possibilites:
 		 *  a) Generate it, or
@@ -494,8 +496,8 @@ static void *tsn_rx_thread_routine(void *data)
 {
 	struct thread_context *thread_context = data;
 	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
+	int socket_fd, ret, received;
 	struct timespec wakeup_time;
-	int socket_fd, ret;
 
 	socket_fd = thread_context->socket_fd;
 
@@ -531,7 +533,9 @@ static void *tsn_rx_thread_routine(void *data)
 		}
 
 		/* Receive Tsn frames. */
-		packet_receive_messages(thread_context->packet_context, &recv_req);
+		received = packet_receive_messages(thread_context->packet_context, &recv_req);
+
+		workload_signal(thread_context, received);
 	}
 
 	return NULL;
