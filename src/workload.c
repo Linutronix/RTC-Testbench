@@ -234,7 +234,7 @@ void workload_signal(struct thread_context *thread_context, unsigned int receive
 	const struct traffic_class_config *conf = thread_context->conf;
 	struct workload_config *wl_cfg = thread_context->workload;
 
-	if (!conf->rx_workload_enabled || !conf->rx_mirror_enabled)
+	if (!conf->rx_workload_enabled)
 		return;
 
 	/* Run workload if we received frames or prewarm is enabled */

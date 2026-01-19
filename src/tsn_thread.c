@@ -411,6 +411,8 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 			}
 		}
 
+		workload_check_finished(thread_context);
+
 		/*
 		 * Send TsnFrames, two possibilites:
 		 *  a) Generate it, or
@@ -424,8 +426,6 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 		} else {
 			unsigned int received;
 			uint64_t i;
-
-			workload_check_finished(thread_context);
 
 			pthread_mutex_lock(&thread_context->xdp_data_mutex);
 
