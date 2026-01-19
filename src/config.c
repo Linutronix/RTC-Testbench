@@ -475,6 +475,25 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxThreadCpu, rx_thread_cpu);
 			CONFIG_STORE_INTERFACE_PARAM_CLASS(GenericL2Interface, interface);
 			CONFIG_STORE_MAC_PARAM_CLASS(GenericL2Destination, l2_destination);
+			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2RxWorkloadEnabled,
+						      rx_workload_enabled);
+			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2RxWorkloadPrewarm,
+						      rx_workload_prewarm);
+			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxWorkloadSkipCount,
+						     rx_workload_skip_count);
+			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadFile, workload_file);
+			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadSetupFunction,
+							workload_setup_function);
+			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadSetupArguments,
+							workload_setup_arguments);
+			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadFunction,
+							workload_function);
+			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadArguments,
+							workload_arguments);
+			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxWorkloadThreadCpu,
+						     workload_thread_cpu);
+			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxWorkloadThreadPriority,
+						     workload_thread_priority);
 
 			CONFIG_STORE_INT_PARAM(LogThreadPriority, log_thread_priority);
 			CONFIG_STORE_INT_PARAM(LogThreadCpu, log_thread_cpu);
@@ -896,6 +915,18 @@ void config_print_values(void)
 		printf("GenericL2Interface=%s\n", conf->interface);
 		printf("GenericL2Destination=");
 		print_mac_address(conf->l2_destination);
+		printf("GenericL2RxWorkloadEnabled=%s\n",
+		       conf->rx_workload_enabled ? "True" : "False");
+		printf("GenericL2RxWorkloadPrewarm=%s\n",
+		       conf->rx_workload_prewarm ? "True" : "False");
+		printf("GenericL2RxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
+		printf("GenericL2RxWorkloadFile=%s\n", conf->workload_file);
+		printf("GenericL2RxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
+		printf("GenericL2RxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
+		printf("GenericL2RxWorkloadFunction=%s\n", conf->workload_function);
+		printf("GenericL2RxWorkloadArguments=%s\n", conf->workload_arguments);
+		printf("GenericL2RxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
+		printf("GenericL2RxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 		printf("\n");
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
@@ -1284,6 +1315,16 @@ int config_set_defaults(bool mirror_enabled)
 	conf->rx_thread_priority = 90;
 	conf->tx_thread_cpu = 0;
 	conf->rx_thread_cpu = 0;
+	conf->rx_workload_enabled = false;
+	conf->rx_workload_prewarm = false;
+	conf->rx_workload_skip_count = 0;
+	conf->workload_file = NULL;
+	conf->workload_function = NULL;
+	conf->workload_arguments = NULL;
+	conf->workload_setup_function = NULL;
+	conf->workload_setup_arguments = NULL;
+	conf->workload_thread_cpu = 0;
+	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
 

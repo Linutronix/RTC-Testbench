@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2022-2025 Linutronix GmbH
+ * Copyright (C) 2022-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -33,6 +33,8 @@
 #include "thread.h"
 #include "tx_time.h"
 #include "utils.h"
+#include "workload.h"
+#include "xdp.h"
 
 static void generic_l2_initialize_frame(struct thread_context *thread_context,
 					unsigned char *frame_data, const unsigned char *source,
@@ -281,6 +283,8 @@ static void *generic_l2_tx_thread_routine(void *data)
 			return NULL;
 		}
 
+		workload_check_finished(thread_context);
+
 		if (!mirror_enabled) {
 			generic_l2_gen_and_send_frames(thread_context,
 						       l2_config->num_frames_per_cycle, socket_fd,
@@ -369,6 +373,8 @@ static void *generic_l2_xdp_tx_thread_routine(void *data)
 				    strerror(ret));
 			return NULL;
 		}
+
+		workload_check_finished(thread_context);
 
 		if (!mirror_enabled) {
 			generic_l2_gen_and_send_xdp_frames(thread_context, num_frames,
@@ -550,8 +556,8 @@ static void *generic_l2_rx_thread_routine(void *data)
 {
 	struct thread_context *thread_context = data;
 	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
+	int socket_fd, ret, received;
 	struct timespec wakeup_time;
-	int socket_fd, ret;
 
 	socket_fd = thread_context->socket_fd;
 
@@ -586,7 +592,9 @@ static void *generic_l2_rx_thread_routine(void *data)
 		}
 
 		/* Receive Layer 2 frames. */
-		packet_receive_messages(thread_context->packet_context, &recv_req);
+		received = packet_receive_messages(thread_context->packet_context, &recv_req);
+
+		workload_signal(thread_context, received);
 	}
 
 	return NULL;
@@ -650,6 +658,8 @@ static void *generic_l2_xdp_rx_thread_routine(void *data)
 					      generic_l2_rx_frame, thread_context, &tx_time);
 		thread_context->received_frames = received;
 		pthread_mutex_unlock(&thread_context->xdp_data_mutex);
+
+		workload_signal(thread_context, received);
 	}
 
 	return NULL;
@@ -754,12 +764,43 @@ struct thread_context *generic_l2_threads_create(void)
 		goto err_thread_rx;
 	}
 
+	/* Create workload thread for execution after network RX */
+	if (l2_config->rx_workload_enabled) {
+		thread_context->workload = calloc(1, sizeof(struct workload_config));
+		if (!thread_context->workload) {
+			fprintf(stderr, "Failed to allocate workload!\n");
+			ret = -ENOMEM;
+			goto err_thread_wl;
+		}
+
+		ret = workload_context_init(
+			thread_context, l2_config->workload_file, l2_config->workload_function,
+			l2_config->workload_arguments, l2_config->workload_setup_function,
+			l2_config->workload_setup_arguments, thread_context->frame_type);
+		if (ret) {
+			fprintf(stderr, "Failed to create workload context!\n");
+			goto err_thread_wl;
+		}
+		ret = create_rt_thread(
+			&thread_context->workload->workload_task_id, l2_config->workload_function,
+			l2_config->workload_thread_priority, l2_config->workload_thread_cpu,
+			&workload_thread_routine, thread_context);
+		if (ret) {
+			fprintf(stderr, "Failed to create Rtc Workload Thread!\n");
+			goto err_thread_wl;
+		}
+	}
+
 	thread_context->meta_data_offset =
 		get_meta_data_offset(GENERICL2_FRAME_TYPE, SECURITY_MODE_NONE);
 
 out:
 	return thread_context;
 
+err_thread_wl:
+	thread_context->stop = 1;
+	free(thread_context->workload);
+	pthread_join(thread_context->rx_task_id, NULL);
 err_thread_rx:
 	thread_context->stop = 1;
 	pthread_join(thread_context->tx_task_id, NULL);
@@ -804,6 +845,9 @@ void generic_l2_threads_free(struct thread_context *thread_context)
 		xdp_close_socket(thread_context->xsk, l2_config->interface,
 				 l2_config->xdp_skb_mode);
 
+	if (thread_context->workload && thread_context->workload->workload_task_id)
+		workload_thread_free(thread_context);
+
 	free(thread_context);
 }
 
@@ -812,6 +856,8 @@ void generic_l2_threads_wait_for_finish(struct thread_context *thread_context)
 	if (!thread_context)
 		return;
 
+	if (thread_context->workload && thread_context->workload->workload_task_id)
+		pthread_join(thread_context->workload->workload_task_id, NULL);
 	if (thread_context->rx_task_id)
 		pthread_join(thread_context->rx_task_id, NULL);
 	if (thread_context->tx_task_id)
