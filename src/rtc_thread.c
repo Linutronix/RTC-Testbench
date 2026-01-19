@@ -30,6 +30,7 @@
 #include "stat.h"
 #include "thread.h"
 #include "utils.h"
+#include "workload.h"
 #include "xdp.h"
 
 static void rtc_initialize_frames(struct thread_context *thread_context, unsigned char *frame_data,
@@ -254,6 +255,8 @@ static void *rtc_tx_thread_routine(void *data)
 			}
 		}
 
+		workload_check_finished(thread_context);
+
 		/*
 		 * Send RtcFrames, two possibilites:
 		 *  a) Generate it, or
@@ -374,6 +377,8 @@ static void *rtc_xdp_tx_thread_routine(void *data)
 			}
 		}
 
+		workload_check_finished(thread_context);
+
 		/*
 		 * Send RtcFrames, two possibilites:
 		 *  a) Generate it, or
@@ -453,8 +458,8 @@ static void *rtc_rx_thread_routine(void *data)
 {
 	struct thread_context *thread_context = data;
 	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
+	int socket_fd, ret, received;
 	struct timespec wakeup_time;
-	int socket_fd, ret;
 
 	socket_fd = thread_context->socket_fd;
 
@@ -490,7 +495,9 @@ static void *rtc_rx_thread_routine(void *data)
 		}
 
 		/* Receive Rtc frames. */
-		packet_receive_messages(thread_context->packet_context, &recv_req);
+		received = packet_receive_messages(thread_context->packet_context, &recv_req);
+
+		workload_signal(thread_context, received);
 	}
 
 	return NULL;
@@ -538,6 +545,8 @@ static void *rtc_xdp_rx_thread_routine(void *data)
 					      receive_profinet_frame, thread_context, NULL);
 		thread_context->received_frames = received;
 		pthread_mutex_unlock(&thread_context->xdp_data_mutex);
+
+		workload_signal(thread_context, received);
 	}
 
 	return NULL;
@@ -678,12 +687,43 @@ int rtc_threads_create(struct thread_context *thread_context)
 		goto err_thread_create2;
 	}
 
+	/* Create workload thread for execution after network RX */
+	if (rtc_config->rx_workload_enabled) {
+		thread_context->workload = calloc(1, sizeof(struct workload_config));
+		if (!thread_context->workload) {
+			fprintf(stderr, "Failed to allocate workload!\n");
+			ret = -ENOMEM;
+			goto err_thread_wl;
+		}
+
+		ret = workload_context_init(
+			thread_context, rtc_config->workload_file, rtc_config->workload_function,
+			rtc_config->workload_arguments, rtc_config->workload_setup_function,
+			rtc_config->workload_setup_arguments, thread_context->frame_type);
+		if (ret) {
+			fprintf(stderr, "Failed to create workload context!\n");
+			goto err_thread_wl;
+		}
+		ret = create_rt_thread(
+			&thread_context->workload->workload_task_id, rtc_config->workload_function,
+			rtc_config->workload_thread_priority, rtc_config->workload_thread_cpu,
+			&workload_thread_routine, thread_context);
+		if (ret) {
+			fprintf(stderr, "Failed to create Rtc Workload Thread!\n");
+			goto err_thread_wl;
+		}
+	}
+
 	thread_context->meta_data_offset =
 		get_meta_data_offset(RTC_FRAME_TYPE, rtc_config->security_mode);
 
 out:
 	return 0;
 
+err_thread_wl:
+	thread_context->stop = 1;
+	free(thread_context->workload);
+	pthread_join(thread_context->rx_task_id, NULL);
 err_thread_create2:
 	thread_context->stop = 1;
 	pthread_join(thread_context->tx_task_id, NULL);
@@ -737,6 +777,9 @@ void rtc_threads_free(struct thread_context *thread_context)
 	if (thread_context->xsk)
 		xdp_close_socket(thread_context->xsk, rtc_config->interface,
 				 rtc_config->xdp_skb_mode);
+
+	if (thread_context->workload && thread_context->workload->workload_task_id)
+		workload_thread_free(thread_context);
 }
 
 void rtc_threads_wait_for_finish(struct thread_context *thread_context)
@@ -744,6 +787,8 @@ void rtc_threads_wait_for_finish(struct thread_context *thread_context)
 	if (!thread_context)
 		return;
 
+	if (thread_context->workload && thread_context->workload->workload_task_id)
+		pthread_join(thread_context->workload->workload_task_id, NULL);
 	if (thread_context->rx_task_id)
 		pthread_join(thread_context->rx_task_id, NULL);
 	if (thread_context->tx_task_id)

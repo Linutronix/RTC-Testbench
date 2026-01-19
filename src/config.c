@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2025 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -271,6 +271,7 @@ int config_read_from_file(const char *config_file)
 						     workload_thread_cpu);
 			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxWorkloadThreadPriority,
 						     workload_thread_priority);
+
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowEnabled, enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpEnabled, xdp_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpSkbMode, xdp_skb_mode);
@@ -330,6 +331,20 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_INT_PARAM_CLASS(RtcRxThreadCpu, rx_thread_cpu);
 			CONFIG_STORE_INTERFACE_PARAM_CLASS(RtcInterface, interface);
 			CONFIG_STORE_MAC_PARAM_CLASS(RtcDestination, l2_destination);
+			CONFIG_STORE_BOOL_PARAM_CLASS(RtcRxWorkloadEnabled, rx_workload_enabled);
+			CONFIG_STORE_BOOL_PARAM_CLASS(RtcRxWorkloadPrewarm, rx_workload_prewarm);
+			CONFIG_STORE_INT_PARAM_CLASS(RtcRxWorkloadSkipCount,
+						     rx_workload_skip_count);
+			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadFile, workload_file);
+			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadSetupFunction,
+							workload_setup_function);
+			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadSetupArguments,
+							workload_setup_arguments);
+			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadFunction, workload_function);
+			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadArguments, workload_arguments);
+			CONFIG_STORE_INT_PARAM_CLASS(RtcRxWorkloadThreadCpu, workload_thread_cpu);
+			CONFIG_STORE_INT_PARAM_CLASS(RtcRxWorkloadThreadPriority,
+						     workload_thread_priority);
 
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtaEnabled, enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtaXdpEnabled, xdp_enabled);
@@ -687,6 +702,16 @@ void config_print_values(void)
 		printf("RtcInterface=%s\n", conf->interface);
 		printf("RtcDestination=");
 		print_mac_address(conf->l2_destination);
+		printf("RtcRxWorkloadEnabled=%s\n", conf->rx_workload_enabled ? "True" : "False");
+		printf("RtcRxWorkloadPrewarm=%s\n", conf->rx_workload_prewarm ? "True" : "False");
+		printf("RtcRxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
+		printf("RtcRxWorkloadFile=%s\n", conf->workload_file);
+		printf("RtcRxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
+		printf("RtcRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
+		printf("RtcRxWorkloadFunction=%s\n", conf->workload_function);
+		printf("RtcRxWorkloadArguments=%s\n", conf->workload_arguments);
+		printf("RtcRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
+		printf("RtcRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 		printf("\n");
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
@@ -1074,6 +1099,16 @@ int config_set_defaults(bool mirror_enabled)
 	conf->rx_thread_priority = 98;
 	conf->tx_thread_cpu = 0;
 	conf->rx_thread_cpu = 0;
+	conf->rx_workload_enabled = false;
+	conf->rx_workload_prewarm = false;
+	conf->rx_workload_skip_count = 0;
+	conf->workload_file = NULL;
+	conf->workload_function = NULL;
+	conf->workload_arguments = NULL;
+	conf->workload_setup_function = NULL;
+	conf->workload_setup_arguments = NULL;
+	conf->workload_thread_cpu = 0;
+	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
 
