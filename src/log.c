@@ -96,7 +96,7 @@ void log_message(enum log_level level, const char *format, ...)
 	len = sizeof(buffer) - 1;
 	p = (char *)buffer;
 
-	written = snprintf(p, len, "[%8ld.%9ld]: [%s]: ", time.tv_sec, time.tv_nsec,
+	written = snprintf(p, len, "[%8lld.%9ld]: [%s]: ", (long long int)time.tv_sec, time.tv_nsec,
 			   log_level_to_string(level));
 	p += written;
 	len -= written;
