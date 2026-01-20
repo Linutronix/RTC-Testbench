@@ -76,12 +76,14 @@ struct statistics {
 	uint64_t proc_first_min;
 	uint64_t proc_first_max;
 	uint64_t proc_first_count;
+	uint64_t proc_first_outliers;
 	double proc_first_sum;
 	double proc_first_avg;
 	/* Batch processing latency at Mirror (1st Rx HW to Last Tx HW timestamp) */
 	uint64_t proc_batch_min;
 	uint64_t proc_batch_max;
 	uint64_t proc_batch_count;
+	uint64_t proc_batch_outliers;
 	double proc_batch_sum;
 	double proc_batch_avg;
 	/* Rx latency from NIC Rx Hw timestamp to user space timestamp */

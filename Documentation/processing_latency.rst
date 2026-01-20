@@ -202,13 +202,15 @@ per cycle):
 .. code-block:: text
 
    # Processing Latency Metrics
-   TsnHighProcFirstMin=999 [us]
+   TsnHighProcFirstMin=982 [us]
    TsnHighProcFirstMax=1001 [us]
-   TsnHighProcFirstAvg=999.198684 [us]
+   TsnHighProcFirstAvg=998.476523 [us]
+   TsnHighProcFirstOutliers=1
 
-   TsnHighProcBatchMin=1002 [us]
+   TsnHighProcBatchMin=983 [us]
    TsnHighProcBatchMax=1003 [us]
-   TsnHighProcBatchAvg=1002.000087 [us]
+   TsnHighProcBatchAvg=1000.237762 [us]
+   TsnHighProcBatchOutliers=739
 
 Additional Monitoring Points
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

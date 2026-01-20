@@ -301,6 +301,10 @@ static void stat_frame_sent_latency_common(struct statistics *stat, enum stat_fr
 static void stat_frame_proc_first_common(struct statistics *stat, enum stat_frame_type frame_type,
 					 uint64_t proc_first_us)
 {
+	/* Check for outliers - processing time exceeding cycle time */
+	if (proc_first_us > app_config.application_base_cycle_time_ns / 1000)
+		stat->proc_first_outliers++;
+
 	stat_update_min_max(proc_first_us, &stat->proc_first_min, &stat->proc_first_max);
 	stat->proc_first_count++;
 	stat->proc_first_sum += proc_first_us;
@@ -310,6 +314,10 @@ static void stat_frame_proc_first_common(struct statistics *stat, enum stat_fram
 static void stat_frame_proc_batch_common(struct statistics *stat, enum stat_frame_type frame_type,
 					 uint64_t proc_batch_us)
 {
+	/* Check for outliers - processing time exceeding cycle time */
+	if (proc_batch_us > app_config.application_base_cycle_time_ns / 1000)
+		stat->proc_batch_outliers++;
+
 	stat_update_min_max(proc_batch_us, &stat->proc_batch_min, &stat->proc_batch_max);
 	stat->proc_batch_count++;
 	stat->proc_batch_sum += proc_batch_us;
@@ -883,6 +891,10 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 	if (ret)
 		return ret;
 
+	ret = append_jlog_u64(&json, &len, "ProcFirstOutliers", stat->proc_first_outliers);
+	if (ret)
+		return ret;
+
 	ret = append_jlog_u64(&json, &len, "ProcBatchMin", stat->proc_batch_min);
 	if (ret)
 		return ret;
@@ -892,6 +904,10 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 		return ret;
 
 	ret = append_jlog_float(&json, &len, "ProcBatchAv", stat->proc_batch_avg);
+	if (ret)
+		return ret;
+
+	ret = append_jlog_u64(&json, &len, "ProcBatchOutliers", stat->proc_batch_outliers);
 	if (ret)
 		return ret;
 

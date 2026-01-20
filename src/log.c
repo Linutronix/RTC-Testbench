@@ -130,9 +130,10 @@ static void log_add_traffic_class(const char *name, enum stat_frame_type frame_t
 	    app_config.classes[frame_type].xdp_enabled && stat->proc_first_count > 0) {
 		written = snprintf(*buffer, *length,
 				   "%sProcFirstMin=%" PRIu64 " [us] | %sProcFirstMax=%" PRIu64
-				   " [us] | %sProcFirstAvg=%lf [us] | ",
+				   " [us] | %sProcFirstAvg=%lf [us] | "
+				   "%sProcFirstOutliers=%" PRIu64 " | ",
 				   name, stat->proc_first_min, name, stat->proc_first_max, name,
-				   stat->proc_first_avg);
+				   stat->proc_first_avg, name, stat->proc_first_outliers);
 		*buffer += written;
 		*length -= written;
 	}
@@ -141,9 +142,10 @@ static void log_add_traffic_class(const char *name, enum stat_frame_type frame_t
 	    app_config.classes[frame_type].xdp_enabled && stat->proc_batch_count > 0) {
 		written = snprintf(*buffer, *length,
 				   "%sProcBatchMin=%" PRIu64 " [us] | %sProcBatchMax=%" PRIu64
-				   " [us] | %sProcBatchAvg=%lf [us] | ",
+				   " [us] | %sProcBatchAvg=%lf [us] | "
+				   "%sProcBatchOutliers=%" PRIu64 " | ",
 				   name, stat->proc_batch_min, name, stat->proc_batch_max, name,
-				   stat->proc_batch_avg);
+				   stat->proc_batch_avg, name, stat->proc_batch_outliers);
 		*buffer += written;
 		*length -= written;
 	}
