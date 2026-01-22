@@ -56,9 +56,17 @@ The following table shows all gathered statistics. All statistics are collected 
      - Latency from the first RX hardware timestamp to the last TX hardware timestamp (batch
        processing latency per cycle). See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
+   * - ProcBatchOutliers
+     - Is incremented if a ProcBatch latency is greater than cycle time. This usually indicates some
+       real time issue (e.g., kernel, driver, hardware, ...). Should be zero.
+
    * - ProcFirst[Min,Max,Av] [us]
      - Latency from the first RX hardware timestamp to the first TX hardware timestamp (first-frame
        processing latency per cycle). See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
+
+   * - ProcFirstOutliers
+     - Is incremented if a ProcFirst latency is greater than cycle time. This usually indicates some
+       real time issue (e.g., kernel, driver, hardware, ...). Should be zero.
 
    * - RoundTrip[Min,Max,Av] [us]
      - Round trip delay measures the time from reference to mirror and back. The delay is calculated

@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Statistics &mdash; Linux RealTime Communication Testbench v5.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -171,9 +171,17 @@ bugs. Should be zero.</p></td>
 <td><p>Latency from the first RX hardware timestamp to the last TX hardware timestamp (batch
 processing latency per cycle). See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
-<tr class="row-even"><td><p>ProcFirst[Min,Max,Av] [us]</p></td>
+<tr class="row-even"><td><p>ProcBatchOutliers</p></td>
+<td><p>Is incremented if a ProcBatch latency is greater than cycle time. This usually indicates some
+real time issue (e.g., kernel, driver, hardware, …). Should be zero.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ProcFirst[Min,Max,Av] [us]</p></td>
 <td><p>Latency from the first RX hardware timestamp to the first TX hardware timestamp (first-frame
 processing latency per cycle). See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
+</tr>
+<tr class="row-even"><td><p>ProcFirstOutliers</p></td>
+<td><p>Is incremented if a ProcFirst latency is greater than cycle time. This usually indicates some
+real time issue (e.g., kernel, driver, hardware, …). Should be zero.</p></td>
 </tr>
 <tr class="row-odd"><td><p>RoundTrip[Min,Max,Av] [us]</p></td>
 <td><p>Round trip delay measures the time from reference to mirror and back. The delay is calculated

@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Processing Latency &mdash; Linux RealTime Communication Testbench v5.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -335,13 +335,15 @@ to verify hardware timestamping capabilities.</p>
 <p>Example Mirror-mode log output with processing latency metrics (3 TsnHigh packets
 per cycle):</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span># Processing Latency Metrics
-TsnHighProcFirstMin=999 [us]
+TsnHighProcFirstMin=982 [us]
 TsnHighProcFirstMax=1001 [us]
-TsnHighProcFirstAvg=999.198684 [us]
+TsnHighProcFirstAvg=998.476523 [us]
+TsnHighProcFirstOutliers=1
 
-TsnHighProcBatchMin=1002 [us]
+TsnHighProcBatchMin=983 [us]
 TsnHighProcBatchMax=1003 [us]
-TsnHighProcBatchAvg=1002.000087 [us]
+TsnHighProcBatchAvg=1000.237762 [us]
+TsnHighProcBatchOutliers=739
 </pre></div>
 </div>
 </section>
