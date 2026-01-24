@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (C) 2020-2024 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -18,6 +18,7 @@
 #include <linux/if_ether.h>
 
 #include "config.h"
+#include "stat.h"
 #include "xdp.h"
 
 #define MAX_FRAME_SIZE XDP_FRAME_SIZE
@@ -31,6 +32,7 @@ struct ring_buffer;
 struct xdp_socket;
 struct security_context;
 struct packet_context;
+struct workload_config;
 
 struct thread_context {
 	/* Task related */
