@@ -56,6 +56,15 @@ static inline const char *stat_frame_type_to_string(enum stat_frame_type frame_t
 	return stat_frame_type_names[frame_type];
 }
 
+struct workload_statistics {
+	uint64_t rx_workload_min;
+	uint64_t rx_workload_max;
+	uint64_t rx_workload_count;
+	double rx_workload_sum;
+	double rx_workload_avg;
+	uint64_t rx_workload_outliers;
+};
+
 struct statistics {
 	uint64_t time_stamp;
 	uint64_t frames_sent;
@@ -105,12 +114,7 @@ struct statistics {
 	double rx_xdp2app_sum;
 	double rx_xdp2app_avg;
 	/* Workload statistics */
-	uint64_t rx_workload_min;
-	uint64_t rx_workload_max;
-	uint64_t rx_workload_count;
-	double rx_workload_sum;
-	double rx_workload_avg;
-	uint64_t rx_workload_outliers;
+	struct workload_statistics workload[WORKLOAD_MAX];
 	/* Tx latency from user space (at send) to NIC Tx HW timestamp */
 	uint64_t tx_min;
 	uint64_t tx_max;

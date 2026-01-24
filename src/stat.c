@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2021-2025 Linutronix GmbH
+ * Copyright (C) 2021-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -70,7 +70,8 @@ static void stat_reset(struct statistics *stats)
 	stats->rx_min = UINT64_MAX;
 	stats->rx_hw2xdp_min = UINT64_MAX;
 	stats->rx_xdp2app_min = UINT64_MAX;
-	stats->rx_workload_min = UINT64_MAX;
+	for (int i = 0; i < WORKLOAD_MAX; i++)
+		stats->workload[i].rx_workload_min = UINT64_MAX;
 	stats->tx_min = UINT64_MAX;
 	stats->proc_first_min = UINT64_MAX;
 	stats->proc_batch_min = UINT64_MAX;
@@ -355,7 +356,8 @@ static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
 
 static void stat_frame_workload_per_period(enum stat_frame_type frame_type, uint64_t workload_time)
 {
-	struct statistics *stat_per_period = &statistics_per_period[frame_type];
+	struct workload_statistics *stat_per_period =
+		&statistics_per_period[frame_type].workload[0];
 
 	if (stat_per_period->rx_workload_count >
 	    app_config.classes[frame_type].rx_workload_skip_count) {
@@ -756,7 +758,7 @@ void stat_proc_batch_latency(enum stat_frame_type frame_type, uint64_t cycle_num
 void stat_frame_workload(enum stat_frame_type frame_type, uint64_t cycle_number,
 			 struct timespec start_ts)
 {
-	struct statistics *stat = &global_statistics[frame_type];
+	struct workload_statistics *stat = &global_statistics[frame_type].workload[0];
 	uint64_t workload_time = 0, curr_time, start_time;
 	struct timespec clk_time = {};
 
@@ -784,7 +786,7 @@ void stat_frame_workload(enum stat_frame_type frame_type, uint64_t cycle_number,
 
 void stat_inc_workload_outlier(enum stat_frame_type frame_type)
 {
-	struct statistics *stat = &global_statistics[frame_type];
+	struct workload_statistics *stat = &global_statistics[frame_type].workload[0];
 
 	if (stat->rx_workload_count > app_config.classes[frame_type].rx_workload_skip_count)
 		stat->rx_workload_outliers++;
@@ -936,15 +938,15 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 	if (ret)
 		return ret;
 
-	ret = append_jlog_u64(&json, &len, "RxWorkloadMin", stat->rx_workload_min);
+	ret = append_jlog_u64(&json, &len, "RxWorkloadMin", stat->workload[0].rx_workload_min);
 	if (ret)
 		return ret;
 
-	ret = append_jlog_u64(&json, &len, "RxWorkloadMax", stat->rx_workload_max);
+	ret = append_jlog_u64(&json, &len, "RxWorkloadMax", stat->workload[0].rx_workload_max);
 	if (ret)
 		return ret;
 
-	ret = append_jlog_float(&json, &len, "RxWorkloadAv", stat->rx_workload_avg);
+	ret = append_jlog_float(&json, &len, "RxWorkloadAv", stat->workload[0].rx_workload_avg);
 	if (ret)
 		return ret;
 
@@ -984,7 +986,8 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 	if (ret)
 		return ret;
 
-	ret = last_jlog_u64(&json, &len, "RxWorkloadOutliers", stat->rx_workload_outliers);
+	ret = last_jlog_u64(&json, &len, "RxWorkloadOutliers",
+			    stat->workload[0].rx_workload_outliers);
 	if (ret)
 		return ret;
 

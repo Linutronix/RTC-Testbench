@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2025 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 #include <errno.h>
@@ -241,8 +241,10 @@ static int log_add_workload_stats(const char *name, enum stat_frame_type frame_t
 			       "%sRxWorkloadMax=%" PRIu64 " [us] | "
 			       "%sRxWorkloadAvg=%lf [us] | "
 			       "%sRxWorkloadOutliers=%" PRIu64 " | ",
-			       name, stat->rx_workload_min, name, stat->rx_workload_max, name,
-			       stat->rx_workload_avg, name, stat->rx_workload_outliers);
+			       name, stat->workload[0].rx_workload_min, name,
+			       stat->workload[0].rx_workload_max, name,
+			       stat->workload[0].rx_workload_avg, name,
+			       stat->workload[0].rx_workload_outliers);
 
 		return snprintf_err_handling(buffer, length, ret);
 	}
