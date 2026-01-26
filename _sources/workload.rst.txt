@@ -36,44 +36,46 @@ To be compatible with RTC-Testbench, a workload must:
 Specifying a workload
 ^^^^^^^^^^^^^^^^^^^^^
 
-The following options are used to configure a TsnHigh RX workload:
+The following options are used to configure a RX workload:
 
-.. list-table:: TsnHigh configuration options
+.. list-table:: Traffic class configuration options
    :widths: 50 100
    :header-rows: 1
 
    * - Option
      - Description
 
-   * - TsnHighRxWorkloadEnabled (Boolean)
+   * - <Class>RxWorkloadEnabled (Boolean)
      - Enable/disable workload execution for TSN High traffic class
 
-   * - TsnHighRxWorkloadFile (String)
+   * - <Class>RxWorkloadFile (String)
      - Path to the shared library containing the workload
 
-   * - TsnHighRxWorkloadSetupFunction (String)
+   * - <Class>RxWorkloadSetupFunction (String)
      - Name of the setup function to call during initialization
 
-   * - TsnHighRxWorkloadSetupArguments (String)
+   * - <Class>RxWorkloadSetupArguments (String)
      - Arguments passed to the setup function (space-separated string)
 
-   * - TsnHighRxWorkloadFunction (String)
+   * - <Class>RxWorkloadFunction (String)
      - Name of the runtime function called each cycle
 
-   * - TsnHighRxWorkloadArguments (String)
+   * - <Class>RxWorkloadArguments (String)
      - Arguments passed to the runtime function
 
-   * - TsnHighRxWorkloadPrewarm (Boolean)
+   * - <Class>RxWorkloadPrewarm (Boolean)
      - Execute workload immediately when threads spawn (true) or wait for network traffic (false)
 
-   * - TsnHighRxWorkloadSkipCount (Integer)
+   * - <Class>RxWorkloadSkipCount (Integer)
      - Skip min/max statistics updates for the first N workload iterations
 
-   * - TsnHighRxWorkloadThreadCpu (Integer)
+   * - <Class>RxWorkloadThreadCpu (Integer)
      - CPU core number to pin the workload thread to
 
-   * - TsnHighRxWorkloadThreadPriority (Integer)
+   * - <Class>RxWorkloadThreadPriority (Integer)
      - Real-time thread priority (1-99, higher values = higher priority)
+
+The RX workload feature is implemented for ``TsnHigh``, ``Rtc`` and ``GenericL2`` traffic classes.
 
 Pointer Chasing Workload
 ------------------------

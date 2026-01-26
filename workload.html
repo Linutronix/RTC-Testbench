@@ -158,9 +158,9 @@ to avoid doing them in the time critical path.</p></li>
 </section>
 <section id="specifying-a-workload">
 <h3>Specifying a workload<a class="headerlink" href="#specifying-a-workload" title="Permalink to this heading"></a></h3>
-<p>The following options are used to configure a TsnHigh RX workload:</p>
+<p>The following options are used to configure a RX workload:</p>
 <table class="docutils align-default" id="id1">
-<caption><span class="caption-text">TsnHigh configuration options</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Traffic class configuration options</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
 <colgroup>
 <col style="width: 33.3%" />
 <col style="width: 66.7%" />
@@ -171,38 +171,39 @@ to avoid doing them in the time critical path.</p></li>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>TsnHighRxWorkloadEnabled (Boolean)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;RxWorkloadEnabled (Boolean)</p></td>
 <td><p>Enable/disable workload execution for TSN High traffic class</p></td>
 </tr>
-<tr class="row-odd"><td><p>TsnHighRxWorkloadFile (String)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;RxWorkloadFile (String)</p></td>
 <td><p>Path to the shared library containing the workload</p></td>
 </tr>
-<tr class="row-even"><td><p>TsnHighRxWorkloadSetupFunction (String)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;RxWorkloadSetupFunction (String)</p></td>
 <td><p>Name of the setup function to call during initialization</p></td>
 </tr>
-<tr class="row-odd"><td><p>TsnHighRxWorkloadSetupArguments (String)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;RxWorkloadSetupArguments (String)</p></td>
 <td><p>Arguments passed to the setup function (space-separated string)</p></td>
 </tr>
-<tr class="row-even"><td><p>TsnHighRxWorkloadFunction (String)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;RxWorkloadFunction (String)</p></td>
 <td><p>Name of the runtime function called each cycle</p></td>
 </tr>
-<tr class="row-odd"><td><p>TsnHighRxWorkloadArguments (String)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;RxWorkloadArguments (String)</p></td>
 <td><p>Arguments passed to the runtime function</p></td>
 </tr>
-<tr class="row-even"><td><p>TsnHighRxWorkloadPrewarm (Boolean)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;RxWorkloadPrewarm (Boolean)</p></td>
 <td><p>Execute workload immediately when threads spawn (true) or wait for network traffic (false)</p></td>
 </tr>
-<tr class="row-odd"><td><p>TsnHighRxWorkloadSkipCount (Integer)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;RxWorkloadSkipCount (Integer)</p></td>
 <td><p>Skip min/max statistics updates for the first N workload iterations</p></td>
 </tr>
-<tr class="row-even"><td><p>TsnHighRxWorkloadThreadCpu (Integer)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;RxWorkloadThreadCpu (Integer)</p></td>
 <td><p>CPU core number to pin the workload thread to</p></td>
 </tr>
-<tr class="row-odd"><td><p>TsnHighRxWorkloadThreadPriority (Integer)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;RxWorkloadThreadPriority (Integer)</p></td>
 <td><p>Real-time thread priority (1-99, higher values = higher priority)</p></td>
 </tr>
 </tbody>
 </table>
+<p>The RX workload feature is implemented for <code class="docutils literal notranslate"><span class="pre">TsnHigh</span></code>, <code class="docutils literal notranslate"><span class="pre">Rtc</span></code> and <code class="docutils literal notranslate"><span class="pre">GenericL2</span></code> traffic classes.</p>
 </section>
 </section>
 <section id="pointer-chasing-workload">
