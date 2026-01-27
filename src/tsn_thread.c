@@ -762,10 +762,10 @@ int tsn_threads_create(struct thread_context *thread_context)
 			fprintf(stderr, "Failed to create workload context!\n");
 			goto err_thread_wl;
 		}
-		ret = create_rt_thread(&thread_context->workload->workload_task_id,
-				       tsn_config->workload_thread_priority,
-				       tsn_config->workload_thread_cpu, &workload_thread_routine,
-				       thread_context, tsn_config->workload_function);
+		ret = create_rt_thread(
+			&thread_context->workload->workload_task_id,
+			tsn_config->workload_thread_priority, tsn_config->workload_thread_cpus[0],
+			&workload_thread_routine, thread_context, tsn_config->workload_function);
 		if (ret) {
 			fprintf(stderr, "Failed to create Tsn Workload Thread!\n");
 			goto err_thread_wl;

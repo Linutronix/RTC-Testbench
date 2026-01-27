@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (C) 2021-2025 Linutronix GmbH
+ * Copyright (C) 2021-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -11,6 +11,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+/* Maximum workload threads per traffic class */
+#define WORKLOAD_MAX 32
 
 enum log_stat_options {
 	LOG_REFERENCE = 0,

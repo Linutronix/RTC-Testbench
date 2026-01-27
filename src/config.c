@@ -144,6 +144,46 @@ static int config_parse_time(const char *value, uint64_t *ret)
 	return -EINVAL;
 }
 
+static int config_parse_cpu_list(const char *value, int *array, int array_len, int *num)
+{
+	int ret, i = 0;
+	char *tmp, *p;
+
+	/* Make a copy for strtok() */
+	tmp = strdup(value);
+	if (!tmp)
+		return -ENOMEM;
+
+	p = strtok(tmp, " ,");
+	while (p) {
+		array[i] = atoi(p);
+		if (array[i] < 0) {
+			ret = -EINVAL;
+			goto out;
+		}
+		p = strtok(NULL, " ,");
+		i++;
+
+		/* CPU list too long? */
+		if (i >= array_len) {
+			ret = -ERANGE;
+			goto out;
+		}
+	}
+
+	if (i == 0) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+	*num = i;
+	ret = 0;
+
+out:
+	free(tmp);
+	return ret;
+}
+
 /* The configuration file is YAML based. Use libyaml to parse it. */
 int config_read_from_file(const char *config_file)
 {
@@ -267,8 +307,8 @@ int config_read_from_file(const char *config_file)
 							workload_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadArguments,
 							workload_arguments);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxWorkloadThreadCpu,
-						     workload_thread_cpu);
+			CONFIG_STORE_CPU_LIST_PARAM_CLASS(TsnHighRxWorkloadThreadCpu,
+							  workload_thread_cpus);
 			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxWorkloadThreadPriority,
 						     workload_thread_priority);
 
@@ -342,7 +382,8 @@ int config_read_from_file(const char *config_file)
 							workload_setup_arguments);
 			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadFunction, workload_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadArguments, workload_arguments);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcRxWorkloadThreadCpu, workload_thread_cpu);
+			CONFIG_STORE_CPU_LIST_PARAM_CLASS(RtcRxWorkloadThreadCpu,
+							  workload_thread_cpus);
 			CONFIG_STORE_INT_PARAM_CLASS(RtcRxWorkloadThreadPriority,
 						     workload_thread_priority);
 
@@ -490,8 +531,8 @@ int config_read_from_file(const char *config_file)
 							workload_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadArguments,
 							workload_arguments);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxWorkloadThreadCpu,
-						     workload_thread_cpu);
+			CONFIG_STORE_CPU_LIST_PARAM_CLASS(GenericL2RxWorkloadThreadCpu,
+							  workload_thread_cpus);
 			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxWorkloadThreadPriority,
 						     workload_thread_priority);
 
@@ -641,7 +682,7 @@ void config_print_values(void)
 		printf("TsnHighRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
 		printf("TsnHighRxWorkloadFunction=%s\n", conf->workload_function);
 		printf("TsnHighRxWorkloadArguments=%s\n", conf->workload_arguments);
-		printf("TsnHighRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
+		printf("TsnHighRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
 		printf("TsnHighRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
@@ -730,7 +771,7 @@ void config_print_values(void)
 		printf("RtcRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
 		printf("RtcRxWorkloadFunction=%s\n", conf->workload_function);
 		printf("RtcRxWorkloadArguments=%s\n", conf->workload_arguments);
-		printf("RtcRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
+		printf("RtcRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
 		printf("RtcRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
@@ -926,7 +967,7 @@ void config_print_values(void)
 		printf("GenericL2RxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
 		printf("GenericL2RxWorkloadFunction=%s\n", conf->workload_function);
 		printf("GenericL2RxWorkloadArguments=%s\n", conf->workload_arguments);
-		printf("GenericL2RxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
+		printf("GenericL2RxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
 		printf("GenericL2RxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
@@ -1060,7 +1101,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_arguments = NULL;
 	conf->workload_setup_function = NULL;
 	conf->workload_setup_arguments = NULL;
-	conf->workload_thread_cpu = 0;
+	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
 	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
@@ -1138,7 +1179,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_arguments = NULL;
 	conf->workload_setup_function = NULL;
 	conf->workload_setup_arguments = NULL;
-	conf->workload_thread_cpu = 0;
+	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
 	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
@@ -1323,7 +1364,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_arguments = NULL;
 	conf->workload_setup_function = NULL;
 	conf->workload_setup_arguments = NULL;
-	conf->workload_thread_cpu = 0;
+	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
 	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);

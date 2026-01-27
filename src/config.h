@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (C) 2020-2025 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -77,7 +77,8 @@ struct traffic_class_config {
 	int rx_thread_priority;
 	int tx_thread_cpu;
 	int rx_thread_cpu;
-	int workload_thread_cpu;
+	int workload_thread_cpus[WORKLOAD_MAX];
+	int workload_thread_cpus_num;
 	int workload_thread_priority;
 
 	/* Workload settings */
@@ -408,6 +409,22 @@ void config_free(void);
 			if (!strcasecmp(value, "chacha20-poly1305"))                               \
 				app_config.classes[type].var =                                     \
 					SECURITY_ALGORITHM_CHACHA20_POLY1305;                      \
+		}                                                                                  \
+	} while (0)
+
+#define CONFIG_STORE_CPU_LIST_PARAM_CLASS(name, var)                                               \
+	do {                                                                                       \
+		if (!strcmp(key, #name)) {                                                         \
+			enum stat_frame_type type = config_opt_to_type(#name);                     \
+			int __ret;                                                                 \
+                                                                                                   \
+			__ret = config_parse_cpu_list(value, app_config.classes[type].var,         \
+						      WORKLOAD_MAX,                                \
+						      &app_config.classes[type].var##_num);        \
+			if (__ret) {                                                               \
+				fprintf(stderr, "The value for " #name " is invalid!\n");          \
+				goto err_parse;                                                    \
+			}                                                                          \
 		}                                                                                  \
 	} while (0)
 
