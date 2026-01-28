@@ -1558,7 +1558,7 @@ bool config_sanity_check(void)
 	     (app_config.classes[TSN_LOW_FRAME_TYPE].tx_hwtstamp_enabled &&
 	      app_config.classes[TSN_LOW_FRAME_TYPE].xdp_enabled))) {
 		fprintf(stderr, "XDP Tx HW Timestamp requires TX_TIMESTAMP build support!\n");
-		fprintf(stderr, "Rebuild with -DTX_TIMESTAMP=ON (requires libxdp >= v1.4.1 and "
+		fprintf(stderr, "Rebuild with -DTX_TIMESTAMP=ON (requires libxdp >= v1.5.2 and "
 				"Linux kernel >= v6.8).\n");
 		return false;
 	}

@@ -162,7 +162,7 @@ The following table summarizes all dependencies:
      - Any version
    * - **libxdp**
      - Any version
-     - >= 1.4.1
+     - >= 1.5.2
    * - **NIC Driver Feature**
      - bpf_xdp_metadata_rx_timestamp()
      - XDP_TXMD_FLAGS_TIMESTAMP
