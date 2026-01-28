@@ -721,6 +721,7 @@ void config_print_values(void)
 		printf("RtcInterface=%s\n", conf->interface);
 		printf("RtcDestination=");
 		print_mac_address(conf->l2_destination);
+		printf("\n");
 		printf("RtcRxWorkloadEnabled=%s\n", conf->rx_workload_enabled ? "True" : "False");
 		printf("RtcRxWorkloadPrewarm=%s\n", conf->rx_workload_prewarm ? "True" : "False");
 		printf("RtcRxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
@@ -731,7 +732,6 @@ void config_print_values(void)
 		printf("RtcRxWorkloadArguments=%s\n", conf->workload_arguments);
 		printf("RtcRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
 		printf("RtcRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
-		printf("\n");
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
 	}
@@ -915,6 +915,7 @@ void config_print_values(void)
 		printf("GenericL2Interface=%s\n", conf->interface);
 		printf("GenericL2Destination=");
 		print_mac_address(conf->l2_destination);
+		printf("\n");
 		printf("GenericL2RxWorkloadEnabled=%s\n",
 		       conf->rx_workload_enabled ? "True" : "False");
 		printf("GenericL2RxWorkloadPrewarm=%s\n",
@@ -927,7 +928,6 @@ void config_print_values(void)
 		printf("GenericL2RxWorkloadArguments=%s\n", conf->workload_arguments);
 		printf("GenericL2RxWorkloadThreadCpu=%d\n", conf->workload_thread_cpu);
 		printf("GenericL2RxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
-		printf("\n");
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
 	}
