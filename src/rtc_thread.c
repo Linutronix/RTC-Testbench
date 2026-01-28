@@ -696,10 +696,7 @@ int rtc_threads_create(struct thread_context *thread_context)
 			goto err_thread_wl;
 		}
 
-		ret = workload_context_init(
-			thread_context, rtc_config->workload_file, rtc_config->workload_function,
-			rtc_config->workload_arguments, rtc_config->workload_setup_function,
-			rtc_config->workload_setup_arguments, thread_context->frame_type);
+		ret = workload_context_init(thread_context);
 		if (ret) {
 			fprintf(stderr, "Failed to create workload context!\n");
 			goto err_thread_wl;

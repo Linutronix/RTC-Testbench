@@ -91,9 +91,8 @@ int jacobi_2d_run(int argc, char *argv[])
 	return 0;
 }
 
-__attribute__((destructor)) int jacobi_2d_finish(void)
+void jacobi_2d_teardown(void)
 {
 	free(grid_a);
 	free(grid_b);
-	return 0;
 }

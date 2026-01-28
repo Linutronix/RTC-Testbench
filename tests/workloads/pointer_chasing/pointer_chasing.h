@@ -53,6 +53,9 @@ static __attribute__((always_inline)) inline void __ptr_chasing_run_workload_x86
 /* Setup function */
 int ptr_chase_setup(int argc, char *argv[]);
 
+/* Teardown function */
+void ptr_chase_teardown(void);
+
 /* Run time function */
 int run_ptr_chasing(int argc, char *argv[]);
 

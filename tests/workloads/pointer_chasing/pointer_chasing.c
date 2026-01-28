@@ -167,9 +167,8 @@ int run_ptr_chasing(int argc, char *argv[])
 	return 0;
 }
 
-__attribute__((destructor)) int ptr_chaser_finish(void)
+void ptr_chase_teardown(void)
 {
 	free(mem);
 	free(ptr_chaser);
-	return 0;
 }

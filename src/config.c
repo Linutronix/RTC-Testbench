@@ -303,6 +303,8 @@ int config_read_from_file(const char *config_file)
 							workload_setup_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadSetupArguments,
 							workload_setup_arguments);
+			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadTeardownFunction,
+							workload_teardown_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadFunction,
 							workload_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadArguments,
@@ -380,6 +382,8 @@ int config_read_from_file(const char *config_file)
 							workload_setup_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadSetupArguments,
 							workload_setup_arguments);
+			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadTeardownFunction,
+							workload_teardown_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadFunction, workload_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadArguments, workload_arguments);
 			CONFIG_STORE_CPU_LIST_PARAM_CLASS(RtcRxWorkloadThreadCpu,
@@ -527,6 +531,8 @@ int config_read_from_file(const char *config_file)
 							workload_setup_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadSetupArguments,
 							workload_setup_arguments);
+			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadTeardownFunction,
+							workload_teardown_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadFunction,
 							workload_function);
 			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadArguments,
@@ -680,6 +686,7 @@ void config_print_values(void)
 		printf("TsnHighRxWorkloadFile=%s\n", conf->workload_file);
 		printf("TsnHighRxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
 		printf("TsnHighRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
+		printf("TsnHighRxWorkloadTeardownFunction=%s\n", conf->workload_teardown_function);
 		printf("TsnHighRxWorkloadFunction=%s\n", conf->workload_function);
 		printf("TsnHighRxWorkloadArguments=%s\n", conf->workload_arguments);
 		printf("TsnHighRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
@@ -769,6 +776,7 @@ void config_print_values(void)
 		printf("RtcRxWorkloadFile=%s\n", conf->workload_file);
 		printf("RtcRxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
 		printf("RtcRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
+		printf("RtcRxWorkloadTeardownFunction=%s\n", conf->workload_teardown_function);
 		printf("RtcRxWorkloadFunction=%s\n", conf->workload_function);
 		printf("RtcRxWorkloadArguments=%s\n", conf->workload_arguments);
 		printf("RtcRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
@@ -965,6 +973,8 @@ void config_print_values(void)
 		printf("GenericL2RxWorkloadFile=%s\n", conf->workload_file);
 		printf("GenericL2RxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
 		printf("GenericL2RxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
+		printf("GenericL2RxWorkloadTeardownFunction=%s\n",
+		       conf->workload_teardown_function);
 		printf("GenericL2RxWorkloadFunction=%s\n", conf->workload_function);
 		printf("GenericL2RxWorkloadArguments=%s\n", conf->workload_arguments);
 		printf("GenericL2RxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
@@ -1101,6 +1111,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_arguments = NULL;
 	conf->workload_setup_function = NULL;
 	conf->workload_setup_arguments = NULL;
+	conf->workload_teardown_function = NULL;
 	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
 	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
@@ -1179,6 +1190,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_arguments = NULL;
 	conf->workload_setup_function = NULL;
 	conf->workload_setup_arguments = NULL;
+	conf->workload_teardown_function = NULL;
 	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
 	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
@@ -1364,6 +1376,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_arguments = NULL;
 	conf->workload_setup_function = NULL;
 	conf->workload_setup_arguments = NULL;
+	conf->workload_teardown_function = NULL;
 	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
 	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);

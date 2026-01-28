@@ -10,7 +10,7 @@
 #include "stat.h"
 #include "thread.h"
 
-struct thread_context; // Forward Declaration
+struct thread_context;
 
 struct workload_config {
 	pthread_t workload_task_id;
@@ -24,15 +24,13 @@ struct workload_config {
 	int (*workload_setup_function)(int argc, char **argv);
 	int workload_setup_argc;
 	char **workload_setup_argv;
+	void (*workload_teardown_function)(void);
 	int workload_running;
 	enum stat_frame_type associated_frame;
 };
 
 void *workload_thread_routine(void *data);
-int workload_context_init(struct thread_context *thread_context, const char *workload_file,
-			  const char *workload_function, const char *workload_argument,
-			  const char *workload_setup_function, const char *workload_setup_argument,
-			  enum stat_frame_type frame_type);
+int workload_context_init(struct thread_context *thread_context);
 void workload_thread_free(struct thread_context *thread_context);
 
 void workload_check_finished(struct thread_context *thread_context);

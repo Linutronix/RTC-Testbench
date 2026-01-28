@@ -768,10 +768,7 @@ struct thread_context *generic_l2_threads_create(void)
 			goto err_thread_wl;
 		}
 
-		ret = workload_context_init(
-			thread_context, l2_config->workload_file, l2_config->workload_function,
-			l2_config->workload_arguments, l2_config->workload_setup_function,
-			l2_config->workload_setup_arguments, thread_context->frame_type);
+		ret = workload_context_init(thread_context);
 		if (ret) {
 			fprintf(stderr, "Failed to create workload context!\n");
 			goto err_thread_wl;

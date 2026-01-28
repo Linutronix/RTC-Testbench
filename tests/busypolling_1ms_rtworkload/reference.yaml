@@ -41,6 +41,7 @@ TsnHigh:
   TsnHighRxWorkloadFile: ../workloads/pointer_chasing/pointer_chasing.so
   TsnHighRxWorkloadSetupFunction: ptr_chase_setup
   TsnHighRxWorkloadSetupArguments: "0x4A4000 0x129000"
+  TsnHighRxWorkloadTeardownFunction: ptr_chase_teardown
   TsnHighRxWorkloadFunction: run_ptr_chasing
   TsnHighRxWorkloadPrewarm: false
   TsnHighRxWorkloadSkipCount: 100

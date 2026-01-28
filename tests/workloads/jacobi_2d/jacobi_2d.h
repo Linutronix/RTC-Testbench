@@ -19,6 +19,9 @@
 /* Setup function */
 int jacobi_2d_setup(int argc, char *argv[]);
 
+/* Teardown function */
+void jacobi_2d_teardown(void);
+
 /* Run time function */
 int jacobi_2d_run(int argc, char *argv[]);
 

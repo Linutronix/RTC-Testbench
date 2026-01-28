@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <string.h>
 
+#include "config.h"
 #include "log.h"
 #include "stat.h"
 #include "thread.h"
@@ -115,44 +116,54 @@ void *workload_thread_routine(void *data)
 	return NULL;
 }
 
-int workload_context_init(struct thread_context *thread_context, const char *workload_file,
-			  const char *workload_function, const char *workload_arguments,
-			  const char *workload_setup_function, const char *workload_setup_arguments,
-			  enum stat_frame_type frame_type)
+int workload_context_init(struct thread_context *thread_context)
 {
 	struct workload_config *wl_cfg = thread_context->workload;
+	struct traffic_class_config *conf = thread_context->conf;
 	char *error;
 	int ret;
 
-	wl_cfg->workload_handler = dlopen(workload_file, RTLD_NOW | RTLD_GLOBAL);
+	wl_cfg->workload_handler = dlopen(conf->workload_file, RTLD_NOW | RTLD_GLOBAL);
 	if (!wl_cfg->workload_handler) {
 		error = dlerror();
-		fprintf(stderr, "Error: Unable to open workload '%s': %s\n", workload_file, error);
+		fprintf(stderr, "Error: Unable to open workload '%s': %s\n", conf->workload_file,
+			error);
 		return -EINVAL;
 	}
 
-	if (workload_setup_function) {
+	if (conf->workload_setup_function) {
 		wl_cfg->workload_setup_function =
-			dlsym(wl_cfg->workload_handler, workload_setup_function);
+			dlsym(wl_cfg->workload_handler, conf->workload_setup_function);
 		if (!wl_cfg->workload_setup_function) {
 			fprintf(stderr, "Error: Unable to find setup function: %s\n",
-				workload_setup_function);
+				conf->workload_setup_function);
 			ret = -EINVAL;
 			goto dl;
 		}
 	}
 
-	wl_cfg->workload_function = dlsym(wl_cfg->workload_handler, workload_function);
+	if (conf->workload_teardown_function) {
+		wl_cfg->workload_teardown_function =
+			dlsym(wl_cfg->workload_handler, conf->workload_teardown_function);
+		if (!wl_cfg->workload_teardown_function) {
+			fprintf(stderr, "Error: Unable to find teardown function: %s\n",
+				conf->workload_teardown_function);
+			ret = -EINVAL;
+			goto dl;
+		}
+	}
+
+	wl_cfg->workload_function = dlsym(wl_cfg->workload_handler, conf->workload_function);
 	if (!wl_cfg->workload_function) {
-		fprintf(stderr, "Error: Unable to find function: %s\n", workload_function);
+		fprintf(stderr, "Error: Unable to find function: %s\n", conf->workload_function);
 		ret = -EINVAL;
 		goto dl;
 	}
 
 	wl_cfg->workload_argc = 0;
 	wl_cfg->workload_argv = NULL;
-	if (workload_arguments) {
-		ret = string_to_argc_argv(workload_arguments, &wl_cfg->workload_argc,
+	if (conf->workload_arguments) {
+		ret = string_to_argc_argv(conf->workload_arguments, &wl_cfg->workload_argc,
 					  &wl_cfg->workload_argv);
 		if (ret)
 			goto dl;
@@ -160,8 +171,9 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 
 	wl_cfg->workload_setup_argc = 0;
 	wl_cfg->workload_setup_argv = NULL;
-	if (workload_setup_arguments) {
-		ret = string_to_argc_argv(workload_setup_arguments, &wl_cfg->workload_setup_argc,
+	if (conf->workload_setup_arguments) {
+		ret = string_to_argc_argv(conf->workload_setup_arguments,
+					  &wl_cfg->workload_setup_argc,
 					  &wl_cfg->workload_setup_argv);
 		if (ret)
 			goto argv;
@@ -170,7 +182,7 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 	init_mutex(&wl_cfg->workload_mutex);
 	init_condition_variable(&wl_cfg->workload_cond);
 
-	wl_cfg->associated_frame = frame_type;
+	wl_cfg->associated_frame = thread_context->frame_type;
 
 	/* Call the setup function if it exists */
 	if (wl_cfg->workload_setup_function) {
@@ -179,7 +191,7 @@ int workload_context_init(struct thread_context *thread_context, const char *wor
 		if (ret) {
 			fprintf(stderr,
 				"Workload setup function '%s' return with failure code: %d\n",
-				workload_setup_function, ret);
+				conf->workload_setup_function, ret);
 			goto setup;
 		}
 	}
@@ -203,6 +215,9 @@ void workload_thread_free(struct thread_context *thread_context)
 		return;
 
 	wl_cfg = thread_context->workload;
+
+	if (wl_cfg->workload_teardown_function)
+		wl_cfg->workload_teardown_function();
 
 	free_argv(wl_cfg->workload_argc, wl_cfg->workload_argv);
 	free_argv(wl_cfg->workload_setup_argc, wl_cfg->workload_setup_argv);

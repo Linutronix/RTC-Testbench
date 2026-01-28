@@ -95,6 +95,8 @@ struct traffic_class_config {
 	size_t workload_setup_function_length;
 	char *workload_setup_arguments;
 	size_t workload_setup_arguments_length;
+	char *workload_teardown_function;
+	size_t workload_teardown_function_length;
 };
 
 struct application_config {
