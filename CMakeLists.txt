@@ -118,7 +118,7 @@ if (WITH_MQTT)
 endif()
 
 option(RX_TIMESTAMP "Enable RX timestamp support (requires libbpf >= 1.2)" OFF)
-option(TX_TIMESTAMP "Enable TX timestamp support (requires libxdp >= 1.4.1)" OFF)
+option(TX_TIMESTAMP "Enable TX timestamp support (requires libxdp >= 1.5.2)" OFF)
 
 if(RX_TIMESTAMP)
   pkg_check_modules(LIBBPF_REQUIRED_FOR_RX_TIMESTAMP libbpf>=1.2)
@@ -128,8 +128,8 @@ if(RX_TIMESTAMP)
 endif()
 
 if(TX_TIMESTAMP)
-  if(NOT ((${LIBXDP_VERSION} GREATER_EQUAL 1.4.1) AND (${HAVE_XDP_FLAGS_TX_HWTSTAMP})))
-    message(FATAL_ERROR "TX_TIMESTAMP requires libxdp >= 1.4.1 and kernel support for XDP_TXMD_FLAGS_TIMESTAMP")
+  if(NOT ((${LIBXDP_VERSION} GREATER_EQUAL 1.5.2) AND (${HAVE_XDP_FLAGS_TX_HWTSTAMP})))
+    message(FATAL_ERROR "TX_TIMESTAMP requires libxdp >= 1.5.2 and kernel support for XDP_TXMD_FLAGS_TIMESTAMP")
   endif()
 endif()
 
@@ -206,9 +206,9 @@ if ((${LIBXDP_VERSION} GREATER_EQUAL 1.5.0) AND (${HAVE_XDP_FLAGS_TX_TIME}))
 endif()
 
 #
-# Check for XDP and Tx HW Timestamp support. It requires: libxdp >= 1.4.1 and Linux v6.8.
+# Check for XDP and Tx HW Timestamp support. It requires: libxdp >= 1.5.2 and Linux v6.8.
 #
-if ((${LIBXDP_VERSION} GREATER_EQUAL 1.4.1) AND (${HAVE_XDP_FLAGS_TX_HWTSTAMP}))
+if ((${LIBXDP_VERSION} GREATER_EQUAL 1.5.2) AND (${HAVE_XDP_FLAGS_TX_HWTSTAMP}))
   message(STATUS "XDP and Tx HW Timestamp support available using libxdp version: ${LIBXDP_VERSION}")
 endif()
 
