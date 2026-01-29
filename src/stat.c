@@ -118,10 +118,15 @@ int stat_init(enum log_stat_options log_selection)
 
 	if (app_config.debug_stop_trace_on_outlier) {
 		file_tracing_on = fopen("/sys/kernel/tracing/tracing_on", "w");
-		if (!file_tracing_on)
+		if (!file_tracing_on) {
+			fprintf(stderr,
+				"Failed to open 'tracing_on' file! Try mounting tracefs.\n");
 			return -errno;
+		}
 		file_trace_marker = fopen("/sys/kernel/tracing/trace_marker", "w");
 		if (!file_trace_marker) {
+			fprintf(stderr,
+				"Failed to open 'tracing_marker' file! Try mounting tracefs.\n");
 			fclose(file_tracing_on);
 			return -errno;
 		}
