@@ -9,10 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "pointer_chasing.h"
+#include "workload.h"
 
-ptr_chaser_t *ptr_chaser;
-ptr_node *mem;
+#include "pointer_chasing.h"
 
 /* Get random int in a range of [0, max) */
 static int random_int(int max)
@@ -20,7 +19,7 @@ static int random_int(int max)
 	return rand() % max;
 }
 
-static ptr_node *create_linked_list(void)
+static ptr_node *create_linked_list(ptr_chaser_t *ptr_chaser)
 {
 	ptr_node *ptr, *head;
 	uint64_t i, nr_nodes;
@@ -29,15 +28,15 @@ static ptr_node *create_linked_list(void)
 	nr_nodes = ptr_chaser->span / sizeof(ptr_node);
 
 	/* Allocate large buffer that we will read randomly from */
-	mem = (ptr_node *)malloc(ptr_chaser->buff * sizeof(ptr_node));
-	if (!mem) {
+	ptr_chaser->mem = (ptr_node *)malloc(ptr_chaser->buff * sizeof(ptr_node));
+	if (!ptr_chaser->mem) {
 		fprintf(stderr,
 			"[pointer_chasing]: Memory allocation failed. Consider reducing size "
 			"of the buffer?\n");
 		return NULL;
 	}
 
-	head = &mem[random_int(ptr_chaser->buff)];
+	head = &ptr_chaser->mem[random_int(ptr_chaser->buff)];
 	head->val = 1;
 	ptr = head;
 
@@ -46,8 +45,8 @@ static ptr_node *create_linked_list(void)
 	while (i < nr_nodes) {
 		/* Pick a random address in the span */
 		offset = random_int(nr_nodes);
-		if (mem[offset].val == 0) {
-			ptr->next = &mem[offset];
+		if (ptr_chaser->mem[offset].val == 0) {
+			ptr->next = &ptr_chaser->mem[offset];
 			ptr = ptr->next;
 			ptr->val = 1;
 			i++;
@@ -62,7 +61,7 @@ static int generate_linked_list(ptr_chaser_t *ptr_chaser, unsigned int seed)
 	ptr_node *head;
 
 	srand(seed);
-	head = create_linked_list();
+	head = create_linked_list(ptr_chaser);
 	if (!head) {
 		fprintf(stderr, "[pointer_chasing]: Creating Linked List failed.\n");
 		return -ENOMEM;
@@ -72,8 +71,9 @@ static int generate_linked_list(ptr_chaser_t *ptr_chaser, unsigned int seed)
 	return 0;
 }
 
-int ptr_chase_setup(int argc, char *argv[])
+int ptr_chase_setup(struct workload_instance *instance, int argc, char *argv[])
 {
+	struct ptr_chaser *ptr_chaser;
 	uint64_t buff, span;
 	char *endptr;
 	int ret = 0;
@@ -124,6 +124,8 @@ int ptr_chase_setup(int argc, char *argv[])
 	ptr_chaser->workload = (void *)__chasing_code_loop;
 #endif
 
+	instance->priv = ptr_chaser;
+
 	return 0;
 }
 
@@ -151,8 +153,9 @@ static void __attribute__((unused)) * __ptr_chasing_run_workload(ptr_chaser_t *p
 	return p;
 }
 
-int run_ptr_chasing(int argc, char *argv[])
+int run_ptr_chasing(struct workload_instance *instance, int argc, char *argv[])
 {
+	struct ptr_chaser *ptr_chaser = instance->priv;
 	(void)argc;
 	(void)argv;
 
@@ -167,8 +170,10 @@ int run_ptr_chasing(int argc, char *argv[])
 	return 0;
 }
 
-void ptr_chase_teardown(void)
+void ptr_chase_teardown(struct workload_instance *instance)
 {
-	free(mem);
+	struct ptr_chaser *ptr_chaser = instance->priv;
+
+	free(ptr_chaser->mem);
 	free(ptr_chaser);
 }

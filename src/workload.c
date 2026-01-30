@@ -98,7 +98,8 @@ void *workload_thread_routine(void *data)
 			continue;
 
 		clock_gettime(app_config.application_clock_id, &start_ts);
-		ret = wl_cfg->workload_function(wl_cfg->workload_argc, wl_cfg->workload_argv);
+		ret = wl_cfg->workload_function(&wl_cfg->instances[0], wl_cfg->workload_argc,
+						wl_cfg->workload_argv);
 		if (ret)
 			log_message(LOG_LEVEL_WARNING,
 				    "Workload: Workload function returned error %d\n", ret);
@@ -184,9 +185,19 @@ int workload_context_init(struct thread_context *thread_context)
 
 	wl_cfg->associated_frame = thread_context->frame_type;
 
+	/* Initialize workload instances */
+	for (int i = 0; i < conf->workload_thread_cpus_num; i++) {
+		struct workload_instance *instance = &wl_cfg->instances[i];
+
+		instance->id = i;
+		instance->cpu = conf->workload_thread_cpus[i];
+		instance->priv = NULL;
+	}
+
 	/* Call the setup function if it exists */
 	if (wl_cfg->workload_setup_function) {
-		ret = wl_cfg->workload_setup_function(wl_cfg->workload_setup_argc,
+		ret = wl_cfg->workload_setup_function(&wl_cfg->instances[0],
+						      wl_cfg->workload_setup_argc,
 						      wl_cfg->workload_setup_argv);
 		if (ret) {
 			fprintf(stderr,
@@ -217,7 +228,7 @@ void workload_thread_free(struct thread_context *thread_context)
 	wl_cfg = thread_context->workload;
 
 	if (wl_cfg->workload_teardown_function)
-		wl_cfg->workload_teardown_function();
+		wl_cfg->workload_teardown_function(&wl_cfg->instances[0]);
 
 	free_argv(wl_cfg->workload_argc, wl_cfg->workload_argv);
 	free_argv(wl_cfg->workload_setup_argc, wl_cfg->workload_setup_argv);

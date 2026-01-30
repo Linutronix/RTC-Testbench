@@ -6,6 +6,14 @@
 #ifndef JACOBI_2D_H
 #define JACOBI_2D_H
 
+struct workload_instance;
+
+struct jacobi_2d {
+	double *grid_a;
+	double *grid_b;
+	int iterations;
+};
+
 /*
  * Size: 100 x 100 x 8 -> 78.125 Kib.
  *
@@ -17,12 +25,12 @@
 #define GRID_SIZE 100
 
 /* Setup function */
-int jacobi_2d_setup(int argc, char *argv[]);
+int jacobi_2d_setup(struct workload_instance *instance, int argc, char *argv[]);
 
 /* Teardown function */
-void jacobi_2d_teardown(void);
+void jacobi_2d_teardown(struct workload_instance *instance);
 
 /* Run time function */
-int jacobi_2d_run(int argc, char *argv[]);
+int jacobi_2d_run(struct workload_instance *instance, int argc, char *argv[]);
 
 #endif /* JACOBI_2D_H */

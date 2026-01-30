@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+struct workload_instance;
+
 #define CACHE_LINE_SIZE 64
 
 typedef union ptr_node {
@@ -24,6 +26,7 @@ typedef struct ptr_chaser {
 	uint64_t span;
 	void *head;
 	void (*workload)(struct ptr_chaser *);
+	ptr_node *mem;
 } ptr_chaser_t;
 
 #ifdef __x86_64__
@@ -51,12 +54,12 @@ static __attribute__((always_inline)) inline void __ptr_chasing_run_workload_x86
 #endif
 
 /* Setup function */
-int ptr_chase_setup(int argc, char *argv[]);
+int ptr_chase_setup(struct workload_instance *instance, int argc, char *argv[]);
 
 /* Teardown function */
-void ptr_chase_teardown(void);
+void ptr_chase_teardown(struct workload_instance *instance);
 
 /* Run time function */
-int run_ptr_chasing(int argc, char *argv[]);
+int run_ptr_chasing(struct workload_instance *instance, int argc, char *argv[]);
 
 #endif /* _POINTER_CHASING_H_ */

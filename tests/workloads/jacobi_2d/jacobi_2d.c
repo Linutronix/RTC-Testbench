@@ -9,11 +9,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "jacobi_2d.h"
+#include "workload.h"
 
-static double *grid_a;
-static double *grid_b;
-static int iterations;
+#include "jacobi_2d.h"
 
 static inline int idx(int i, int j)
 {
@@ -44,41 +42,52 @@ static void jacobi_2d_step(double *src, double *dest)
 	}
 }
 
-int jacobi_2d_setup(int argc, char *argv[])
+int jacobi_2d_setup(struct workload_instance *instance, int argc, char *argv[])
 {
+	struct jacobi_2d *j2;
+
 	if (argc != 2) {
 		fprintf(stderr, "[jacobi_2d]: Usage: <iterations>\n");
 		return -EINVAL;
 	}
 
-	iterations = atoi(argv[1]);
-	if (iterations <= 0) {
+	j2 = calloc(1, sizeof(*j2));
+	if (!j2)
+		return -ENOMEM;
+
+	j2->iterations = atoi(argv[1]);
+	if (j2->iterations <= 0) {
 		fprintf(stderr, "[jacobi_2d]: Usage: <iterations>\n");
+		free(j2);
 		return -EINVAL;
 	}
 
-	grid_a = calloc(GRID_SIZE * GRID_SIZE, sizeof(double));
-	grid_b = calloc(GRID_SIZE * GRID_SIZE, sizeof(double));
+	j2->grid_a = calloc(GRID_SIZE * GRID_SIZE, sizeof(double));
+	j2->grid_b = calloc(GRID_SIZE * GRID_SIZE, sizeof(double));
 
-	if (!grid_a || !grid_b) {
+	if (!j2->grid_a || !j2->grid_b) {
 		fprintf(stderr, "[jacobi_2d]: Grid allocation failed!\n");
+		free(j2);
 		return -ENOMEM;
 	}
+
+	instance->priv = j2;
 
 	return 0;
 }
 
-int jacobi_2d_run(int argc, char *argv[])
+int jacobi_2d_run(struct workload_instance *instance, int argc, char *argv[])
 {
+	struct jacobi_2d *j2 = instance->priv;
 	(void)argc;
 	(void)argv;
 
-	double *src = grid_a;
-	double *dest = grid_b;
+	double *src = j2->grid_a;
+	double *dest = j2->grid_b;
 
 	jacobi_2d_init_grid(src);
 
-	for (int i = 0; i < iterations; i++) {
+	for (int i = 0; i < j2->iterations; i++) {
 		double *tmp;
 
 		jacobi_2d_step(src, dest);
@@ -91,8 +100,11 @@ int jacobi_2d_run(int argc, char *argv[])
 	return 0;
 }
 
-void jacobi_2d_teardown(void)
+void jacobi_2d_teardown(struct workload_instance *instance)
 {
-	free(grid_a);
-	free(grid_b);
+	struct jacobi_2d *j2 = instance->priv;
+
+	free(j2->grid_a);
+	free(j2->grid_b);
+	free(j2);
 }
