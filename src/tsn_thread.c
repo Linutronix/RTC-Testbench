@@ -815,8 +815,7 @@ static void tsn_threads_free(struct thread_context *thread_context)
 		xdp_close_socket(thread_context->xsk, tsn_config->interface,
 				 tsn_config->xdp_skb_mode);
 
-	if (thread_context->workload && thread_context->workload->workload_task_id)
-		workload_thread_free(thread_context);
+	workload_thread_free(thread_context);
 }
 
 static void tsn_threads_wait_for_finish(struct thread_context *thread_context)
@@ -824,8 +823,8 @@ static void tsn_threads_wait_for_finish(struct thread_context *thread_context)
 	if (!thread_context)
 		return;
 
-	if (thread_context->workload && thread_context->workload->workload_task_id)
-		pthread_join(thread_context->workload->workload_task_id, NULL);
+	workload_thread_wait_for_finish(thread_context);
+
 	if (thread_context->rx_task_id)
 		pthread_join(thread_context->rx_task_id, NULL);
 	if (thread_context->tx_task_id)

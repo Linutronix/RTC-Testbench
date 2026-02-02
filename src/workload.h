@@ -38,6 +38,7 @@ struct workload_config {
 
 int workload_context_init(struct thread_context *thread_context);
 void workload_thread_free(struct thread_context *thread_context);
+void workload_thread_wait_for_finish(struct thread_context *thread_context);
 
 void workload_check_finished(struct thread_context *thread_context);
 void workload_signal(struct thread_context *thread_context, unsigned int received);

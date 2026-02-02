@@ -245,9 +245,15 @@ dlopen:
 
 void workload_thread_free(struct thread_context *thread_context)
 {
+	struct traffic_class_config *conf;
 	struct workload_config *wl_cfg;
 
 	if (!thread_context)
+		return;
+
+	conf = thread_context->conf;
+
+	if (!conf || !conf->rx_workload_enabled)
 		return;
 
 	wl_cfg = thread_context->workload;
@@ -261,6 +267,24 @@ void workload_thread_free(struct thread_context *thread_context)
 	dlclose(wl_cfg->workload_handler);
 
 	free(thread_context->workload);
+}
+
+void workload_thread_wait_for_finish(struct thread_context *thread_context)
+{
+	struct traffic_class_config *conf;
+	struct workload_config *wl_cfg;
+
+	if (!thread_context)
+		return;
+
+	conf = thread_context->conf;
+
+	if (!conf || !conf->rx_workload_enabled)
+		return;
+
+	wl_cfg = thread_context->workload;
+
+	pthread_join(wl_cfg->workload_task_id, NULL);
 }
 
 void workload_check_finished(struct thread_context *thread_context)
