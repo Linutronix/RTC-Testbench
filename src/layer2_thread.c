@@ -760,27 +760,10 @@ struct thread_context *generic_l2_threads_create(void)
 	}
 
 	/* Create workload thread for execution after network RX */
-	if (l2_config->rx_workload_enabled) {
-		thread_context->workload = calloc(1, sizeof(struct workload_config));
-		if (!thread_context->workload) {
-			fprintf(stderr, "Failed to allocate workload!\n");
-			ret = -ENOMEM;
-			goto err_thread_wl;
-		}
-
-		ret = workload_context_init(thread_context);
-		if (ret) {
-			fprintf(stderr, "Failed to create workload context!\n");
-			goto err_thread_wl;
-		}
-		ret = create_rt_thread(&thread_context->workload->workload_task_id,
-				       l2_config->workload_thread_priority,
-				       l2_config->workload_thread_cpus[0], &workload_thread_routine,
-				       thread_context, l2_config->workload_function);
-		if (ret) {
-			fprintf(stderr, "Failed to create Rtc Workload Thread!\n");
-			goto err_thread_wl;
-		}
+	ret = workload_context_init(thread_context);
+	if (ret) {
+		fprintf(stderr, "Failed to create L2 Workload context!\n");
+		goto err_thread_wl;
 	}
 
 	thread_context->meta_data_offset =
@@ -791,7 +774,6 @@ out:
 
 err_thread_wl:
 	thread_context->stop = 1;
-	free(thread_context->workload);
 	pthread_join(thread_context->rx_task_id, NULL);
 err_thread_rx:
 	thread_context->stop = 1;

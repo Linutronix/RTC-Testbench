@@ -36,7 +36,6 @@ struct workload_config {
 	struct workload_instance instances[WORKLOAD_MAX];
 };
 
-void *workload_thread_routine(void *data);
 int workload_context_init(struct thread_context *thread_context);
 void workload_thread_free(struct thread_context *thread_context);
 

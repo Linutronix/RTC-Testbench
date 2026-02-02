@@ -119,17 +119,28 @@ void *workload_thread_routine(void *data)
 
 int workload_context_init(struct thread_context *thread_context)
 {
-	struct workload_config *wl_cfg = thread_context->workload;
 	struct traffic_class_config *conf = thread_context->conf;
+	struct workload_config *wl_cfg;
 	char *error;
 	int ret;
+
+	if (!conf->rx_workload_enabled)
+		return 0;
+
+	thread_context->workload = calloc(1, sizeof(struct workload_config));
+	if (!thread_context->workload) {
+		fprintf(stderr, "Failed to allocate workload!\n");
+		return -ENOMEM;
+	}
+	wl_cfg = thread_context->workload;
 
 	wl_cfg->workload_handler = dlopen(conf->workload_file, RTLD_NOW | RTLD_GLOBAL);
 	if (!wl_cfg->workload_handler) {
 		error = dlerror();
 		fprintf(stderr, "Error: Unable to open workload '%s': %s\n", conf->workload_file,
 			error);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto dlopen;
 	}
 
 	if (conf->workload_setup_function) {
@@ -207,14 +218,28 @@ int workload_context_init(struct thread_context *thread_context)
 		}
 	}
 
+	/* Create and start workload thread */
+	ret = create_rt_thread(&wl_cfg->workload_task_id, conf->workload_thread_priority,
+			       conf->workload_thread_cpus[0], &workload_thread_routine,
+			       thread_context, conf->workload_function);
+	if (ret) {
+		fprintf(stderr, "Failed to create Workload Thread!\n");
+		goto thread;
+	}
+
 	return 0;
 
+thread:
+	if (wl_cfg->workload_teardown_function)
+		wl_cfg->workload_teardown_function(&wl_cfg->instances[0]);
 setup:
 	free_argv(wl_cfg->workload_setup_argc, wl_cfg->workload_setup_argv);
 argv:
 	free_argv(wl_cfg->workload_argc, wl_cfg->workload_argv);
 dl:
 	dlclose(thread_context->workload->workload_handler);
+dlopen:
+	free(thread_context->workload);
 	return ret;
 }
 
