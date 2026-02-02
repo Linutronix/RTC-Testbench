@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2025 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -669,31 +669,32 @@ int rta_threads_create(struct thread_context *thread_context)
 		thread_context->rx_security_context = NULL;
 	}
 
-	ret = create_rt_thread(&thread_context->tx_task_id, "RtaTxThread",
-			       rta_config->tx_thread_priority, rta_config->tx_thread_cpu,
+	ret = create_rt_thread(&thread_context->tx_task_id, rta_config->tx_thread_priority,
+			       rta_config->tx_thread_cpu,
 			       rta_config->xdp_enabled ? rta_xdp_tx_thread_routine
 						       : rta_tx_thread_routine,
-			       thread_context);
+			       thread_context, "RtaTxThread");
 	if (ret) {
 		fprintf(stderr, "Failed to create Rta Tx Thread!\n");
 		goto err_thread;
 	}
 
 	if (!rta_config->rx_mirror_enabled) {
-		ret = create_rt_thread(&thread_context->tx_gen_task_id, "RtaTxGenThread",
+		ret = create_rt_thread(&thread_context->tx_gen_task_id,
 				       rta_config->tx_thread_priority, rta_config->tx_thread_cpu,
-				       rta_tx_generation_thread_routine, thread_context);
+				       rta_tx_generation_thread_routine, thread_context,
+				       "RtaTxGenThread");
 		if (ret) {
 			fprintf(stderr, "Failed to create Rta TxGen Thread!\n");
 			goto err_thread_txgen;
 		}
 	}
 
-	ret = create_rt_thread(&thread_context->rx_task_id, "RtaRxThread",
-			       rta_config->rx_thread_priority, rta_config->rx_thread_cpu,
+	ret = create_rt_thread(&thread_context->rx_task_id, rta_config->rx_thread_priority,
+			       rta_config->rx_thread_cpu,
 			       rta_config->xdp_enabled ? rta_xdp_rx_thread_routine
 						       : rta_rx_thread_routine,
-			       thread_context);
+			       thread_context, "RtaRxThread");
 	if (ret) {
 		fprintf(stderr, "Failed to create Rta Rx Thread!\n");
 		goto err_thread_rx;

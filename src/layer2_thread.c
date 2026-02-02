@@ -669,7 +669,6 @@ struct thread_context *generic_l2_threads_create(void)
 {
 	struct traffic_class_config *l2_config;
 	struct thread_context *thread_context;
-	char thread_name[128];
 	int ret;
 
 	thread_context = calloc(1, sizeof(*thread_context));
@@ -740,25 +739,21 @@ struct thread_context *generic_l2_threads_create(void)
 		}
 	}
 
-	snprintf(thread_name, sizeof(thread_name), "%sTxThread", l2_config->name);
-
-	ret = create_rt_thread(&thread_context->tx_task_id, thread_name,
-			       l2_config->tx_thread_priority, l2_config->tx_thread_cpu,
+	ret = create_rt_thread(&thread_context->tx_task_id, l2_config->tx_thread_priority,
+			       l2_config->tx_thread_cpu,
 			       l2_config->xdp_enabled ? generic_l2_xdp_tx_thread_routine
 						      : generic_l2_tx_thread_routine,
-			       thread_context);
+			       thread_context, "%sTxThread", l2_config->name);
 	if (ret) {
 		fprintf(stderr, "Failed to create GenericL2 Tx Thread!\n");
 		goto err_thread;
 	}
 
-	snprintf(thread_name, sizeof(thread_name), "%sRxThread", l2_config->name);
-
-	ret = create_rt_thread(&thread_context->rx_task_id, thread_name,
-			       l2_config->rx_thread_priority, l2_config->rx_thread_cpu,
+	ret = create_rt_thread(&thread_context->rx_task_id, l2_config->rx_thread_priority,
+			       l2_config->rx_thread_cpu,
 			       l2_config->xdp_enabled ? generic_l2_xdp_rx_thread_routine
 						      : generic_l2_rx_thread_routine,
-			       thread_context);
+			       thread_context, "%sRxThread", l2_config->name);
 	if (ret) {
 		fprintf(stderr, "Failed to create GenericL2 Rx Thread!\n");
 		goto err_thread_rx;
@@ -781,10 +776,10 @@ struct thread_context *generic_l2_threads_create(void)
 			fprintf(stderr, "Failed to create workload context!\n");
 			goto err_thread_wl;
 		}
-		ret = create_rt_thread(
-			&thread_context->workload->workload_task_id, l2_config->workload_function,
-			l2_config->workload_thread_priority, l2_config->workload_thread_cpu,
-			&workload_thread_routine, thread_context);
+		ret = create_rt_thread(&thread_context->workload->workload_task_id,
+				       l2_config->workload_thread_priority,
+				       l2_config->workload_thread_cpu, &workload_thread_routine,
+				       thread_context, l2_config->workload_function);
 		if (ret) {
 			fprintf(stderr, "Failed to create Rtc Workload Thread!\n");
 			goto err_thread_wl;

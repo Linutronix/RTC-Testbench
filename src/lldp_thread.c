@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2025 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -489,27 +489,28 @@ int lldp_threads_create(struct thread_context *thread_context)
 		}
 	}
 
-	ret = create_rt_thread(&thread_context->tx_task_id, "LldpTxThread",
-			       lldp_config->tx_thread_priority, lldp_config->tx_thread_cpu,
-			       lldp_tx_thread_routine, thread_context);
+	ret = create_rt_thread(&thread_context->tx_task_id, lldp_config->tx_thread_priority,
+			       lldp_config->tx_thread_cpu, lldp_tx_thread_routine, thread_context,
+			       "LldpTxThread");
 	if (ret) {
 		fprintf(stderr, "Failed to create Lldp Tx Thread!\n");
 		goto err_thread;
 	}
 
 	if (!lldp_config->rx_mirror_enabled) {
-		ret = create_rt_thread(&thread_context->tx_gen_task_id, "LldpTxGenThread",
+		ret = create_rt_thread(&thread_context->tx_gen_task_id,
 				       lldp_config->tx_thread_priority, lldp_config->tx_thread_cpu,
-				       lldp_tx_generation_thread_routine, thread_context);
+				       lldp_tx_generation_thread_routine, thread_context,
+				       "LldpTxGenThread");
 		if (ret) {
 			fprintf(stderr, "Failed to create Lldp TxGen Thread!\n");
 			goto err_thread_txgen;
 		}
 	}
 
-	ret = create_rt_thread(&thread_context->rx_task_id, "LldpRxThread",
-			       lldp_config->rx_thread_priority, lldp_config->rx_thread_cpu,
-			       lldp_rx_thread_routine, thread_context);
+	ret = create_rt_thread(&thread_context->rx_task_id, lldp_config->rx_thread_priority,
+			       lldp_config->rx_thread_cpu, lldp_rx_thread_routine, thread_context,
+			       "LldpRxThread");
 	if (ret) {
 		fprintf(stderr, "Failed to create Lldp Rx Thread!\n");
 		goto err_thread_rx;

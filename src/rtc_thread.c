@@ -667,21 +667,21 @@ int rtc_threads_create(struct thread_context *thread_context)
 		thread_context->rx_security_context = NULL;
 	}
 
-	ret = create_rt_thread(&thread_context->tx_task_id, "RtcTxThread",
-			       rtc_config->tx_thread_priority, rtc_config->tx_thread_cpu,
+	ret = create_rt_thread(&thread_context->tx_task_id, rtc_config->tx_thread_priority,
+			       rtc_config->tx_thread_cpu,
 			       rtc_config->xdp_enabled ? rtc_xdp_tx_thread_routine
 						       : rtc_tx_thread_routine,
-			       thread_context);
+			       thread_context, "RtcTxThread");
 	if (ret) {
 		fprintf(stderr, "Failed to create Rtc Tx thread!\n");
 		goto err_thread_create1;
 	}
 
-	ret = create_rt_thread(&thread_context->rx_task_id, "RtcRxThread",
-			       rtc_config->rx_thread_priority, rtc_config->rx_thread_cpu,
+	ret = create_rt_thread(&thread_context->rx_task_id, rtc_config->rx_thread_priority,
+			       rtc_config->rx_thread_cpu,
 			       rtc_config->xdp_enabled ? rtc_xdp_rx_thread_routine
 						       : rtc_rx_thread_routine,
-			       thread_context);
+			       thread_context, "RtcRxThread");
 	if (ret) {
 		fprintf(stderr, "Failed to create Rtc Rx thread!\n");
 		goto err_thread_create2;
@@ -704,10 +704,10 @@ int rtc_threads_create(struct thread_context *thread_context)
 			fprintf(stderr, "Failed to create workload context!\n");
 			goto err_thread_wl;
 		}
-		ret = create_rt_thread(
-			&thread_context->workload->workload_task_id, rtc_config->workload_function,
-			rtc_config->workload_thread_priority, rtc_config->workload_thread_cpu,
-			&workload_thread_routine, thread_context);
+		ret = create_rt_thread(&thread_context->workload->workload_task_id,
+				       rtc_config->workload_thread_priority,
+				       rtc_config->workload_thread_cpu, &workload_thread_routine,
+				       thread_context, rtc_config->workload_function);
 		if (ret) {
 			fprintf(stderr, "Failed to create Rtc Workload Thread!\n");
 			goto err_thread_wl;

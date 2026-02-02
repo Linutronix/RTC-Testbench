@@ -2,7 +2,7 @@
 /*
  * Copyright (C) 2024 Intel Corporation.
  * Author Walfred Tedeschi <walfred.tedeschi@intel.com>
- * Copyright (C) 2025 Linutronix GmbH
+ * Copyright (C) 2025-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -153,9 +153,9 @@ struct log_mqtt_thread_context *log_mqtt_thread_create(void)
 	if (!mqtt_context)
 		return NULL;
 
-	ret = create_rt_thread(&mqtt_context->mqtt_log_task_id, "LoggerGraph",
-			       app_config.log_mqtt_thread_priority, app_config.log_mqtt_thread_cpu,
-			       log_mqtt_thread_routine, mqtt_context);
+	ret = create_rt_thread(&mqtt_context->mqtt_log_task_id, app_config.log_mqtt_thread_priority,
+			       app_config.log_mqtt_thread_cpu, log_mqtt_thread_routine,
+			       mqtt_context, "LoggerGraph");
 
 	if (ret)
 		goto err_thread;

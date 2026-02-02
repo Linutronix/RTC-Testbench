@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2025 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -477,27 +477,28 @@ int dcp_threads_create(struct thread_context *thread_context)
 		}
 	}
 
-	ret = create_rt_thread(&thread_context->tx_task_id, "DcpTxThread",
-			       dcp_config->tx_thread_priority, dcp_config->tx_thread_cpu,
-			       dcp_tx_thread_routine, thread_context);
+	ret = create_rt_thread(&thread_context->tx_task_id, dcp_config->tx_thread_priority,
+			       dcp_config->tx_thread_cpu, dcp_tx_thread_routine, thread_context,
+			       "DcpTxThread");
 	if (ret) {
 		fprintf(stderr, "Failed to create Dcp Tx Thread!\n");
 		goto err_thread;
 	}
 
 	if (!dcp_config->rx_mirror_enabled) {
-		ret = create_rt_thread(&thread_context->tx_gen_task_id, "DcpTxGenThread",
+		ret = create_rt_thread(&thread_context->tx_gen_task_id,
 				       dcp_config->tx_thread_priority, dcp_config->tx_thread_cpu,
-				       dcp_tx_generation_thread_routine, thread_context);
+				       dcp_tx_generation_thread_routine, thread_context,
+				       "DcpTxGenThread");
 		if (ret) {
 			fprintf(stderr, "Failed to create Dcp TxGen Thread!\n");
 			goto err_thread_txgen;
 		}
 	}
 
-	ret = create_rt_thread(&thread_context->rx_task_id, "DcpRxThread",
-			       dcp_config->rx_thread_priority, dcp_config->rx_thread_cpu,
-			       dcp_rx_thread_routine, thread_context);
+	ret = create_rt_thread(&thread_context->rx_task_id, dcp_config->rx_thread_priority,
+			       dcp_config->rx_thread_cpu, dcp_rx_thread_routine, thread_context,
+			       "DcpRxThread");
 	if (ret) {
 		fprintf(stderr, "Failed to create Dcp Rx Thread!\n");
 		goto err_thread_rx;

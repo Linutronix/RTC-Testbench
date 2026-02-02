@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2025 Linutronix GmbH
+ * Copyright (C) 2025-2026 Linutronix GmbH
  */
 
 #include <errno.h>
@@ -119,8 +119,9 @@ struct log_json_thread_context *log_json_thread_create(void)
 	}
 
 	/* Start dedicated JSON/UDP pubslishing thread */
-	ret = create_rt_thread(&ctx->pid, "LoggerJson", app_config.log_json_thread_priority,
-			       app_config.log_json_thread_cpu, log_json_publisher, ctx);
+	ret = create_rt_thread(&ctx->pid, app_config.log_json_thread_priority,
+			       app_config.log_json_thread_cpu, log_json_publisher, ctx,
+			       "LoggerJson");
 
 	if (ret) {
 		fprintf(stderr, "JSON: Failed to start JSON Logger thread!\n");

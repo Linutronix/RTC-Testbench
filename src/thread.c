@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020,2022 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
 #include <errno.h>
 #include <pthread.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,13 +16,19 @@
 #include "thread.h"
 #include "utils.h"
 
-int create_rt_thread(pthread_t *task_id, const char *thread_name, int thread_priority, int cpu_core,
-		     void *(*thread_routine)(void *), void *data)
+int create_rt_thread(pthread_t *task_id, int thread_priority, int cpu_core,
+		     void *(*thread_routine)(void *), void *data, const char *format, ...)
 {
 	struct sched_param param;
+	char thread_name[16]; /* TASK_COMM_LEN */
 	pthread_attr_t attr;
 	cpu_set_t cpus;
+	va_list args;
 	int ret;
+
+	va_start(args, format);
+	vsnprintf(thread_name, sizeof(thread_name), format, args);
+	va_end(args);
 
 	ret = pthread_attr_init(&attr);
 	if (ret) {
@@ -69,7 +76,11 @@ int create_rt_thread(pthread_t *task_id, const char *thread_name, int thread_pri
 		goto err;
 	}
 
-	pthread_setname_np(*task_id, thread_name);
+	ret = pthread_setname_np(*task_id, thread_name);
+	if (ret) {
+		pthread_error(ret, "pthread_setname_np() failed");
+		goto err;
+	}
 
 	return 0;
 

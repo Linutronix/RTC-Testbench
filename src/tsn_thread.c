@@ -611,7 +611,6 @@ static void *tsn_xdp_rx_thread_routine(void *data)
 int tsn_threads_create(struct thread_context *thread_context)
 {
 	const struct traffic_class_config *tsn_config = thread_context->conf;
-	char thread_name[128];
 	int ret;
 
 	if (thread_context->frame_type == TSN_HIGH_FRAME_TYPE &&
@@ -726,25 +725,21 @@ int tsn_threads_create(struct thread_context *thread_context)
 		thread_context->rx_security_context = NULL;
 	}
 
-	snprintf(thread_name, sizeof(thread_name), "%sTxThread", thread_context->traffic_class);
-
-	ret = create_rt_thread(&thread_context->tx_task_id, thread_name,
-			       tsn_config->tx_thread_priority, tsn_config->tx_thread_cpu,
+	ret = create_rt_thread(&thread_context->tx_task_id, tsn_config->tx_thread_priority,
+			       tsn_config->tx_thread_cpu,
 			       tsn_config->xdp_enabled ? tsn_xdp_tx_thread_routine
 						       : tsn_tx_thread_routine,
-			       thread_context);
+			       thread_context, "%sTxThread", thread_context->traffic_class);
 	if (ret) {
 		fprintf(stderr, "Failed to create Tsn Tx Thread!\n");
 		goto err_thread;
 	}
 
-	snprintf(thread_name, sizeof(thread_name), "%sRxThread", thread_context->traffic_class);
-
-	ret = create_rt_thread(&thread_context->rx_task_id, thread_name,
-			       tsn_config->rx_thread_priority, tsn_config->rx_thread_cpu,
+	ret = create_rt_thread(&thread_context->rx_task_id, tsn_config->rx_thread_priority,
+			       tsn_config->rx_thread_cpu,
 			       tsn_config->xdp_enabled ? tsn_xdp_rx_thread_routine
 						       : tsn_rx_thread_routine,
-			       thread_context);
+			       thread_context, "%sRxThread", thread_context->traffic_class);
 	if (ret) {
 		fprintf(stderr, "Failed to create Tsn Rx Thread!\n");
 		goto err_thread_rx;
@@ -767,10 +762,10 @@ int tsn_threads_create(struct thread_context *thread_context)
 			fprintf(stderr, "Failed to create workload context!\n");
 			goto err_thread_wl;
 		}
-		ret = create_rt_thread(
-			&thread_context->workload->workload_task_id, tsn_config->workload_function,
-			tsn_config->workload_thread_priority, tsn_config->workload_thread_cpu,
-			&workload_thread_routine, thread_context);
+		ret = create_rt_thread(&thread_context->workload->workload_task_id,
+				       tsn_config->workload_thread_priority,
+				       tsn_config->workload_thread_cpu, &workload_thread_routine,
+				       thread_context, tsn_config->workload_function);
 		if (ret) {
 			fprintf(stderr, "Failed to create Tsn Workload Thread!\n");
 			goto err_thread_wl;

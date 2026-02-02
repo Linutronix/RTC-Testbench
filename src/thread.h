@@ -95,8 +95,8 @@ enum pn_thread_type {
 	NUM_PN_THREAD_TYPES,
 };
 
-int create_rt_thread(pthread_t *task_id, const char *thread_name, int priority, int cpu_core,
-		     void *(*thread_routine)(void *), void *data);
+int create_rt_thread(pthread_t *task_id, int priority, int cpu_core,
+		     void *(*thread_routine)(void *), void *data, const char *format, ...);
 void init_mutex(pthread_mutex_t *mutex);
 void init_condition_variable(pthread_cond_t *cond_var);
 int link_pn_threads(struct thread_context *pn_threads);

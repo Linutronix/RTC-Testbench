@@ -285,8 +285,9 @@ struct log_thread_context *log_thread_create(void)
 	if (!log_context->file_handle)
 		goto err_fopen;
 
-	ret = create_rt_thread(&log_context->log_task_id, "Logger", app_config.log_thread_priority,
-			       app_config.log_thread_cpu, log_thread_routine, log_context);
+	ret = create_rt_thread(&log_context->log_task_id, app_config.log_thread_priority,
+			       app_config.log_thread_cpu, log_thread_routine, log_context,
+			       "Logger");
 	if (ret)
 		goto err_thread;
 

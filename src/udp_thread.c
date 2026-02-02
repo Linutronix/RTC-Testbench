@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2024 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -380,7 +380,6 @@ static void *udp_tx_generation_thread_routine(void *data)
 static int udp_threads_create(struct thread_context *thread_context)
 {
 	const struct traffic_class_config *udp_config = thread_context->conf;
-	char thread_name[128];
 	int ret;
 
 	if (thread_context->frame_type == UDP_HIGH_FRAME_TYPE &&
@@ -431,33 +430,28 @@ static int udp_threads_create(struct thread_context *thread_context)
 		}
 	}
 
-	snprintf(thread_name, sizeof(thread_name), "%sTxThread", thread_context->traffic_class);
-
-	ret = create_rt_thread(&thread_context->tx_task_id, thread_name,
-			       udp_config->tx_thread_priority, udp_config->tx_thread_cpu,
-			       udp_tx_thread_routine, thread_context);
+	ret = create_rt_thread(&thread_context->tx_task_id, udp_config->tx_thread_priority,
+			       udp_config->tx_thread_cpu, udp_tx_thread_routine, thread_context,
+			       "%sTxThread", thread_context->traffic_class);
 	if (ret) {
 		fprintf(stderr, "Failed to create Udp Tx Thread!\n");
 		goto err_thread;
 	}
 
-	snprintf(thread_name, sizeof(thread_name), "%sTxGenThread", thread_context->traffic_class);
-
 	if (!udp_config->rx_mirror_enabled) {
-		ret = create_rt_thread(&thread_context->tx_gen_task_id, "UdpLowTxGenThread",
+		ret = create_rt_thread(&thread_context->tx_gen_task_id,
 				       udp_config->tx_thread_priority, udp_config->tx_thread_cpu,
-				       udp_tx_generation_thread_routine, thread_context);
+				       udp_tx_generation_thread_routine, thread_context,
+				       "%sTxGenThread", thread_context->traffic_class);
 		if (ret) {
 			fprintf(stderr, "Failed to create Udp TxGen Thread!\n");
 			goto err_thread_txgen;
 		}
 	}
 
-	snprintf(thread_name, sizeof(thread_name), "%sRxThread", thread_context->traffic_class);
-
-	ret = create_rt_thread(&thread_context->rx_task_id, thread_name,
-			       udp_config->rx_thread_priority, udp_config->rx_thread_cpu,
-			       udp_rx_thread_routine, thread_context);
+	ret = create_rt_thread(&thread_context->rx_task_id, udp_config->rx_thread_priority,
+			       udp_config->rx_thread_cpu, udp_rx_thread_routine, thread_context,
+			       "%sRxThread", thread_context->traffic_class);
 	if (ret) {
 		fprintf(stderr, "Failed to create Udp Rx Thread!\n");
 		goto err_thread_rx;
