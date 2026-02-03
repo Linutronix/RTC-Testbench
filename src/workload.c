@@ -76,8 +76,15 @@ static void free_argv(int argc, char **argv)
 
 void *workload_thread_routine(void *data)
 {
-	struct thread_context *thread_context = data;
-	struct workload_config *wl_cfg = thread_context->workload;
+	struct workload_thread_context *ctx;
+	struct thread_context *thread_context;
+	struct workload_config *wl_cfg;
+	struct workload_thread *thread;
+
+	ctx = data;
+	thread_context = ctx->thread_context;
+	wl_cfg = thread_context->workload;
+	thread = &wl_cfg->threads[ctx->id];
 
 	/* Run until we are ready to stop. */
 	while (!thread_context->stop) {
@@ -88,30 +95,30 @@ void *workload_thread_routine(void *data)
 		timeout.tv_sec++;
 
 		/* Wait for workload to be run. Signaled by Rx threads. */
-		pthread_mutex_lock(&wl_cfg->workload_mutex);
-		ret = pthread_cond_timedwait(&wl_cfg->workload_cond, &wl_cfg->workload_mutex,
+		pthread_mutex_lock(&thread->workload_mutex);
+		ret = pthread_cond_timedwait(&thread->workload_cond, &thread->workload_mutex,
 					     &timeout);
-		pthread_mutex_unlock(&wl_cfg->workload_mutex);
+		pthread_mutex_unlock(&thread->workload_mutex);
 
 		/* In case of timeout, check !stop again. */
 		if (ret == ETIMEDOUT)
 			continue;
 
 		clock_gettime(app_config.application_clock_id, &start_ts);
-		ret = wl_cfg->workload_function(&wl_cfg->instances[0], wl_cfg->workload_argc,
+		ret = wl_cfg->workload_function(&thread->instance, wl_cfg->workload_argc,
 						wl_cfg->workload_argv);
 		if (ret)
 			log_message(LOG_LEVEL_WARNING,
 				    "Workload: Workload function returned error %d\n", ret);
 
 		/* workload_running is checked by Tx threads to indicate workload time overruns. */
-		pthread_mutex_lock(&wl_cfg->workload_mutex);
-		wl_cfg->workload_running = 0;
-		pthread_mutex_unlock(&wl_cfg->workload_mutex);
+		pthread_mutex_lock(&thread->workload_mutex);
+		thread->workload_running = 0;
+		pthread_mutex_unlock(&thread->workload_mutex);
 
-		stat_frame_workload(wl_cfg->associated_frame, wl_cfg->workload_sequence_counter,
-				    start_ts);
-		wl_cfg->workload_sequence_counter++;
+		stat_frame_workload(ctx->id, wl_cfg->associated_frame,
+				    thread->workload_sequence_counter, start_ts);
+		thread->workload_sequence_counter++;
 	}
 
 	return NULL;
@@ -122,7 +129,7 @@ int workload_context_init(struct thread_context *thread_context)
 	struct traffic_class_config *conf = thread_context->conf;
 	struct workload_config *wl_cfg;
 	char *error;
-	int ret;
+	int ret, i;
 
 	if (!conf->rx_workload_enabled)
 		return 0;
@@ -191,48 +198,63 @@ int workload_context_init(struct thread_context *thread_context)
 			goto argv;
 	}
 
-	init_mutex(&wl_cfg->workload_mutex);
-	init_condition_variable(&wl_cfg->workload_cond);
-
 	wl_cfg->associated_frame = thread_context->frame_type;
 
-	/* Initialize workload instances */
-	for (int i = 0; i < conf->workload_thread_cpus_num; i++) {
-		struct workload_instance *instance = &wl_cfg->instances[i];
+	for (i = 0; i < conf->workload_thread_cpus_num; i++) {
+		struct workload_thread *thread = &wl_cfg->threads[i];
+		struct workload_instance *instance = &thread->instance;
+		struct workload_thread_context *ctx = &wl_cfg->ctx[i];
 
+		/* Initialize workload instances */
 		instance->id = i;
 		instance->cpu = conf->workload_thread_cpus[i];
 		instance->priv = NULL;
-	}
 
-	/* Call the setup function if it exists */
-	if (wl_cfg->workload_setup_function) {
-		ret = wl_cfg->workload_setup_function(&wl_cfg->instances[0],
-						      wl_cfg->workload_setup_argc,
-						      wl_cfg->workload_setup_argv);
-		if (ret) {
-			fprintf(stderr,
-				"Workload setup function '%s' return with failure code: %d\n",
-				conf->workload_setup_function, ret);
-			goto setup;
+		init_mutex(&thread->workload_mutex);
+		init_condition_variable(&thread->workload_cond);
+
+		ctx->thread_context = thread_context;
+		ctx->id = i;
+
+		/* Call the setup function if it exists */
+		if (wl_cfg->workload_setup_function) {
+			ret = wl_cfg->workload_setup_function(instance, wl_cfg->workload_setup_argc,
+							      wl_cfg->workload_setup_argv);
+			if (ret) {
+				fprintf(stderr,
+					"Workload setup function '%s' return with failure code: "
+					"%d\n",
+					conf->workload_setup_function, ret);
+				goto setup;
+			}
 		}
 	}
 
-	/* Create and start workload thread */
-	ret = create_rt_thread(&wl_cfg->workload_task_id, conf->workload_thread_priority,
-			       conf->workload_thread_cpus[0], &workload_thread_routine,
-			       thread_context, conf->workload_function);
-	if (ret) {
-		fprintf(stderr, "Failed to create Workload Thread!\n");
-		goto thread;
+	/* Create and start threads */
+	for (i = 0; i < conf->workload_thread_cpus_num; i++) {
+		struct workload_thread *thread = &wl_cfg->threads[i];
+		struct workload_thread_context *ctx = &wl_cfg->ctx[i];
+
+		ret = create_rt_thread(&thread->workload_task_id, conf->workload_thread_priority,
+				       conf->workload_thread_cpus[i], &workload_thread_routine, ctx,
+				       "WorkloadTask%d", i);
+		if (ret) {
+			fprintf(stderr, "Failed to create Workload Thread for CPU %d!\n",
+				conf->workload_thread_cpus[i]);
+			goto thread;
+		}
 	}
 
 	return 0;
 
 thread:
-	if (wl_cfg->workload_teardown_function)
-		wl_cfg->workload_teardown_function(&wl_cfg->instances[0]);
+	thread_context->stop = 1;
+	for (int j = i - 1; j >= 0; --j)
+		pthread_join(wl_cfg->threads[j].workload_task_id, NULL);
 setup:
+	if (wl_cfg->workload_teardown_function)
+		for (int j = i - 1; j >= 0; --j)
+			wl_cfg->workload_teardown_function(&wl_cfg->threads[j].instance);
 	free_argv(wl_cfg->workload_setup_argc, wl_cfg->workload_setup_argv);
 argv:
 	free_argv(wl_cfg->workload_argc, wl_cfg->workload_argv);
@@ -259,7 +281,8 @@ void workload_thread_free(struct thread_context *thread_context)
 	wl_cfg = thread_context->workload;
 
 	if (wl_cfg->workload_teardown_function)
-		wl_cfg->workload_teardown_function(&wl_cfg->instances[0]);
+		for (int i = 0; i < conf->workload_thread_cpus_num; i++)
+			wl_cfg->workload_teardown_function(&wl_cfg->threads[i].instance);
 
 	free_argv(wl_cfg->workload_argc, wl_cfg->workload_argv);
 	free_argv(wl_cfg->workload_setup_argc, wl_cfg->workload_setup_argv);
@@ -284,7 +307,8 @@ void workload_thread_wait_for_finish(struct thread_context *thread_context)
 
 	wl_cfg = thread_context->workload;
 
-	pthread_join(wl_cfg->workload_task_id, NULL);
+	for (int i = 0; i < conf->workload_thread_cpus_num; i++)
+		pthread_join(wl_cfg->threads[i].workload_task_id, NULL);
 }
 
 void workload_check_finished(struct thread_context *thread_context)
@@ -296,12 +320,17 @@ void workload_check_finished(struct thread_context *thread_context)
 		return;
 
 	/* Increment workload outlier count if workload did not finish. */
-	pthread_mutex_lock(&wl_cfg->workload_mutex);
-	if (wl_cfg->workload_running) {
-		stat_inc_workload_outlier(thread_context->frame_type);
-		log_message(LOG_LEVEL_DEBUG, "Workload did not finish!\n");
+	for (int i = 0; i < conf->workload_thread_cpus_num; i++) {
+		struct workload_thread *thread = &wl_cfg->threads[i];
+
+		pthread_mutex_lock(&thread->workload_mutex);
+		if (thread->workload_running) {
+			stat_inc_workload_outlier(i, thread_context->frame_type);
+			log_message(LOG_LEVEL_DEBUG, "Workload for CPU %d did not finish!\n",
+				    conf->workload_thread_cpus[i]);
+		}
+		pthread_mutex_unlock(&thread->workload_mutex);
 	}
-	pthread_mutex_unlock(&wl_cfg->workload_mutex);
 }
 
 void workload_signal(struct thread_context *thread_context, unsigned int received)
@@ -314,9 +343,13 @@ void workload_signal(struct thread_context *thread_context, unsigned int receive
 
 	/* Run workload if we received frames or prewarm is enabled */
 	if (received || conf->rx_workload_prewarm) {
-		pthread_mutex_lock(&wl_cfg->workload_mutex);
-		wl_cfg->workload_running = 1;
-		pthread_cond_signal(&wl_cfg->workload_cond);
-		pthread_mutex_unlock(&wl_cfg->workload_mutex);
+		for (int i = 0; i < conf->workload_thread_cpus_num; i++) {
+			struct workload_thread *thread = &wl_cfg->threads[i];
+
+			pthread_mutex_lock(&thread->workload_mutex);
+			thread->workload_running = 1;
+			pthread_cond_signal(&thread->workload_cond);
+			pthread_mutex_unlock(&thread->workload_mutex);
+		}
 	}
 }

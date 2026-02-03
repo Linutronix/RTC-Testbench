@@ -147,8 +147,9 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 void stat_update(void);
 void stat_get_global_stats(struct statistics *stats, size_t len);
 void stat_get_stats_per_period(struct statistics *stats, size_t len);
-void stat_frame_workload(enum stat_frame_type, uint64_t cycle_number, struct timespec start_ts);
-void stat_inc_workload_outlier(enum stat_frame_type frame_type);
+void stat_frame_workload(int id, enum stat_frame_type, uint64_t cycle_number,
+			 struct timespec start_ts);
+void stat_inc_workload_outlier(int id, enum stat_frame_type frame_type);
 void stat_frame_sent_latency(enum stat_frame_type frame_type, uint64_t seq);
 void stat_proc_first_latency(enum stat_frame_type frame_type, uint64_t cycle_number,
 			     uint64_t tx_hw_timestamp);

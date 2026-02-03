@@ -354,10 +354,11 @@ static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
 	stat_per_period->frames_sent++;
 }
 
-static void stat_frame_workload_per_period(enum stat_frame_type frame_type, uint64_t workload_time)
+static void stat_frame_workload_per_period(int id, enum stat_frame_type frame_type,
+					   uint64_t workload_time)
 {
 	struct workload_statistics *stat_per_period =
-		&statistics_per_period[frame_type].workload[0];
+		&statistics_per_period[frame_type].workload[id];
 
 	if (stat_per_period->rx_workload_count >
 	    app_config.classes[frame_type].rx_workload_skip_count) {
@@ -409,7 +410,8 @@ static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
 {
 }
 
-static void stat_frame_workload_per_period(enum stat_frame_type frame_type, uint64_t workload_time)
+static void stat_frame_workload_per_period(int id, enum stat_frame_type frame_type,
+					   uint64_t workload_time)
 {
 }
 #ifdef TX_TIMESTAMP
@@ -755,10 +757,10 @@ void stat_proc_batch_latency(enum stat_frame_type frame_type, uint64_t cycle_num
 }
 #endif
 
-void stat_frame_workload(enum stat_frame_type frame_type, uint64_t cycle_number,
+void stat_frame_workload(int id, enum stat_frame_type frame_type, uint64_t cycle_number,
 			 struct timespec start_ts)
 {
-	struct workload_statistics *stat = &global_statistics[frame_type].workload[0];
+	struct workload_statistics *stat = &global_statistics[frame_type].workload[id];
 	uint64_t workload_time = 0, curr_time, start_time;
 	struct timespec clk_time = {};
 
@@ -781,12 +783,12 @@ void stat_frame_workload(enum stat_frame_type frame_type, uint64_t cycle_number,
 	stat->rx_workload_avg = stat->rx_workload_sum / (double)stat->rx_workload_count;
 
 	/* Update stats per collection interval */
-	stat_frame_workload_per_period(frame_type, workload_time);
+	stat_frame_workload_per_period(id, frame_type, workload_time);
 }
 
-void stat_inc_workload_outlier(enum stat_frame_type frame_type)
+void stat_inc_workload_outlier(int id, enum stat_frame_type frame_type)
 {
-	struct workload_statistics *stat = &global_statistics[frame_type].workload[0];
+	struct workload_statistics *stat = &global_statistics[frame_type].workload[id];
 
 	if (stat->rx_workload_count > app_config.classes[frame_type].rx_workload_skip_count)
 		stat->rx_workload_outliers++;
