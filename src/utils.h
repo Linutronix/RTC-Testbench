@@ -162,4 +162,22 @@ static inline void set_sequence_counter(unsigned char *frame_data, uint32_t meta
 
 uint32_t get_meta_data_offset(enum stat_frame_type frame_type, enum security_mode security_mode);
 
+/* snprintf */
+static inline int snprintf_err_handling(char **buffer, size_t *len, int ret)
+{
+	/* Error? */
+	if (ret < 0)
+		return -EINVAL;
+
+	/* Buffer too small? */
+	if (ret >= *len)
+		return -EINVAL;
+
+	/* All good */
+	*buffer += ret;
+	*len -= ret;
+
+	return 0;
+}
+
 #endif /* _UTILS_H_ */

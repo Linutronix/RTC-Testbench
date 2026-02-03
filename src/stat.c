@@ -789,30 +789,13 @@ void stat_inc_workload_outlier(enum stat_frame_type frame_type)
 	stat->rx_workload_outliers++;
 }
 
-static int json_err_handling(char **buffer, size_t *len, int ret)
-{
-	/* Error? */
-	if (ret < 0)
-		return -EINVAL;
-
-	/* Buffer too small? */
-	if (ret >= *len)
-		return -EINVAL;
-
-	/* All good */
-	*buffer += ret;
-	*len -= ret;
-
-	return 0;
-}
-
 static int append_jlog_u64(char **buffer, size_t *len, const char *stat, uint64_t value)
 {
 	int ret;
 
 	ret = snprintf(*buffer, *len, "\"%s\": %" PRIu64 ",\n", stat, value);
 
-	return json_err_handling(buffer, len, ret);
+	return snprintf_err_handling(buffer, len, ret);
 }
 
 static int last_jlog_u64(char **buffer, size_t *len, const char *stat, uint64_t value)
@@ -821,7 +804,7 @@ static int last_jlog_u64(char **buffer, size_t *len, const char *stat, uint64_t 
 
 	ret = snprintf(*buffer, *len, "\"%s\": %" PRIu64 "\n", stat, value);
 
-	return json_err_handling(buffer, len, ret);
+	return snprintf_err_handling(buffer, len, ret);
 }
 
 static int append_jlog_float(char **buffer, size_t *len, const char *stat, double value)
@@ -830,7 +813,7 @@ static int append_jlog_float(char **buffer, size_t *len, const char *stat, doubl
 
 	ret = snprintf(*buffer, *len, "\"%s\": %lf,\n", stat, value);
 
-	return json_err_handling(buffer, len, ret);
+	return snprintf_err_handling(buffer, len, ret);
 }
 
 int stat_to_json(char *json, size_t len, const struct statistics *stat, const char *tc,
@@ -847,7 +830,7 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 		       "{\n"
 		       "\"TCName\" : \"%s\",\n",
 		       stat->time_stamp, measurement, tc);
-	ret = json_err_handling(&json, &len, ret);
+	ret = snprintf_err_handling(&json, &len, ret);
 	if (ret)
 		return ret;
 
@@ -1007,5 +990,5 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 	/* JSON footer */
 	ret = snprintf(json, len, "}\n}\n}\n");
 
-	return json_err_handling(&json, &len, ret);
+	return snprintf_err_handling(&json, &len, ret);
 }
