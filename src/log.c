@@ -108,97 +108,182 @@ void log_message(enum log_level level, const char *format, ...)
 	ring_buffer_add(global_log_ring_buffer, buffer, written);
 }
 
-static void log_add_traffic_class(const char *name, enum stat_frame_type frame_type, char **buffer,
-				  size_t *length)
+static int log_add_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
+			 size_t *length)
 {
 	const struct statistics *stat = &global_statistics[frame_type];
-	int written;
+	int ret;
 
-	written = snprintf(
-		*buffer, *length,
-		"%sSent=%" PRIu64 " | %sReceived=%" PRIu64 " | %sRttMin=%" PRIu64
-		" [us] | %sRttMax=%" PRIu64 " [us] | %sRttAvg=%lf [us] | %sOnewayMin=%" PRIu64
-		" [us] | %sOnewayMax=%" PRIu64 " [us] | %sOnewayAvg=%lf [us] | ",
-		name, stat->frames_sent, name, stat->frames_received, name, stat->round_trip_min,
-		name, stat->round_trip_max, name, stat->round_trip_avg, name, stat->oneway_min,
-		name, stat->oneway_max, name, stat->oneway_avg);
+	ret = snprintf(*buffer, *length,
+		       "%sSent=%" PRIu64 " | %sReceived=%" PRIu64 " | %sRttMin=%" PRIu64
+		       " [us] | %sRttMax=%" PRIu64
+		       " [us] | %sRttAvg=%lf [us] | %sOnewayMin=%" PRIu64
+		       " [us] | %sOnewayMax=%" PRIu64 " [us] | %sOnewayAvg=%lf [us] | ",
+		       name, stat->frames_sent, name, stat->frames_received, name,
+		       stat->round_trip_min, name, stat->round_trip_max, name, stat->round_trip_avg,
+		       name, stat->oneway_min, name, stat->oneway_max, name, stat->oneway_avg);
 
-	*buffer += written;
-	*length -= written;
+	return snprintf_err_handling(buffer, length, ret);
+}
+
+static int log_add_proc_first_stats(const char *name, enum stat_frame_type frame_type,
+				    char **buffer, size_t *length)
+{
+	const struct statistics *stat = &global_statistics[frame_type];
+	int ret;
 
 	if (app_config.classes[frame_type].tx_hwtstamp_enabled && config_have_rx_timestamp() &&
 	    app_config.classes[frame_type].xdp_enabled && stat->proc_first_count > 0) {
-		written = snprintf(*buffer, *length,
-				   "%sProcFirstMin=%" PRIu64 " [us] | %sProcFirstMax=%" PRIu64
-				   " [us] | %sProcFirstAvg=%lf [us] | "
-				   "%sProcFirstOutliers=%" PRIu64 " | ",
-				   name, stat->proc_first_min, name, stat->proc_first_max, name,
-				   stat->proc_first_avg, name, stat->proc_first_outliers);
-		*buffer += written;
-		*length -= written;
+		ret = snprintf(*buffer, *length,
+			       "%sProcFirstMin=%" PRIu64 " [us] | %sProcFirstMax=%" PRIu64
+			       " [us] | %sProcFirstAvg=%lf [us] | "
+			       "%sProcFirstOutliers=%" PRIu64 " | ",
+			       name, stat->proc_first_min, name, stat->proc_first_max, name,
+			       stat->proc_first_avg, name, stat->proc_first_outliers);
+		return snprintf_err_handling(buffer, length, ret);
 	}
+
+	return 0;
+}
+
+static int log_add_proc_batch_stats(const char *name, enum stat_frame_type frame_type,
+				    char **buffer, size_t *length)
+{
+	const struct statistics *stat = &global_statistics[frame_type];
+	int ret;
 
 	if (app_config.classes[frame_type].tx_hwtstamp_enabled && config_have_rx_timestamp() &&
 	    app_config.classes[frame_type].xdp_enabled && stat->proc_batch_count > 0) {
-		written = snprintf(*buffer, *length,
-				   "%sProcBatchMin=%" PRIu64 " [us] | %sProcBatchMax=%" PRIu64
-				   " [us] | %sProcBatchAvg=%lf [us] | "
-				   "%sProcBatchOutliers=%" PRIu64 " | ",
-				   name, stat->proc_batch_min, name, stat->proc_batch_max, name,
-				   stat->proc_batch_avg, name, stat->proc_batch_outliers);
-		*buffer += written;
-		*length -= written;
+		ret = snprintf(*buffer, *length,
+			       "%sProcBatchMin=%" PRIu64 " [us] | %sProcBatchMax=%" PRIu64
+			       " [us] | %sProcBatchAvg=%lf [us] | "
+			       "%sProcBatchOutliers=%" PRIu64 " | ",
+			       name, stat->proc_batch_min, name, stat->proc_batch_max, name,
+			       stat->proc_batch_avg, name, stat->proc_batch_outliers);
+
+		return snprintf_err_handling(buffer, length, ret);
 	}
+
+	return 0;
+}
+
+static int log_add_xdp_rx_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
+				size_t *length)
+{
+	const struct statistics *stat = &global_statistics[frame_type];
+	int ret;
 
 	if (config_have_rx_timestamp() && app_config.classes[frame_type].xdp_enabled) {
-		written = snprintf(*buffer, *length,
-				   "%sRxMin=%" PRIu64 " [us] | %sRxMax=%" PRIu64
-				   " [us] | %sRxAvg=%lf [us] | "
-				   "%sRxHw2XdpMin=%" PRIu64 " [us] | %sRxHw2XdpMax=%" PRIu64
-				   " [us] | %sRxHw2XdpAvg=%lf [us] | "
-				   "%sRxXdp2AppMin=%" PRIu64 " [us] | %sRxXdp2AppMax=%" PRIu64
-				   " [us] | %sRxXdp2AppAvg=%lf [us] | ",
-				   name, stat->rx_min, name, stat->rx_max, name, stat->rx_avg, name,
-				   stat->rx_hw2xdp_min, name, stat->rx_hw2xdp_max, name,
-				   stat->rx_hw2xdp_avg, name, stat->rx_xdp2app_min, name,
-				   stat->rx_xdp2app_max, name, stat->rx_xdp2app_avg);
+		ret = snprintf(*buffer, *length,
+			       "%sRxMin=%" PRIu64 " [us] | %sRxMax=%" PRIu64
+			       " [us] | %sRxAvg=%lf [us] | "
+			       "%sRxHw2XdpMin=%" PRIu64 " [us] | %sRxHw2XdpMax=%" PRIu64
+			       " [us] | %sRxHw2XdpAvg=%lf [us] | "
+			       "%sRxXdp2AppMin=%" PRIu64 " [us] | %sRxXdp2AppMax=%" PRIu64
+			       " [us] | %sRxXdp2AppAvg=%lf [us] | ",
+			       name, stat->rx_min, name, stat->rx_max, name, stat->rx_avg, name,
+			       stat->rx_hw2xdp_min, name, stat->rx_hw2xdp_max, name,
+			       stat->rx_hw2xdp_avg, name, stat->rx_xdp2app_min, name,
+			       stat->rx_xdp2app_max, name, stat->rx_xdp2app_avg);
 
-		*buffer += written;
-		*length -= written;
+		return snprintf_err_handling(buffer, length, ret);
 	}
+
+	return 0;
+}
+
+static int log_add_xdp_tx_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
+				size_t *length)
+{
+	const struct statistics *stat = &global_statistics[frame_type];
+	int ret;
 
 	if (app_config.classes[frame_type].tx_hwtstamp_enabled &&
 	    app_config.classes[frame_type].xdp_enabled) {
-		written =
-			snprintf(*buffer, *length,
-				 "%sTxMin=%" PRIu64 " [us] | %sTxMax=%" PRIu64
-				 " [us] | %sTxAvg=%lf [us] | %sTxHwTimestampMissing=%" PRIu64 " | ",
-				 name, stat->tx_min, name, stat->tx_max, name, stat->tx_avg, name,
-				 stat->tx_hw_timestamp_missing);
-		*buffer += written;
-		*length -= written;
+		ret = snprintf(*buffer, *length,
+			       "%sTxMin=%" PRIu64 " [us] | %sTxMax=%" PRIu64
+			       " [us] | %sTxAvg=%lf [us] | %sTxHwTimestampMissing=%" PRIu64 " | ",
+			       name, stat->tx_min, name, stat->tx_max, name, stat->tx_avg, name,
+			       stat->tx_hw_timestamp_missing);
+
+		return snprintf_err_handling(buffer, length, ret);
 	}
+
+	return 0;
+}
+
+static int log_add_outlier_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
+				 size_t *length)
+{
+	const struct statistics *stat = &global_statistics[frame_type];
+	int ret;
 
 	if (stat_frame_type_is_real_time(frame_type)) {
-		written = snprintf(*buffer, *length,
-				   "%sRttOutliers=%" PRIu64 " | %sOnewayOutliers=%" PRIu64 " | ",
-				   name, stat->round_trip_outliers, name, stat->oneway_outliers);
-		*buffer += written;
-		*length -= written;
+		ret = snprintf(*buffer, *length,
+			       "%sRttOutliers=%" PRIu64 " | %sOnewayOutliers=%" PRIu64 " | ", name,
+			       stat->round_trip_outliers, name, stat->oneway_outliers);
+
+		return snprintf_err_handling(buffer, length, ret);
 	}
+
+	return 0;
+}
+
+static int log_add_workload_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
+				  size_t *length)
+{
+	const struct statistics *stat = &global_statistics[frame_type];
+	int ret;
 
 	if (app_config.classes[frame_type].rx_workload_enabled) {
-		written = snprintf(*buffer, *length,
-				   "%sRxWorkloadMin=%" PRIu64 " [us] | "
-				   "%sRxWorkloadMax=%" PRIu64 " [us] | "
-				   "%sRxWorkloadAvg=%lf [us] | "
-				   "%sRxWorkloadOutliers=%" PRIu64 " | ",
-				   name, stat->rx_workload_min, name, stat->rx_workload_max, name,
-				   stat->rx_workload_avg, name, stat->rx_workload_outliers);
+		ret = snprintf(*buffer, *length,
+			       "%sRxWorkloadMin=%" PRIu64 " [us] | "
+			       "%sRxWorkloadMax=%" PRIu64 " [us] | "
+			       "%sRxWorkloadAvg=%lf [us] | "
+			       "%sRxWorkloadOutliers=%" PRIu64 " | ",
+			       name, stat->rx_workload_min, name, stat->rx_workload_max, name,
+			       stat->rx_workload_avg, name, stat->rx_workload_outliers);
 
-		*buffer += written;
-		*length -= written;
+		return snprintf_err_handling(buffer, length, ret);
 	}
+
+	return 0;
+}
+
+static int log_add_traffic_class(const char *name, enum stat_frame_type frame_type, char **buffer,
+				 size_t *length)
+{
+	int ret;
+
+	ret = log_add_stats(name, frame_type, buffer, length);
+	if (ret)
+		return ret;
+
+	ret = log_add_proc_first_stats(name, frame_type, buffer, length);
+	if (ret)
+		return ret;
+
+	ret = log_add_proc_batch_stats(name, frame_type, buffer, length);
+	if (ret)
+		return ret;
+
+	ret = log_add_xdp_rx_stats(name, frame_type, buffer, length);
+	if (ret)
+		return ret;
+
+	ret = log_add_xdp_tx_stats(name, frame_type, buffer, length);
+	if (ret)
+		return ret;
+
+	ret = log_add_outlier_stats(name, frame_type, buffer, length);
+	if (ret)
+		return ret;
+
+	ret = log_add_workload_stats(name, frame_type, buffer, length);
+	if (ret)
+		return ret;
+
+	return 0;
 }
 
 static void *log_thread_routine(void *data)
@@ -221,6 +306,7 @@ static void *log_thread_routine(void *data)
 	while (!log_context->stop) {
 		size_t log_data_len, stat_message_length;
 		char stat_message[4096] = {}, *p;
+		bool success = true;
 		int i;
 
 		/* Wait until next period */
@@ -236,7 +322,7 @@ static void *log_thread_routine(void *data)
 
 		/* Log statistics once per logging period. */
 		p = stat_message;
-		stat_message_length = sizeof(stat_message) - 1;
+		stat_message_length = sizeof(stat_message);
 
 		for (i = 0; i < NUM_FRAME_TYPES; i++) {
 			if (config_is_traffic_class_active(stat_frame_type_to_string(i))) {
@@ -245,11 +331,14 @@ static void *log_thread_routine(void *data)
 						? app_config.classes[GENERICL2_FRAME_TYPE].name
 						: stat_frame_type_to_string(i);
 
-				log_add_traffic_class(name, i, &p, &stat_message_length);
+				ret = log_add_traffic_class(name, i, &p, &stat_message_length);
+				if (ret)
+					success = false;
 			}
 		}
 
-		log_message(LOG_LEVEL_INFO, "%s\n", stat_message);
+		if (success)
+			log_message(LOG_LEVEL_INFO, "%s\n", stat_message);
 
 		/* Fetch data */
 		ring_buffer_fetch(log_context->log_ring_buffer, log_context->log_data,
