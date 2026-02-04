@@ -233,9 +233,15 @@ static int log_add_workload_stats(const char *name, enum stat_frame_type frame_t
 				  size_t *length)
 {
 	const struct statistics *stat = &global_statistics[frame_type];
-	int ret;
+	int ret, num;
 
-	if (app_config.classes[frame_type].rx_workload_enabled) {
+	if (!app_config.classes[frame_type].rx_workload_enabled)
+		return 0;
+
+	num = app_config.classes[frame_type].workload_thread_cpus_num;
+
+	/* Keep old statistic names if num == 1. */
+	if (num == 1) {
 		ret = snprintf(*buffer, *length,
 			       "%sRxWorkloadMin=%" PRIu64 " [us] | "
 			       "%sRxWorkloadMax=%" PRIu64 " [us] | "
@@ -247,6 +253,23 @@ static int log_add_workload_stats(const char *name, enum stat_frame_type frame_t
 			       stat->workload[0].rx_workload_outliers);
 
 		return snprintf_err_handling(buffer, length, ret);
+	}
+
+	/* If num > 1 add the id into statistic names. */
+	for (int i = 0; i < num; i++) {
+		const struct workload_statistics *wl = &stat->workload[i];
+
+		ret = snprintf(*buffer, *length,
+			       "%sRxWorkload%dMin=%" PRIu64 " [us] | "
+			       "%sRxWorkload%dMax=%" PRIu64 " [us] | "
+			       "%sRxWorkload%dAvg=%lf [us] | "
+			       "%sRxWorkload%dOutliers=%" PRIu64 " | ",
+			       name, i, wl->rx_workload_min, name, i, wl->rx_workload_max, name, i,
+			       wl->rx_workload_avg, name, i, wl->rx_workload_outliers);
+
+		ret = snprintf_err_handling(buffer, length, ret);
+		if (ret)
+			return ret;
 	}
 
 	return 0;
