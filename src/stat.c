@@ -996,7 +996,7 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 	if (ret)
 		return ret;
 
-	ret = last_jlog_u64(&json, &len, "OnewayOutliers", stat->oneway_outliers);
+	ret = append_jlog_u64(&json, &len, "OnewayOutliers", stat->oneway_outliers);
 	if (ret)
 		return ret;
 
