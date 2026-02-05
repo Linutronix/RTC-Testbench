@@ -824,7 +824,7 @@ static int last_jlog_u64(char **buffer, size_t *len, const char *stat, uint64_t 
 	return json_err_handling(buffer, len, ret);
 }
 
-static int append_jlog_float(char **buffer, size_t *len, const char *stat, float value)
+static int append_jlog_float(char **buffer, size_t *len, const char *stat, double value)
 {
 	int ret;
 
