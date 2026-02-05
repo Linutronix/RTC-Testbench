@@ -24,13 +24,15 @@
 #include "utils.h"
 
 static void log_json_add_traffic_class(struct log_json_thread_context *ctx,
-				       const struct statistics *stat, const char *tc)
+				       enum stat_frame_type frame_type,
+				       const struct statistics *stat)
 {
+	const char *tc = stat_frame_type_to_string(frame_type);
 	char stat_message[4096];
 	int ret;
 
 	/* Convert stats to json */
-	ret = stat_to_json(stat_message, sizeof(stat_message), stat, tc,
+	ret = stat_to_json(stat_message, sizeof(stat_message), frame_type, stat, tc,
 			   app_config.log_json_measurement_name);
 	if (ret) {
 		log_message(LOG_LEVEL_DEBUG, "JsonTx: Failed to compose JSON message: %s\n",
@@ -89,8 +91,7 @@ void *log_json_publisher(void *data)
 		/* Publish via UDP */
 		for (int i = 0; i < NUM_FRAME_TYPES; i++) {
 			if (config_is_traffic_class_active(stat_frame_type_to_string(i)))
-				log_json_add_traffic_class(ctx, &stats[i],
-							   stat_frame_type_to_string(i));
+				log_json_add_traffic_class(ctx, i, &stats[i]);
 		}
 	}
 

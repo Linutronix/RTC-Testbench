@@ -821,8 +821,66 @@ static int append_jlog_float(char **buffer, size_t *len, const char *stat, doubl
 	return snprintf_err_handling(buffer, len, ret);
 }
 
-int stat_to_json(char *json, size_t len, const struct statistics *stat, const char *tc,
-		 const char *measurement)
+static int append_jlog_workload_stats(char **buffer, size_t *len, enum stat_frame_type frame_type,
+				      const struct statistics *stat)
+{
+	int ret, num;
+
+	num = app_config.classes[frame_type].workload_thread_cpus_num;
+
+	if (num == 1) {
+		ret = append_jlog_u64(buffer, len, "RxWorkloadMin",
+				      stat->workload[0].rx_workload_min);
+		if (ret)
+			return ret;
+
+		ret = append_jlog_u64(buffer, len, "RxWorkloadMax",
+				      stat->workload[0].rx_workload_max);
+		if (ret)
+			return ret;
+
+		ret = append_jlog_float(buffer, len, "RxWorkloadAv",
+					stat->workload[0].rx_workload_avg);
+		if (ret)
+			return ret;
+
+		return append_jlog_u64(buffer, len, "RxWorkloadOutliers",
+				       stat->workload[0].rx_workload_outliers);
+	}
+
+	for (int i = 0; i < num; i++) {
+		const struct workload_statistics *wl = &stat->workload[i];
+
+		/* Encode workload id into statistics */
+		ret = snprintf(*buffer, *len, "\"RxWorkload%dMin\": %" PRIu64 ",\n", i,
+			       wl->rx_workload_min);
+		ret = snprintf_err_handling(buffer, len, ret);
+		if (ret)
+			return ret;
+
+		ret = snprintf(*buffer, *len, "\"RxWorkload%dMax\": %" PRIu64 ",\n", i,
+			       wl->rx_workload_max);
+		ret = snprintf_err_handling(buffer, len, ret);
+		if (ret)
+			return ret;
+
+		ret = snprintf(*buffer, *len, "\"RxWorkload%dAv\": %lf,\n", i, wl->rx_workload_avg);
+		ret = snprintf_err_handling(buffer, len, ret);
+		if (ret)
+			return ret;
+
+		ret = snprintf(*buffer, *len, "\"RxWorkload%dOutliers\": %" PRIu64 ",\n", i,
+			       wl->rx_workload_outliers);
+		ret = snprintf_err_handling(buffer, len, ret);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+int stat_to_json(char *json, size_t len, enum stat_frame_type frame_type,
+		 const struct statistics *stat, const char *tc, const char *measurement)
 {
 	int ret;
 
@@ -940,15 +998,7 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 	if (ret)
 		return ret;
 
-	ret = append_jlog_u64(&json, &len, "RxWorkloadMin", stat->workload[0].rx_workload_min);
-	if (ret)
-		return ret;
-
-	ret = append_jlog_u64(&json, &len, "RxWorkloadMax", stat->workload[0].rx_workload_max);
-	if (ret)
-		return ret;
-
-	ret = append_jlog_float(&json, &len, "RxWorkloadAv", stat->workload[0].rx_workload_avg);
+	ret = append_jlog_workload_stats(&json, &len, frame_type, stat);
 	if (ret)
 		return ret;
 
@@ -984,12 +1034,7 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 	if (ret)
 		return ret;
 
-	ret = append_jlog_u64(&json, &len, "OnewayOutliers", stat->oneway_outliers);
-	if (ret)
-		return ret;
-
-	ret = last_jlog_u64(&json, &len, "RxWorkloadOutliers",
-			    stat->workload[0].rx_workload_outliers);
+	ret = last_jlog_u64(&json, &len, "OnewayOutliers", stat->oneway_outliers);
 	if (ret)
 		return ret;
 

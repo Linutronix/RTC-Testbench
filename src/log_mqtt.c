@@ -44,13 +44,15 @@ void log_mqtt_thread_free(struct log_mqtt_thread_context *thread_context)
 static struct statistics statistics_per_period[NUM_FRAME_TYPES];
 
 static void log_mqtt_add_traffic_class(struct mosquitto *mosq, const char *mqtt_base_topic_name,
-				       struct statistics *stat, const char *tc)
+				       enum stat_frame_type frame_type, struct statistics *stat)
 {
+	const char *tc = stat_frame_type_to_string(frame_type);
 	char stat_message[4096] = {};
 	int result_pub;
 
 	/* Convert stats to json */
-	stat_to_json(stat_message, sizeof(stat_message), stat, tc, mqtt_base_topic_name);
+	stat_to_json(stat_message, sizeof(stat_message), frame_type, stat, tc,
+		     mqtt_base_topic_name);
 
 	/* Publish */
 	result_pub = mosquitto_publish(mosq, NULL, "testbench", strlen(stat_message), stat_message,
@@ -123,9 +125,9 @@ static void *log_mqtt_thread_routine(void *data)
 		/* Publish via MQTT */
 		for (i = 0; i < NUM_FRAME_TYPES; i++) {
 			if (config_is_traffic_class_active(stat_frame_type_to_string(i)))
-				log_mqtt_add_traffic_class(
-					mqtt_context->mosq, app_config.log_mqtt_measurement_name,
-					&statistics_per_period[i], stat_frame_type_to_string(i));
+				log_mqtt_add_traffic_class(mqtt_context->mosq,
+							   app_config.log_mqtt_measurement_name, i,
+							   &statistics_per_period[i]);
 		}
 	}
 
