@@ -268,6 +268,7 @@ void print_mac_address(const unsigned char *mac_address)
 		if (i != ETH_ALEN - 1)
 			printf("-");
 	}
+	printf("\n");
 }
 
 void print_payload_pattern(const char *payload_pattern, size_t payload_pattern_length)
@@ -276,6 +277,19 @@ void print_payload_pattern(const char *payload_pattern, size_t payload_pattern_l
 
 	for (i = 0; i < payload_pattern_length; ++i)
 		printf("0x%02x ", payload_pattern[i]);
+	printf("\n");
+}
+
+void print_cpu_list(const int *cpus, size_t cpus_len)
+{
+	size_t i;
+
+	for (i = 0; i < cpus_len; i++) {
+		printf("%d", cpus[i]);
+		if (i != cpus_len - 1)
+			printf(", ");
+	}
+	printf("\n");
 }
 
 uint32_t get_meta_data_offset(enum stat_frame_type frame_type, enum security_mode security_mode)

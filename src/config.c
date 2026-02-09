@@ -660,7 +660,6 @@ void config_print_values(void)
 		printf("TsnHighNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("TsnHighPayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("TsnHighFrameLength=%zu\n", conf->frame_length);
 		printf("TsnHighSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
 		printf("TsnHighSecurityAlgorithm=%s\n",
@@ -677,7 +676,6 @@ void config_print_values(void)
 		printf("TsnHighInterface=%s\n", conf->interface);
 		printf("TsnHighDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("\n");
 		printf("TsnHighRxWorkloadEnabled=%s\n",
 		       conf->rx_workload_enabled ? "True" : "False");
 		printf("TsnHighRxWorkloadPrewarm=%s\n",
@@ -689,7 +687,8 @@ void config_print_values(void)
 		printf("TsnHighRxWorkloadTeardownFunction=%s\n", conf->workload_teardown_function);
 		printf("TsnHighRxWorkloadFunction=%s\n", conf->workload_function);
 		printf("TsnHighRxWorkloadArguments=%s\n", conf->workload_arguments);
-		printf("TsnHighRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
+		printf("TsnHighRxWorkloadThreadCpu=");
+		print_cpu_list(conf->workload_thread_cpus, conf->workload_thread_cpus_num);
 		printf("TsnHighRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
@@ -714,7 +713,6 @@ void config_print_values(void)
 		printf("TsnLowNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("TsnLowPayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("TsnLowFrameLength=%zu\n", conf->frame_length);
 		printf("TsnLowSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
 		printf("TsnLowSecurityAlgorithm=%s\n",
@@ -731,7 +729,6 @@ void config_print_values(void)
 		printf("TsnLowInterface=%s\n", conf->interface);
 		printf("TsnLowDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("\n");
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
 	}
@@ -752,7 +749,6 @@ void config_print_values(void)
 		printf("RtcNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("RtcPayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("RtcFrameLength=%zu\n", conf->frame_length);
 		printf("RtcSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
 		printf("RtcSecurityAlgorithm=%s\n",
@@ -769,7 +765,6 @@ void config_print_values(void)
 		printf("RtcInterface=%s\n", conf->interface);
 		printf("RtcDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("\n");
 		printf("RtcRxWorkloadEnabled=%s\n", conf->rx_workload_enabled ? "True" : "False");
 		printf("RtcRxWorkloadPrewarm=%s\n", conf->rx_workload_prewarm ? "True" : "False");
 		printf("RtcRxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
@@ -779,7 +774,8 @@ void config_print_values(void)
 		printf("RtcRxWorkloadTeardownFunction=%s\n", conf->workload_teardown_function);
 		printf("RtcRxWorkloadFunction=%s\n", conf->workload_function);
 		printf("RtcRxWorkloadArguments=%s\n", conf->workload_arguments);
-		printf("RtcRxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
+		printf("RtcRxWorkloadThreadCpu=");
+		print_cpu_list(conf->workload_thread_cpus, conf->workload_thread_cpus_num);
 		printf("RtcRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
@@ -802,7 +798,6 @@ void config_print_values(void)
 		printf("RtaNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("RtaPayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("RtaFrameLength=%zu\n", conf->frame_length);
 		printf("RtaSecurityMode=%s\n", security_mode_to_string(conf->security_mode));
 		printf("RtaSecurityAlgorithm=%s\n",
@@ -819,7 +814,6 @@ void config_print_values(void)
 		printf("RtaInterface=%s\n", conf->interface);
 		printf("RtaDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("\n");
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
 	}
@@ -835,7 +829,6 @@ void config_print_values(void)
 		printf("DcpNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("DcpPayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("DcpFrameLength=%zu\n", conf->frame_length);
 		printf("DcpRxQueue=%d\n", conf->rx_queue);
 		printf("DcpTxQueue=%d\n", conf->tx_queue);
@@ -847,7 +840,6 @@ void config_print_values(void)
 		printf("DcpInterface=%s\n", conf->interface);
 		printf("DcpDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("\n");
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
 	}
@@ -861,7 +853,6 @@ void config_print_values(void)
 		printf("LldpNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("LldpPayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("LldpFrameLength=%zu\n", conf->frame_length);
 		printf("LldpRxQueue=%d\n", conf->rx_queue);
 		printf("LldpTxQueue=%d\n", conf->tx_queue);
@@ -873,7 +864,6 @@ void config_print_values(void)
 		printf("LldpInterface=%s\n", conf->interface);
 		printf("LldpDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("\n");
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
 	}
@@ -887,7 +877,6 @@ void config_print_values(void)
 		printf("UdpHighNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("UdpHighPayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("UdpHighFrameLength=%zu\n", conf->frame_length);
 		printf("UdpHighRxQueue=%d\n", conf->rx_queue);
 		printf("UdpHighTxQueue=%d\n", conf->tx_queue);
@@ -913,7 +902,6 @@ void config_print_values(void)
 		printf("UdpLowNumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("UdpLowPayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("UdpLowFrameLength=%zu\n", conf->frame_length);
 		printf("UdpLowRxQueue=%d\n", conf->rx_queue);
 		printf("UdpLowTxQueue=%d\n", conf->tx_queue);
@@ -952,7 +940,6 @@ void config_print_values(void)
 		printf("GenericL2NumFramesPerCycle=%zu\n", conf->num_frames_per_cycle);
 		printf("GenericL2PayloadPattern=");
 		print_payload_pattern(conf->payload_pattern, conf->payload_pattern_length);
-		printf("\n");
 		printf("GenericL2FrameLength=%zu\n", conf->frame_length);
 		printf("GenericL2RxQueue=%d\n", conf->rx_queue);
 		printf("GenericL2TxQueue=%d\n", conf->tx_queue);
@@ -964,7 +951,6 @@ void config_print_values(void)
 		printf("GenericL2Interface=%s\n", conf->interface);
 		printf("GenericL2Destination=");
 		print_mac_address(conf->l2_destination);
-		printf("\n");
 		printf("GenericL2RxWorkloadEnabled=%s\n",
 		       conf->rx_workload_enabled ? "True" : "False");
 		printf("GenericL2RxWorkloadPrewarm=%s\n",
@@ -977,7 +963,8 @@ void config_print_values(void)
 		       conf->workload_teardown_function);
 		printf("GenericL2RxWorkloadFunction=%s\n", conf->workload_function);
 		printf("GenericL2RxWorkloadArguments=%s\n", conf->workload_arguments);
-		printf("GenericL2RxWorkloadThreadCpu=%d\n", conf->workload_thread_cpus[0]);
+		printf("GenericL2RxWorkloadThreadCpu=");
+		print_cpu_list(conf->workload_thread_cpus, conf->workload_thread_cpus_num);
 		printf("GenericL2RxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
@@ -997,7 +984,6 @@ void config_print_values(void)
 	printf("DebugMonitorMode=%s\n", app_config.debug_monitor_mode ? "True" : "False");
 	printf("DebugMonitorDestination=");
 	print_mac_address(app_config.debug_monitor_destination);
-	printf("\n");
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
 

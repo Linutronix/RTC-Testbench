@@ -90,6 +90,7 @@ void pthread_error(int ret, const char *message);
 /* Printing */
 void print_mac_address(const unsigned char *mac_address);
 void print_payload_pattern(const char *payload_pattern, size_t payload_pattern_length);
+void print_cpu_list(const int *cpus, size_t cpus_len);
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
