@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "workload.h"
@@ -62,14 +63,17 @@ int jacobi_2d_setup(struct workload_instance *instance, int argc, char *argv[])
 		return -EINVAL;
 	}
 
+	j2->grid_init = calloc(GRID_SIZE * GRID_SIZE, sizeof(double));
 	j2->grid_a = calloc(GRID_SIZE * GRID_SIZE, sizeof(double));
 	j2->grid_b = calloc(GRID_SIZE * GRID_SIZE, sizeof(double));
 
-	if (!j2->grid_a || !j2->grid_b) {
+	if (!j2->grid_init || !j2->grid_a || !j2->grid_b) {
 		fprintf(stderr, "[jacobi_2d]: Grid allocation failed!\n");
 		free(j2);
 		return -ENOMEM;
 	}
+
+	jacobi_2d_init_grid(j2->grid_init);
 
 	instance->priv = j2;
 
@@ -84,8 +88,10 @@ int jacobi_2d_run(struct workload_instance *instance, int argc, char *argv[])
 
 	double *src = j2->grid_a;
 	double *dest = j2->grid_b;
+	double *init = j2->grid_init;
 
-	jacobi_2d_init_grid(src);
+	/* Initialize src with known state. */
+	memcpy(src, init, GRID_SIZE * GRID_SIZE * sizeof(double));
 
 	for (int i = 0; i < j2->iterations; i++) {
 		double *tmp;
@@ -104,6 +110,7 @@ void jacobi_2d_teardown(struct workload_instance *instance)
 {
 	struct jacobi_2d *j2 = instance->priv;
 
+	free(j2->grid_init);
 	free(j2->grid_a);
 	free(j2->grid_b);
 	free(j2);

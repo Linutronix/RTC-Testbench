@@ -9,6 +9,7 @@
 struct workload_instance;
 
 struct jacobi_2d {
+	double *grid_init;
 	double *grid_a;
 	double *grid_b;
 	int iterations;
@@ -20,7 +21,8 @@ struct jacobi_2d {
  * Keep the GRID_SIZE small, so that this code can be used with cycles times of 1ms. For larger
  * compute periods increase the number iterations passed to jacobi_2d_setup().
  *
- * Tested on i7-10700TE. Iterations: 1 -> ~300us.
+ * Tested on i7-10700TE. Iterations: 1  -> ~23us
+ *                       Iterations: 20 -> ~332us
  */
 #define GRID_SIZE 100
 
