@@ -143,7 +143,7 @@ int ptr_chase_setup(struct workload_instance *instance, int argc, char *argv[])
  *     ldr        x0, [x0]     ; CODE XREF=run_ptr_chasing+24
  *     cbnz       x0, ptr_loop
  */
-static void __attribute__((unused)) * __ptr_chasing_run_workload(ptr_chaser_t *ptr_chaser)
+static void __attribute__((unused)) * ptr_chasing_run_workload(ptr_chaser_t *ptr_chaser)
 {
 	ptr_node *p = ptr_chaser->head;
 
@@ -161,10 +161,10 @@ int run_ptr_chasing(struct workload_instance *instance, int argc, char *argv[])
 
 #ifdef __x86_64__
 	/* Hand written version for x86_64 */
-	__ptr_chasing_run_workload_x86_64(ptr_chaser);
+	ptr_chasing_run_workload_x86_64(ptr_chaser);
 #else
 	/* For all other architectures */
-	__ptr_chasing_run_workload(ptr_chaser);
+	ptr_chasing_run_workload(ptr_chaser);
 #endif
 
 	return 0;

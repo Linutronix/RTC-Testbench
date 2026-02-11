@@ -43,7 +43,7 @@ __asm__(".global __chasing_code_loop        ;\n\t"
  * code_ptr: holds a pointer to workload bytecode
  * %%RAX: holds a pointer to head of data set
  */
-static __attribute__((always_inline)) inline void __ptr_chasing_run_workload_x86_64(
+static __attribute__((always_inline)) inline void ptr_chasing_run_workload_x86_64(
 	ptr_chaser_t *ptr_chaser)
 {
 	__asm__ __volatile__("call *%[code_ptr]   ;\n\t"
