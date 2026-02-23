@@ -823,7 +823,7 @@ int stat_to_json(char *json, size_t len, const struct statistics *stat, const ch
 
 	/* JSON header */
 	ret = snprintf(json, len,
-		       "{\"reference\" :\n"
+		       "{\"testbench\" :\n"
 		       "{\"Timestamp\" : %" PRIu64 ",\n"
 		       "\"MeasurementName\" : \"%s\",\n"
 		       "\"stats\" : \n"

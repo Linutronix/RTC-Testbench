@@ -74,20 +74,20 @@ sub main
 	$json = decode_json $data;
 
 	if ($measurement) {
-	    next unless $json->{reference}{MeasurementName} eq $measurement;
+	    next unless $json->{testbench}{MeasurementName} eq $measurement;
 	}
 
 	if ($tc) {
-	    next unless $json->{reference}{stats}{TCName} eq $tc;
+	    next unless $json->{testbench}{stats}{TCName} eq $tc;
 	}
 
-	print "Measurement: $measurement -- TC: $json->{reference}{stats}{TCName}\n";
-	foreach my $stat (sort keys %{ $json->{reference}{stats} }) {
+	print "Measurement: $measurement -- TC: $json->{testbench}{stats}{TCName}\n";
+	foreach my $stat (sort keys %{ $json->{testbench}{stats} }) {
 	    if (scalar @stats) {
 		next unless grep $stat =~ /$_/, @stats;
 	    }
 
-	    print "  $stat: $json->{reference}{stats}{$stat}\n";
+	    print "  $stat: $json->{testbench}{stats}{$stat}\n";
 	}
     }
 }
