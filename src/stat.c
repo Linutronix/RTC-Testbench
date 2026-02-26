@@ -786,7 +786,8 @@ void stat_inc_workload_outlier(enum stat_frame_type frame_type)
 {
 	struct statistics *stat = &global_statistics[frame_type];
 
-	stat->rx_workload_outliers++;
+	if (stat->rx_workload_count > app_config.classes[frame_type].rx_workload_skip_count)
+		stat->rx_workload_outliers++;
 }
 
 static int append_jlog_u64(char **buffer, size_t *len, const char *stat, uint64_t value)
