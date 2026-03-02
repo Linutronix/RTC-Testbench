@@ -67,7 +67,7 @@ The following options are used to configure a RX workload:
      - Execute workload immediately when threads spawn (true) or wait for network traffic (false)
 
    * - <Class>RxWorkloadSkipCount (Integer)
-     - Skip min/max statistics updates for the first N workload iterations
+     - Skip min/max statistics and outlier updates for the first N workload iterations
 
    * - <Class>RxWorkloadThreadCpu (Integer)
      - CPU core number to pin the workload thread to
