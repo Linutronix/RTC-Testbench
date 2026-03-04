@@ -133,6 +133,8 @@ Run 'elbe initvm -v <hdd|sd> submit x86_64.xml' to build it.
       <pkg>libssl-dev</pkg>
       <pkg>dwarves</pkg>
       <pkg>zstd</pkg>
+      <pkg>xdp-tools</pkg>
+      <pkg>bpftool</pkg>
       <!-- Firmware -->
       <pkg>firmware-linux</pkg>
     </pkg-list>
