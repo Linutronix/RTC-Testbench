@@ -70,7 +70,7 @@ The following options are used to configure a RX workload:
      - Skip min/max statistics and outlier updates for the first N workload iterations
 
    * - <Class>RxWorkloadThreadCpu (Integer)
-     - CPU core number to pin the workload thread to
+     - Comma separated list of CPU core numbers to pin the workload threads to
 
    * - <Class>RxWorkloadThreadPriority (Integer)
      - Real-time thread priority (1-99, higher values = higher priority)
