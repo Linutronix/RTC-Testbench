@@ -28,6 +28,11 @@ igc_start() {
   # Increase the number of Rx and Tx queues in case of $num_cpus < 4.
   #
   ethtool -L "${interface}" combined 4
+
+  #
+  # Disable Energy Efficient Ethernet (EEE).
+  #
+  ethtool --set-eee "${interface}" eee off
 }
 
 #
