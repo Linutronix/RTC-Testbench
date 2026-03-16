@@ -184,6 +184,37 @@ out:
 	return ret;
 }
 
+static int config_parse_clockid(const char *value, clockid_t *clock)
+{
+	if (!strcmp(value, "CLOCK_TAI")) {
+		*clock = CLOCK_TAI;
+		return 0;
+	}
+
+	if (!strcmp(value, "CLOCK_MONOTONIC")) {
+		*clock = CLOCK_MONOTONIC;
+		return 0;
+	}
+
+	if (!strncmp(value, "CLOCK_AUX", strlen("CLOCK_AUX"))) {
+		int ret;
+		long id;
+
+		ret = config_parse_int(value + strlen("CLOCK_AUX"), &id);
+		if (ret)
+			return -EINVAL;
+
+		if (id < 0 || id >= MAX_AUX_CLOCKS)
+			return -EINVAL;
+
+		*clock = CLOCK_AUX + id;
+		return 0;
+	}
+
+	/* No valid clock id found. */
+	return -EINVAL;
+}
+
 /* The configuration file is YAML based. Use libyaml to parse it. */
 int config_read_from_file(const char *config_file)
 {
@@ -627,8 +658,8 @@ void config_print_values(void)
 
 	printf("--------------------------------------------------------------------------------"
 	       "\n");
-	printf("ApplicationClockId=%s\n",
-	       app_config.application_clock_id == CLOCK_TAI ? "CLOCK_TAI" : "CLOCK_MONOTONIC");
+	printf("ApplicationClockId=");
+	print_clockid(app_config.application_clock_id);
 	printf("ApplicationBaseCycleTimeNS=%" PRIu64 "\n",
 	       app_config.application_base_cycle_time_ns);
 	printf("ApplicationBaseStartTimeNS=%" PRIu64 "\n",

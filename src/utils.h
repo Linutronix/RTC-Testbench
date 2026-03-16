@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (C) 2020-2024 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -21,6 +21,15 @@
 #include "stat.h"
 
 /* timing */
+#ifndef MAX_CLOCKS
+#define MAX_CLOCKS 16
+#endif
+
+#ifndef CLOCK_AUX
+#define CLOCK_AUX MAX_CLOCKS
+#define MAX_AUX_CLOCKS 8
+#endif
+
 #define MSEC_PER_SEC 1000
 #define USEC_PER_SEC 1000000
 #define NSEC_PER_SEC 1000000000LL
@@ -91,6 +100,7 @@ void pthread_error(int ret, const char *message);
 void print_mac_address(const unsigned char *mac_address);
 void print_payload_pattern(const char *payload_pattern, size_t payload_pattern_length);
 void print_cpu_list(const int *cpus, size_t cpus_len);
+void print_clockid(clockid_t clock);
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 

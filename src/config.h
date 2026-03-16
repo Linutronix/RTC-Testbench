@@ -348,15 +348,14 @@ void config_free(void);
 #define CONFIG_STORE_CLOCKID_PARAM(name, var)                                                      \
 	do {                                                                                       \
 		if (!strcmp(key, #name)) {                                                         \
-			if (strcmp(value, "CLOCK_TAI") && strcmp(value, "CLOCK_MONOTONIC")) {      \
+			clockid_t clock;                                                           \
+                                                                                                   \
+			ret = config_parse_clockid(value, &clock);                                 \
+			if (ret) {                                                                 \
 				fprintf(stderr, "Invalid clockid specified!\n");                   \
 				goto err_parse;                                                    \
 			}                                                                          \
-                                                                                                   \
-			if (!strcmp(value, "CLOCK_TAI"))                                           \
-				app_config.var = CLOCK_TAI;                                        \
-			if (!strcmp(value, "CLOCK_MONOTONIC"))                                     \
-				app_config.var = CLOCK_MONOTONIC;                                  \
+			app_config.var = clock;                                                    \
 		}                                                                                  \
 	} while (0)
 

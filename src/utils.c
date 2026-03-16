@@ -292,6 +292,26 @@ void print_cpu_list(const int *cpus, size_t cpus_len)
 	printf("\n");
 }
 
+void print_clockid(clockid_t clock)
+{
+	char buf[32];
+	int id;
+
+	if (clock == CLOCK_TAI) {
+		printf("CLOCK_TAI\n");
+		return;
+	}
+
+	if (clock == CLOCK_MONOTONIC) {
+		printf("CLOCK_MONOTONIC\n");
+		return;
+	}
+
+	id = clock - CLOCK_AUX;
+	snprintf(buf, sizeof(buf), "CLOCK_AUX%d", id);
+	printf("%s\n", buf);
+}
+
 uint32_t get_meta_data_offset(enum stat_frame_type frame_type, enum security_mode security_mode)
 {
 	uint32_t meta_data_offset = 0;
