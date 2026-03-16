@@ -338,7 +338,7 @@ static void *log_thread_routine(void *data)
 		increment_period(&time, period);
 		ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME, &time, NULL);
 		if (ret) {
-			pthread_error(ret, "clock_nanosleep() failed");
+			pthread_error(ret, "LOG: clock_nanosleep() failed");
 			return NULL;
 		}
 

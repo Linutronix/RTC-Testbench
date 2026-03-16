@@ -115,7 +115,7 @@ static void *log_mqtt_thread_routine(void *data)
 		increment_period(&time, period_ns);
 		ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME, &time, NULL);
 		if (ret) {
-			pthread_error(ret, "clock_nanosleep() failed");
+			pthread_error(ret, "MQTT: clock_nanosleep() failed");
 			goto err_time;
 		}
 
