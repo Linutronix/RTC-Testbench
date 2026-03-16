@@ -1,0 +1,185 @@
+---
+#
+# Copyright (C) 2023 Linutronix GmbH
+# Author Kurt Kanzenbach <kurt@linutronix.de>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Sample reference YAML configuration file for Intel Comet Lake platforms with
+# i225 NIC(s).
+#
+Application:
+  ApplicationClockId: CLOCK_AUX0
+  # ApplicationBaseStartTimeNS: 0
+  ApplicationBaseCycleTimeNS: 1ms
+  ApplicationTxBaseOffsetNS: 800us
+  ApplicationRxBaseOffsetNS: 300us
+  ApplicationXdpProgram: xdp_kern_profinet_vid100.o
+TSNHigh:
+  TsnHighEnabled: true
+  TsnHighXdpEnabled: true
+  TsnHighXdpSkbMode: false
+  TsnHighXdpZcMode: true
+  TsnHighXdpWakeupMode: true
+  TsnHighTxTimeEnabled: false
+  TsnHighTxTimeOffsetNS: 0
+  TsnHighTxTimeStampEnabled: false
+  TsnHighVid: 100
+  TsnHighNumFramesPerCycle: 1
+  TsnHighPayloadPattern: |
+    TsnHighPayloadPattern
+  TsnHighFrameLength: 128
+  TsnHighRxQueue: 0
+  TsnHighTxQueue: 0
+  TsnHighSocketPriority: 7
+  TsnHighTxThreadPriority: 98
+  TsnHighRxThreadPriority: 98
+  TsnHighTxThreadCpu: 0
+  TsnHighRxThreadCpu: 0
+  TsnHighInterface: enp3s0
+  TsnHighDestination: a8:74:1d:9d:98:d8
+TSNLow:
+  TsnLowEnabled: true
+  TsnLowXdpEnabled: true
+  TsnLowXdpSkbMode: false
+  TsnLowXdpZcMode: true
+  TsnLowXdpWakeupMode: true
+  TsnLowTxTimeEnabled: false
+  TsnLowTxTimeOffsetNS: 0
+  TsnLowTxTimeStampEnabled: false
+  TsnLowVid: 100
+  TsnLowNumFramesPerCycle: 1
+  TsnLowPayloadPattern: |
+    TsnLowPayloadPattern
+  TsnLowFrameLength: 128
+  TsnLowRxQueue: 1
+  TsnLowTxQueue: 1
+  TsnLowSocketPriority: 6
+  TsnLowTxThreadPriority: 98
+  TsnLowRxThreadPriority: 98
+  TsnLowTxThreadCpu: 1
+  TsnLowRxThreadCpu: 1
+  TsnLowInterface: enp3s0
+  TsnLowDestination: a8:74:1d:9d:98:d8
+RTC:
+  RtcEnabled: true
+  RtcXdpEnabled: true
+  RtcXdpSkbMode: false
+  RtcXdpZcMode: true
+  RtcXdpWakeupMode: true
+  RtcTxTimeStampEnabled: false
+  RtcVid: 100
+  RtcNumFramesPerCycle: 1
+  RtcPayloadPattern: |
+    RtcPayloadPattern
+  RtcFrameLength: 128
+  RtcRxQueue: 2
+  RtcTxQueue: 2
+  RtcSocketPriority: 5
+  RtcTxThreadPriority: 98
+  RtcRxThreadPriority: 98
+  RtcTxThreadCpu: 2
+  RtcRxThreadCpu: 2
+  RtcInterface: enp3s0
+  RtcDestination: a8:74:1d:9d:98:d8
+RTA:
+  RtaEnabled: true
+  RtaXdpEnabled: true
+  RtaXdpSkbMode: false
+  RtaXdpZcMode: false
+  RtaXdpWakeupMode: true
+  RtaTxTimeStampEnabled: false
+  RtaVid: 100
+  RtaBurstPeriodNS: 200ms
+  RtaNumFramesPerCycle: 1
+  RtaPayloadPattern: |
+    RtaPayloadPattern
+  RtaFrameLength: 200
+  RtaRxQueue: 3
+  RtaTxQueue: 3
+  RtaSocketPriority: 4
+  RtaTxThreadPriority: 97
+  RtaRxThreadPriority: 97
+  RtaTxThreadCpu: 3
+  RtaRxThreadCpu: 3
+  RtaInterface: enp3s0
+  RtaDestination: a8:74:1d:9d:98:d8
+DCP:
+  DcpEnabled: true
+  DcpVid: 100
+  DcpBurstPeriodNS: 2s
+  DcpNumFramesPerCycle: 1
+  DcpPayloadPattern: |
+    DcpPayloadPattern
+  DcpFrameLength: 200
+  DcpRxQueue: 3
+  DcpTxQueue: 3
+  DcpSocketPriority: 3
+  DcpTxThreadPriority: 53
+  DcpRxThreadPriority: 53
+  DcpTxThreadCpu: 4
+  DcpRxThreadCpu: 4
+  DcpInterface: enp3s0
+  DcpDestination: 01:0e:cf:00:00:00
+LLDP:
+  LldpEnabled: true
+  LldpBurstPeriodNS: 5s
+  LldpNumFramesPerCycle: 1
+  LldpPayloadPattern: |
+    LldpPayloadPattern
+  LldpFrameLength: 200
+  LldpRxQueue: 3
+  LldpTxQueue: 3
+  LldpSocketPriority: 3
+  LldpTxThreadPriority: 52
+  LldpRxThreadPriority: 52
+  LldpTxThreadCpu: 5
+  LldpRxThreadCpu: 5
+  LldpInterface: enp3s0
+  LldpDestination: 01:80:c2:00:00:0e
+UDPHigh:
+  UdpHighEnabled: true
+  UdpHighBurstPeriodNS: 1s
+  UdpHighNumFramesPerCycle: 1
+  UdpHighPayloadPattern: |
+    UdpHighPayloadPattern
+  UdpHighFrameLength: 1400
+  UdpHighRxQueue: 3
+  UdpHighTxQueue: 3
+  UdpHighSocketPriority: 3
+  UdpHighTxThreadPriority: 51
+  UdpHighRxThreadPriority: 51
+  UdpHighTxThreadCpu: 6
+  UdpHighRxThreadCpu: 6
+  UdpHighInterface: enp3s0
+  UdpHighPort: 6666
+  UdpHighDestination: 192.168.1.2
+  UdpHighSource: 192.168.1.1
+UDPLow:
+  UdpLowEnabled: true
+  UdpLowBurstPeriodNS: 1s
+  UdpLowNumFramesPerCycle: 1
+  UdpLowPayloadPattern: |
+    UdpLowPayloadPattern
+  UdpLowFrameLength: 1400
+  UdpLowRxQueue: 3
+  UdpLowTxQueue: 3
+  UdpLowSocketPriority: 3
+  UdpLowTxThreadPriority: 51
+  UdpLowRxThreadPriority: 51
+  UdpLowTxThreadCpu: 7
+  UdpLowRxThreadCpu: 7
+  UdpLowInterface: enp3s0
+  UdpLowPort: 6667
+  UdpLowDestination: 192.168.1.2
+  UdpLowSource: 192.168.1.1
+Log:
+  LogThreadPriority: 1
+  LogThreadCpu: 7
+  LogFile: /var/log/reference_vid100.log
+  LogLevel: Info
+Debug:
+  DebugStopTraceOnOutlier: false
+  DebugStopTraceOnError: false
+  DebugMonitorMode: false
+  DebugMonitorDestination: 44:44:44:44:44:44
