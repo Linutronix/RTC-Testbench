@@ -73,7 +73,7 @@ void *log_json_publisher(void *data)
 	 */
 	ret = clock_gettime(app_config.application_clock_id, &time);
 	if (ret) {
-		fprintf(stderr, "JSON: clock_gettime() failed: %s!", strerror(errno));
+		fprintf(stderr, "JSON: clock_gettime() failed: %s!\n", strerror(errno));
 		goto out;
 	}
 

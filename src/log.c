@@ -324,7 +324,7 @@ static void *log_thread_routine(void *data)
 	 */
 	ret = clock_gettime(app_config.application_clock_id, &time);
 	if (ret) {
-		fprintf(stderr, "Log: clock_gettime() failed: %s!", strerror(errno));
+		fprintf(stderr, "LOG: clock_gettime() failed: %s!\n", strerror(errno));
 		return NULL;
 	}
 

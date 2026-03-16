@@ -58,7 +58,7 @@ static void log_mqtt_add_traffic_class(struct mosquitto *mosq, const char *mqtt_
 	result_pub = mosquitto_publish(mosq, NULL, "testbench", strlen(stat_message), stat_message,
 				       2, false);
 	if (result_pub != MOSQ_ERR_SUCCESS)
-		fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(result_pub));
+		fprintf(stderr, "MQTT: Error publishing: %s\n", mosquitto_strerror(result_pub));
 }
 
 static void log_mqtt_on_connect(struct mosquitto *mosq, void *obj, int reason_code)
@@ -78,7 +78,7 @@ static void *log_mqtt_thread_routine(void *data)
 
 	mqtt_context->mosq = mosquitto_new(NULL, true, NULL);
 	if (mqtt_context->mosq == NULL) {
-		fprintf(stderr, "MQTTLog Error: Out of memory.\n");
+		fprintf(stderr, "MQTT: Out of memory.\n");
 		goto err_mqtt_outof_memory;
 	}
 
@@ -86,8 +86,7 @@ static void *log_mqtt_thread_routine(void *data)
 					   app_config.log_mqtt_broker_port,
 					   app_config.log_mqtt_keep_alive_secs);
 	if (connect_status != MOSQ_ERR_SUCCESS) {
-		fprintf(stderr, "MQTTLog Error by connect: %s\n",
-			mosquitto_strerror(connect_status));
+		fprintf(stderr, "MQTT: Error by connect: %s\n", mosquitto_strerror(connect_status));
 		goto err_mqtt_connect;
 	}
 
@@ -95,7 +94,7 @@ static void *log_mqtt_thread_routine(void *data)
 
 	ret = mosquitto_loop_start(mqtt_context->mosq);
 	if (ret != MOSQ_ERR_SUCCESS) {
-		fprintf(stderr, "Log Via MQTT Error: %s\n", mosquitto_strerror(ret));
+		fprintf(stderr, "MQTT: Error: %s\n", mosquitto_strerror(ret));
 		goto err_mqtt_start;
 	}
 
@@ -105,7 +104,7 @@ static void *log_mqtt_thread_routine(void *data)
 	 */
 	ret = clock_gettime(app_config.application_clock_id, &time);
 	if (ret) {
-		fprintf(stderr, "Log Via MQTT: clock_gettime() failed: %s!", strerror(errno));
+		fprintf(stderr, "MQTT: clock_gettime() failed: %s!\n", strerror(errno));
 		goto err_time;
 	}
 
