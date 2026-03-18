@@ -485,6 +485,35 @@ All required configuration files and scripts are located in
 
 Hardware: Intel CPU with Intel i225/i226
 
+Working Clock
+^^^^^^^^^^^^^
+
+IEEE 60802 (the industrial TSN profile for automation) defines at least two time domains:
+
+- **Global time**: Is a global time domain e.g., based on UTC. It is used to correlate events and
+  for logging and diagnosis. Can be distributed by NTP or PTP.
+- **Working clock**: This is a high precision time domain used for scheduling and packet
+  transmission inside a TSN network. It is not necessarily based on UTC, but rather starts at
+  zero. It is distributed by gPTP.
+
+In this test case, the following Linux clocks are involved:
+
+- ``CLOCK_REALTIME``, ``CLOCK_TAI``: Is set by NTP e.g., chrony.
+- ``CLOCK_AUX0``: Is set by ``phc2sys`` from network gPTP time.
+
+Both clocks are completely independent from each other. The Testbench applications run on
+``CLOCK_AUX0``.
+
+.. Note:: ``phc2sys`` requires additional patches to use ``CLOCK_AUX``. The patches can be found
+          here: https://github.com/mlichvar/linuxptp/tree/staging.
+
+.. Note:: The Linux kernel does not support ``clock_nanosleep(2)`` for ``CLOCK_AUX`` yet. To run
+          this test case successfully we have to wait for Linux >= v7.1.
+
+All required configuration files and scripts are located in ``tests/working_clock/``.
+
+Hardware: Intel CPU with Intel i225/i226.
+
 Tested Hardware
 ---------------
 
