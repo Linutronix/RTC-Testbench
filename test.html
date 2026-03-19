@@ -86,6 +86,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#profinet-rt">PROFINET RT</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#netload">Netload</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#busypolling">Busypolling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#working-clock">Working Clock</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#tested-hardware">Tested Hardware</a></li>
@@ -650,6 +651,36 @@ is designed to test busy polling with AF_XDP sockets.</p>
 <p>All required configuration files and scripts are located in
 <code class="docutils literal notranslate"><span class="pre">tests/busypolling/</span></code>.</p>
 <p>Hardware: Intel CPU with Intel i225/i226</p>
+</section>
+<section id="working-clock">
+<h3>Working Clock<a class="headerlink" href="#working-clock" title="Permalink to this heading"></a></h3>
+<p>IEEE 60802 (the industrial TSN profile for automation) defines at least two time domains:</p>
+<ul class="simple">
+<li><p><strong>Global time</strong>: Is a global time domain e.g., based on UTC. It is used to correlate events and
+for logging and diagnosis. Can be distributed by NTP or PTP.</p></li>
+<li><p><strong>Working clock</strong>: This is a high precision time domain used for scheduling and packet
+transmission inside a TSN network. It is not necessarily based on UTC, but rather starts at
+zero. It is distributed by gPTP.</p></li>
+</ul>
+<p>In this test case, the following Linux clocks are involved:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CLOCK_REALTIME</span></code>, <code class="docutils literal notranslate"><span class="pre">CLOCK_TAI</span></code>: Is set by NTP e.g., chrony.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CLOCK_AUX0</span></code>: Is set by <code class="docutils literal notranslate"><span class="pre">phc2sys</span></code> from network gPTP time.</p></li>
+</ul>
+<p>Both clocks are completely independent from each other. The Testbench applications run on
+<code class="docutils literal notranslate"><span class="pre">CLOCK_AUX0</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">phc2sys</span></code> requires additional patches to use <code class="docutils literal notranslate"><span class="pre">CLOCK_AUX</span></code>. The patches can be found
+here: <a class="reference external" href="https://github.com/mlichvar/linuxptp/tree/staging">https://github.com/mlichvar/linuxptp/tree/staging</a>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Linux kernel does not support <code class="docutils literal notranslate"><span class="pre">clock_nanosleep(2)</span></code> for <code class="docutils literal notranslate"><span class="pre">CLOCK_AUX</span></code> yet. To run
+this test case successfully we have to wait for Linux &gt;= v7.1.</p>
+</div>
+<p>All required configuration files and scripts are located in <code class="docutils literal notranslate"><span class="pre">tests/working_clock/</span></code>.</p>
+<p>Hardware: Intel CPU with Intel i225/i226.</p>
 </section>
 </section>
 <section id="tested-hardware">
