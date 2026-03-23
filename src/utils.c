@@ -307,6 +307,11 @@ void print_clockid(clockid_t clock)
 		return;
 	}
 
+	if (clock == CLOCK_REALTIME) {
+		printf("CLOCK_REALTIME\n");
+		return;
+	}
+
 	id = clock - CLOCK_AUX;
 	snprintf(buf, sizeof(buf), "CLOCK_AUX%d", id);
 	printf("%s\n", buf);

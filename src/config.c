@@ -196,6 +196,11 @@ static int config_parse_clockid(const char *value, clockid_t *clock)
 		return 0;
 	}
 
+	if (!strcmp(value, "CLOCK_REALTIME")) {
+		*clock = CLOCK_REALTIME;
+		return 0;
+	}
+
 	if (!strncmp(value, "CLOCK_AUX", strlen("CLOCK_AUX"))) {
 		int ret;
 		long id;
