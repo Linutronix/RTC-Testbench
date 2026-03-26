@@ -31,7 +31,7 @@ Possible parameters include:
      - Description
 
    * - ApplicationClockId (String)
-     - ``CLOCK_TAI`` or ``CLOCK_MONOTONIC`` or ``CLOCK_AUX[0-7]``
+     - ``CLOCK_TAI`` or ``CLOCK_MONOTONIC`` or ``CLOCK_REALTIME`` or ``CLOCK_AUX[0-7]``
 
    * - ApplicationBaseStartTimeNS (Integer)
      - Absolute start time of simulation (or nothing for default value now + 30s)
