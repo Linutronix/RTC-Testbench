@@ -383,6 +383,7 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_MAC_PARAM_CLASS(TsnLowDestination, l2_destination);
 
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcEnabled, enabled);
+			CONFIG_STORE_BOOL_PARAM_CLASS(RtcEcatEnabled, ecat_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpEnabled, xdp_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpSkbMode, xdp_skb_mode);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpZcMode, xdp_zc_mode);
@@ -773,6 +774,7 @@ void config_print_values(void)
 	if (config_is_traffic_class_active("Rtc")) {
 		printf("RtcEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("RtcRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
+		printf("RtcEcatEnabled=%s\n", conf->ecat_enabled ? "True" : "False");
 		printf("RtcXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
 		printf("RtcXdpSkbMode=%s\n", conf->xdp_skb_mode ? "True" : "False");
 		printf("RtcXdpZcMode=%s\n", conf->xdp_zc_mode ? "True" : "False");
@@ -1177,6 +1179,7 @@ int config_set_defaults(bool mirror_enabled)
 	/* Real Time Cyclic (RTC) */
 	conf = &app_config.classes[RTC_FRAME_TYPE];
 	conf->enabled = false;
+	conf->ecat_enabled = false;
 	conf->rx_mirror_enabled = mirror_enabled;
 	conf->xdp_enabled = false;
 	conf->xdp_skb_mode = false;

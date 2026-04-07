@@ -80,7 +80,8 @@ add_executable(reference
   src/hist.c
   src/workload.c
   src/print.c
-  src/profinet.c)
+  src/profinet.c
+  src/ethercat.c)
 add_executable(mirror
   src/mirror.c
   src/config.c
@@ -106,7 +107,8 @@ add_executable(mirror
   src/hist.c
   src/workload.c
   src/print.c
-  src/profinet.c)
+  src/profinet.c
+  src/ethercat.c)
 
 option(WITH_MQTT, "Enable/Disable logging via MQTT" OFF)
 if (WITH_MQTT)
@@ -246,6 +248,7 @@ add_xdp_prog(xdp_kern_opcua_vid200)
 add_xdp_prog(xdp_kern_opcua_vid300)
 add_xdp_prog(xdp_kern_avtp_vid400)
 add_xdp_prog(xdp_kern_profinet_veth_dispatch)
+add_xdp_prog(xdp_kern_ethercat)
 
 install(TARGETS reference DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT binaries)
 install(TARGETS mirror DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT binaries)

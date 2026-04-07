@@ -52,6 +52,7 @@ struct traffic_class_config {
 	size_t frame_length;
 	int rx_queue;
 	int tx_queue;
+	bool ecat_enabled;
 
 	/* Layer 2/3 settings */
 	char interface[IF_NAMESIZE];

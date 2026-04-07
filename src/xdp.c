@@ -717,29 +717,35 @@ void xdp_gen_and_send_frames(struct xdp_socket *xsk, const struct xdp_gen_config
 		data = xdp_prepare_tx_desc(xsk, tx_desc, xdp->tx_time, i, xdp->num_frames_per_cycle,
 					   true);
 
-		frame_config.mode = xdp->mode;
-		frame_config.security_context = xdp->security_context;
-		frame_config.iv_prefix = xdp->iv_prefix;
-		frame_config.payload_pattern = xdp->payload_pattern;
-		frame_config.payload_pattern_length = xdp->payload_pattern_length;
-		frame_config.frame_data = data;
-		frame_config.frame_length = xdp->frame_length;
-		frame_config.num_frames_per_cycle = xdp->num_frames_per_cycle;
-		frame_config.sequence_counter = xdp->sequence_counter_begin + i;
-		frame_config.tx_timestamp = ts_to_ns(&tx_time);
-		frame_config.meta_data_offset = xdp->meta_data_offset;
+		if (xdp->ecat_enabled) {
+			ecat_add_timestamp(&data[0], ts_to_ns(&tx_time), xdp->frame_length);
+		} else {
+			frame_config.mode = xdp->mode;
+			frame_config.security_context = xdp->security_context;
+			frame_config.iv_prefix = xdp->iv_prefix;
+			frame_config.payload_pattern = xdp->payload_pattern;
+			frame_config.payload_pattern_length = xdp->payload_pattern_length;
+			frame_config.frame_data = data;
+			frame_config.frame_length = xdp->frame_length;
+			frame_config.num_frames_per_cycle = xdp->num_frames_per_cycle;
+			frame_config.sequence_counter = xdp->sequence_counter_begin + i;
+			frame_config.tx_timestamp = ts_to_ns(&tx_time);
+			frame_config.meta_data_offset = xdp->meta_data_offset;
 
-		ret = prepare_frame_for_tx(&frame_config);
-		if (ret)
-			log_message(LOG_LEVEL_ERROR, "XdpTx: Failed to prepare frame for Tx!\n");
+			ret = prepare_frame_for_tx(&frame_config);
+			if (ret)
+				log_message(LOG_LEVEL_ERROR,
+					    "XdpTx: Failed to prepare frame for Tx!\n");
 
-		/*
-		 * In debug monitor mode the first frame of each burst should have a different
-		 * DA. This way, the oscilloscope can trigger for it.
-		 */
-		if (app_config.debug_monitor_mode && i == 0) {
-			eth = (struct vlan_ethernet_header *)data;
-			memcpy(eth->destination, app_config.debug_monitor_destination, ETH_ALEN);
+			/*
+			 * In debug monitor mode the first frame of each burst should have a
+			 * different DA. This way, the oscilloscope can trigger for it.
+			 */
+			if (app_config.debug_monitor_mode && i == 0) {
+				eth = (struct vlan_ethernet_header *)data;
+				memcpy(eth->destination, app_config.debug_monitor_destination,
+				       ETH_ALEN);
+			}
 		}
 	}
 

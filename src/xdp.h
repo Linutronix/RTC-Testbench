@@ -87,6 +87,7 @@ struct xdp_gen_config {
 	uint32_t meta_data_offset;
 	enum stat_frame_type frame_type;
 	const struct xdp_tx_time *tx_time;
+	bool ecat_enabled;
 };
 
 struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_program, int queue,
