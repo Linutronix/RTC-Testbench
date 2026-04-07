@@ -38,6 +38,7 @@ enum config_value_type {
 	CONFIG_TYPE_SECURITY_ALGORITHM,
 	CONFIG_TYPE_CPU_LIST,
 	CONFIG_TYPE_CLOCKID,
+	CONFIG_TYPE_PROTOCOL_TYPE,
 };
 
 #ifndef BIT
@@ -117,6 +118,12 @@ struct config_class_option {
 		    .length_offset = offsetof(struct traffic_class_config, member##_num)},         \
 	 .tcs = mask}
 
+enum protocol_type {
+	GENERICL2_PROTOCOL_TYPE = 0,
+	ETHERCAT_PROTOCOL_TYPE,
+	NUM_PROTOCOL_FRAME_TYPES,
+};
+
 struct traffic_class_config {
 	/* General */
 	bool enabled;
@@ -146,6 +153,7 @@ struct traffic_class_config {
 	size_t frame_length;
 	int rx_queue;
 	int tx_queue;
+	enum protocol_type protocol_type;
 
 	/* Layer 2/3 settings */
 	char interface[IF_NAMESIZE];

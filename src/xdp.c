@@ -728,14 +728,16 @@ void xdp_gen_and_send_frames(struct xdp_socket *xsk, const struct xdp_gen_config
 		frame_config.sequence_counter = xdp->sequence_counter_begin + i;
 		frame_config.tx_timestamp = ts_to_ns(&tx_time);
 		frame_config.meta_data_offset = xdp->meta_data_offset;
+		frame_config.frame_type = xdp->frame_type;
+		frame_config.protocol_type = xdp->protocol_type;
 
 		ret = prepare_frame_for_tx(&frame_config);
 		if (ret)
 			log_message(LOG_LEVEL_ERROR, "XdpTx: Failed to prepare frame for Tx!\n");
 
 		/*
-		 * In debug monitor mode the first frame of each burst should have a different
-		 * DA. This way, the oscilloscope can trigger for it.
+		 * In debug monitor mode the first frame of each burst should have a
+		 * different DA. This way, the oscilloscope can trigger for it.
 		 */
 		if (app_config.debug_monitor_mode && i == 0) {
 			eth = (struct vlan_ethernet_header *)data;

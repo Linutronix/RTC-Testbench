@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (C) 2020-2025 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -20,6 +20,7 @@ int create_rta_socket(void);
 int create_dcp_socket(void);
 int create_lldp_socket(void);
 int create_generic_l2_socket(void);
+int create_ethercat_socket(void);
 int create_udp_socket(const char *udp_destination, const char *udp_source, const char *udp_port,
 		      int socket_priority, struct sockaddr_storage *destination);
 int create_udp_cl_socket(const char *udp_destination, const char *udp_port,

@@ -83,6 +83,8 @@ struct prepare_frame_config {
 	uint64_t sequence_counter;
 	uint64_t tx_timestamp;
 	uint32_t meta_data_offset;
+	enum stat_frame_type frame_type;
+	enum protocol_type protocol_type;
 };
 
 int prepare_frame_for_tx(const struct prepare_frame_config *frame_config);

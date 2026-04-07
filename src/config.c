@@ -117,6 +117,8 @@ static const struct config_class_option class_options[] = {
 	/* GenericL2 */
 	CLASS_STRING_OPTION("Name", name, BIT(GENERICL2_FRAME_TYPE)),
 	CLASS_OPTION("EtherType", ether_type, CONFIG_TYPE_ETHER_TYPE, BIT(GENERICL2_FRAME_TYPE)),
+	CLASS_OPTION("ProtocolType", protocol_type, CONFIG_TYPE_PROTOCOL_TYPE,
+		     BIT(GENERICL2_FRAME_TYPE)),
 
 	/* Security options */
 	CLASS_OPTION("SecurityMode", security_mode, CONFIG_TYPE_SECURITY_MODE, TC_SECURITY),
@@ -529,6 +531,20 @@ static int config_store_value(const struct config_app_option *opt, void *base, c
 		*(clockid_t *)(base + opt->offset) = clock;
 		break;
 	}
+	case CONFIG_TYPE_PROTOCOL_TYPE: {
+		enum protocol_type *proto = (enum protocol_type *)(base + opt->offset);
+
+		if (strcasecmp(value, "L2") && strcasecmp(value, "EtherCAT")) {
+			fprintf(stderr, "Invalid protocol type specified!\n");
+			return -EINVAL;
+		}
+
+		if (!strcasecmp(value, "L2"))
+			*proto = GENERICL2_PROTOCOL_TYPE;
+		if (!strcasecmp(value, "EtherCAT"))
+			*proto = ETHERCAT_PROTOCOL_TYPE;
+		break;
+	}
 	default:
 		fprintf(stderr, "BUG: Unknown option detected!\n");
 		return -EINVAL;
@@ -786,6 +802,12 @@ static void config_print_value(const struct config_app_option *opt, const void *
 		clockid_t clock = *(clockid_t *)(base + opt->offset);
 
 		print_clockid(clock);
+		break;
+	}
+	case CONFIG_TYPE_PROTOCOL_TYPE: {
+		enum protocol_type proto = *(enum protocol_type *)(base + opt->offset);
+
+		printf("%s\n", proto == GENERICL2_PROTOCOL_TYPE ? "L2" : "EtherCAT");
 		break;
 	}
 	default:
@@ -1113,6 +1135,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_thread_priority = 80;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* Logging */
 	app_config.log_thread_priority = 1;
@@ -1387,6 +1410,16 @@ bool config_sanity_check(void)
 	/* Stats */
 	if (app_config.stats_histogram_minimum_ns > app_config.stats_histogram_maximum_ns) {
 		fprintf(stderr, "Histogram minimum and maximum values are invalid!\n");
+		return false;
+	}
+
+	/* EtherCAT */
+	if (config_is_traffic_class_active(GENERICL2_FRAME_TYPE) &&
+	    app_config.classes[GENERICL2_FRAME_TYPE].protocol_type == ETHERCAT_PROTOCOL_TYPE &&
+	    app_config.classes[GENERICL2_FRAME_TYPE].frame_length <
+		    sizeof(struct ethhdr) + sizeof(struct ethercat_header) + 20) {
+		fprintf(stderr, "EtherCAT needs a minimum frame length of %zu!\n",
+			sizeof(struct ethhdr) + sizeof(struct ethercat_header) + 20);
 		return false;
 	}
 

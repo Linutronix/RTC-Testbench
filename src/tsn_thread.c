@@ -144,6 +144,8 @@ static int tsn_gen_and_send_frames(struct thread_context *thread_context, int so
 		frame_config.sequence_counter = sequence_counter_begin + i;
 		frame_config.tx_timestamp = ts_to_ns(&tx_time);
 		frame_config.meta_data_offset = thread_context->meta_data_offset;
+		frame_config.frame_type = thread_context->frame_type;
+		frame_config.protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 		err = prepare_frame_for_tx(&frame_config);
 		if (err)
@@ -187,6 +189,7 @@ static void tsn_gen_and_send_xdp_frames(struct thread_context *thread_context,
 		.meta_data_offset = thread_context->meta_data_offset,
 		.frame_type = thread_context->frame_type,
 		.tx_time = tsn_config->tx_time_enabled ? &tx_time : NULL,
+		.protocol_type = GENERICL2_PROTOCOL_TYPE,
 	};
 
 	xdp_gen_and_send_frames(xsk, &xdp);

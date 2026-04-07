@@ -133,6 +133,8 @@ static int rta_gen_and_send_frames(struct thread_context *thread_context, int so
 		frame_config.sequence_counter = sequence_counter_begin + i;
 		frame_config.tx_timestamp = ts_to_ns(&tx_time);
 		frame_config.meta_data_offset = thread_context->meta_data_offset;
+		frame_config.frame_type = RTA_FRAME_TYPE;
+		frame_config.protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 		err = prepare_frame_for_tx(&frame_config);
 		if (err)
@@ -168,6 +170,7 @@ static void rta_gen_and_send_xdp_frames(struct thread_context *thread_context,
 	xdp.meta_data_offset = thread_context->meta_data_offset;
 	xdp.frame_type = RTA_FRAME_TYPE;
 	xdp.tx_time = NULL;
+	xdp.protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	xdp_gen_and_send_frames(xsk, &xdp);
 }

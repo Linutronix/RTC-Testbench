@@ -85,6 +85,20 @@ static struct sock_filter generic_l2_frame_filter[] = {
 	{0x15, 0, 1, 0x00004321}, {0x06, 0, 0, 0xffffffff}, {0x06, 0, 0, 0000000000},
 };
 
+/*
+ * Filter for EtherCAT Frames:
+ *   ldh [12]
+ *   jne #0x88a4, drop
+ *   ret #-1
+ *   drop: ret #0
+ */
+static struct sock_filter ethercat_frame_filter[] = {
+	{0x28, 0, 0, 0x0000000c},
+	{0x15, 0, 1, 0x000088a4},
+	{0x06, 0, 0, 0xffffffff},
+	{0x06, 0, 0, 0000000000},
+};
+
 static int set_promiscuous_mode(int socket, int interface)
 {
 	struct packet_mreq mreq;
@@ -355,6 +369,12 @@ int create_generic_l2_socket(void)
 
 	return create_socket(GENERICL2_FRAME_TYPE, generic_l2_frame_filter,
 			     ARRAY_SIZE(generic_l2_frame_filter));
+}
+
+int create_ethercat_socket(void)
+{
+	return create_socket(GENERICL2_FRAME_TYPE, ethercat_frame_filter,
+			     ARRAY_SIZE(ethercat_frame_filter));
 }
 
 static int dns_lookup(const char *host, const char *port, struct sockaddr_storage *addr,
