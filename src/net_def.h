@@ -21,6 +21,9 @@
 #ifndef ETH_P_AVTP
 #define ETH_P_AVTP (0x22f0)
 #endif
+#ifndef ETH_P_ETHERCAT
+#define ETH_P_ETHERCAT 0x88A4
+#endif
 
 #define VLAN_ID_MASK 0x0fff
 #define VLAN_PCP_SHIFT 13
@@ -47,6 +50,12 @@
 #define RTA_FRAMEID 0xfc01
 #define RTA_SEC_FRAMEID 0xfc02
 #define DCP_FRAMEID 0xfefe
+
+/* EtherCAT defines used by Testbench */
+#define ETHERCAT_HEADER_LEN 2
+#define ECAT_TX_TIMESTAMP_OFF 26
+#define ECAT_LENGTH_OFF 14
+#define ECAT_CMD_LENGTH_OFF 22
 
 /* VLAN 802.1Q frame. */
 struct vlan_ethernet_header {
@@ -112,6 +121,16 @@ struct profinet_secure_header {
 /* Generic Layer 2 header. */
 struct generic_l2_header {
 	struct reference_meta_data meta_data;
+} __attribute__((packed));
+
+/* EtherCAT header */
+struct ethercat_header {
+	/*
+	 * Bit 0-10 :  Length
+	 * Bit 11   :  Reserved
+	 * Bit 12-15:  Type: 0x1
+	 */
+	__be16 length;
 } __attribute__((packed));
 
 #endif /* _NET_DEF_H_ */

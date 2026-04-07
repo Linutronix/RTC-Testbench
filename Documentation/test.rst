@@ -485,6 +485,17 @@ All required configuration files and scripts are located in
 
 Hardware: Intel CPU with Intel i225/i226
 
+EtherCAT
+^^^^^^^^
+
+The following test scenario is designed to simulate EtherCAT. It creates a cyclic EtherCAT traffic.
+The NIC is connected to an EtherCAT sub-device (e.g. EK1100). No other traffic should be running
+parallel to EtherCAT. There is no need for the mirror application, since the sub-device acts as the 
+mirror of the traffic. 
+
+All required configuration files and scripts are located in
+``tests/ethercat/``.
+
 Working Clock
 ^^^^^^^^^^^^^
 
