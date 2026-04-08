@@ -1,0 +1,65 @@
+---
+#
+# Copyright (C) 2026 Linutronix GmbH
+# Author Kurt Kanzenbach <kurt@linutronix.de>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Sample mirror YAML configuration file for Intel platforms with i226 NIC(s).
+#
+Application:
+  ApplicationClockId: CLOCK_TAI
+  # ApplicationBaseStartTimeNS: 0
+  ApplicationBaseCycleTimeNS: 1ms
+  ApplicationTxBaseOffsetNS: 700us
+  ApplicationRxBaseOffsetNS: 300us
+  ApplicationXdpProgram: xdp_kern_profinet_vid100.o
+TsnHigh:
+  TsnHighEnabled: true
+  TsnHighXdpEnabled: true
+  TsnHighXdpSkbMode: false
+  TsnHighXdpZcMode: true
+  TsnHighXdpWakeupMode: true
+  TsnHighXdpBusyPollMode: true
+  TsnHighTxTimeStampEnabled: false
+  TsnHighVid: 100
+  TsnHighNumFramesPerCycle: 32
+  TsnHighPayloadPattern: |
+    TsnHighPayloadPattern
+  TsnHighFrameLength: 128
+  TsnHighRxQueue: 1
+  TsnHighTxQueue: 1
+  TsnHighSocketPriority: 7
+  TsnHighTxThreadPriority: 98
+  TsnHighRxThreadPriority: 98
+  TsnHighTxThreadCpu: 1
+  TsnHighRxThreadCpu: 1
+  TsnHighInterface: enp3s0
+  TsnHighDestination: a8:74:1d:9d:36:14
+  TsnHighRxWorkloadEnabled: true
+  TsnHighRxWorkloadFile: ../../workloads/pointer_chasing/pointer_chasing.so
+  TsnHighRxWorkloadSetupFunction: ptr_chase_setup
+  TsnHighRxWorkloadSetupArguments: "0x4A4000 0x129000"
+  TsnHighRxWorkloadTeardownFunction: ptr_chase_teardown
+  TsnHighRxWorkloadFunction: run_ptr_chasing
+  TsnHighRxWorkloadPrewarm: false
+  TsnHighRxWorkloadSkipCount: 100
+  TsnHighRxWorkloadThreadCpu: 1
+  TsnHighRxWorkloadThreadPriority: 80
+Log:
+  LogThreadPriority: 1
+  LogThreadCpu: 0
+  LogFile: /var/log/mirror_vid100.log
+  LogLevel: Info
+LogMqtt:
+  LogMqtt: true
+  LogMqttThreadPriority: 10
+  LogMqttThreadCpu: 0
+  LogMqttBrokerIP: 127.0.0.1
+  LogMqttBrokerPort: 1883
+  LogMqttMeasurementName: mirror
+Debug:
+  DebugStopTraceOnOutlier: false
+  DebugStopTraceOnError: false
+  DebugMonitorMode: false
+  DebugMonitorDestination: 44:44:44:44:44:44
