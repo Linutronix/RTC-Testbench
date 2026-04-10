@@ -136,6 +136,9 @@ Possible parameters include:
 
    * - <Class>Destination (MAC/IP Address)
      - Destination MAC/IP address
+	 
+   * - <Class>EcatEnabled (Boolean)
+     - Use EtherCAT instead of PROFINET
 
    * - LogThreadPriority (Integer):
      - Log thread priority based on SCHED_FIFO

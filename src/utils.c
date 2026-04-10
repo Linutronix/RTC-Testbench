@@ -58,6 +58,16 @@ void swap_mac_addresses(void *buffer, size_t len)
 	memcpy(eth->h_dest, tmp, sizeof(tmp));
 }
 
+void ecat_add_timestamp(unsigned char *buffer, uint64_t tx_timestamp, size_t frame_length)
+{
+	__be16 ecat_length = ((frame_length - 14) & 0x7FF) | 0x1000;
+	__be16 cmd_length = (frame_length - 28) & 0x7FF;
+
+	memcpy(&buffer[ECAT_TX_TIMESTAMP_OFF], &tx_timestamp, sizeof(uint64_t));
+	memcpy(&buffer[ECAT_LENGTH_OFF], &ecat_length, sizeof(__be16));
+	memcpy(&buffer[ECAT_CMD_LENGTH_OFF], &cmd_length, sizeof(__be16));
+}
+
 void insert_vlan_tag(void *buffer, size_t len, uint16_t ether_type, uint16_t vlan_tci)
 {
 	struct vlan_ethernet_header *veth;

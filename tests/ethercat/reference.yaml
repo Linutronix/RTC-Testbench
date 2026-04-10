@@ -1,0 +1,48 @@
+---
+#
+# Copyright (C) 2026 acontis technologies GmbH
+# Author Haithem Jebali <h.jebali@acontis.com>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Sample reference YAML configuration file for EtherCAT
+#
+Application:
+  ApplicationClockId: CLOCK_TAI
+  # ApplicationBaseStartTimeNS: 0
+  ApplicationBaseCycleTimeNS: 1000us
+  ApplicationTxBaseOffsetNS: 800us
+  ApplicationRxBaseOffsetNS: 300us
+  ApplicationXdpProgram: xdp_kern_ethercat.o
+RTC:
+  RtcEnabled: true
+  RtcEcatEnabled: true
+  RtcXdpEnabled: true
+  RtcXdpSkbMode: true
+  RtcXdpZcMode: false
+  RtcXdpWakeupMode: false
+  RtcXdpBusyPollMode: false
+  RtcTxTimeStampEnabled: false
+  RtcVid: 100
+  RtcNumFramesPerCycle: 1
+  RtcPayloadPattern:   0x00
+  RtcFrameLength: 128
+  RtcRxQueue: 0
+  RtcTxQueue: 0
+  RtcSocketPriority: 7
+  RtcTxThreadPriority: 98
+  RtcRxThreadPriority: 98
+  RtcTxThreadCpu: 0
+  RtcRxThreadCpu: 0
+  RtcInterface: enp3s0
+  RtcDestination: ff:ff:ff:ff:ff:ff
+Log:
+  LogThreadPriority: 1
+  LogThreadCpu: 1
+  LogFile: /var/log/ethercat.log
+  LogLevel: Info
+Debug:
+  DebugStopTraceOnOutlier: false
+  DebugStopTraceOnError: false
+  DebugMonitorMode: false
+  DebugMonitorDestination: 44:44:44:44:44:44

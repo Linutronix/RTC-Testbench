@@ -21,6 +21,7 @@
 #include <linux/if_vlan.h>
 
 #include "config.h"
+#include "ethercat.h"
 #include "log.h"
 #include "net.h"
 #include "packet.h"
@@ -54,12 +55,15 @@ static void rtc_initialize_frames(struct thread_context *thread_context, unsigne
 			frame_length -= sizeof(struct xsk_tx_metadata);
 		}
 #endif
-
-		initialize_profinet_frame(rtc_config->security_mode, frame, frame_length, source,
-					  destination, rtc_config->payload_pattern,
-					  rtc_config->payload_pattern_length,
-					  rtc_config->vid | rtc_config->pcp << VLAN_PCP_SHIFT,
-					  thread_context->frame_id);
+		if (rtc_config->ecat_enabled) {
+			initialize_ethercat_frame(frame, frame_length, source, destination);
+		} else {
+			initialize_profinet_frame(
+				rtc_config->security_mode, frame, frame_length, source, destination,
+				rtc_config->payload_pattern, rtc_config->payload_pattern_length,
+				rtc_config->vid | rtc_config->pcp << VLAN_PCP_SHIFT,
+				thread_context->frame_id);
+		}
 	}
 }
 
@@ -116,27 +120,31 @@ static int rtc_gen_and_send_frames(struct thread_context *thread_context, int so
 
 	clock_gettime(app_config.application_clock_id, &tx_time);
 
-	for (i = 0; i < rtc_config->num_frames_per_cycle; i++) {
-		struct prepare_frame_config frame_config;
-		int err;
+	if (!rtc_config->ecat_enabled) {
+		for (i = 0; i < rtc_config->num_frames_per_cycle; i++) {
+			struct prepare_frame_config frame_config;
+			int err;
 
-		frame_config.mode = rtc_config->security_mode;
-		frame_config.security_context = thread_context->tx_security_context;
-		frame_config.iv_prefix = (const unsigned char *)rtc_config->security_iv_prefix;
-		frame_config.payload_pattern = thread_context->payload_pattern;
-		frame_config.payload_pattern_length = thread_context->payload_pattern_length;
-		frame_config.frame_data = frame_idx(thread_context->tx_frame_data, i);
-		frame_config.frame_length = rtc_config->frame_length;
-		frame_config.num_frames_per_cycle = rtc_config->num_frames_per_cycle;
-		frame_config.sequence_counter = sequence_counter_begin + i;
-		frame_config.tx_timestamp = ts_to_ns(&tx_time);
-		frame_config.meta_data_offset = thread_context->meta_data_offset;
+			frame_config.mode = rtc_config->security_mode;
+			frame_config.security_context = thread_context->tx_security_context;
+			frame_config.iv_prefix =
+				(const unsigned char *)rtc_config->security_iv_prefix;
+			frame_config.payload_pattern = thread_context->payload_pattern;
+			frame_config.payload_pattern_length =
+				thread_context->payload_pattern_length;
+			frame_config.frame_data = frame_idx(thread_context->tx_frame_data, i);
+			frame_config.frame_length = rtc_config->frame_length;
+			frame_config.num_frames_per_cycle = rtc_config->num_frames_per_cycle;
+			frame_config.sequence_counter = sequence_counter_begin + i;
+			frame_config.tx_timestamp = ts_to_ns(&tx_time);
+			frame_config.meta_data_offset = thread_context->meta_data_offset;
 
-		err = prepare_frame_for_tx(&frame_config);
-		if (err)
-			log_message(LOG_LEVEL_ERROR, "RtcTx: Failed to prepare frame for Tx!\n");
+			err = prepare_frame_for_tx(&frame_config);
+			if (err)
+				log_message(LOG_LEVEL_ERROR,
+					    "RtcTx: Failed to prepare frame for Tx!\n");
+		}
 	}
-
 	/* Send it */
 	len = rtc_send_messages(thread_context, socket_fd, destination,
 				thread_context->tx_frame_data, rtc_config->num_frames_per_cycle);
@@ -166,6 +174,7 @@ static void rtc_gen_and_send_xdp_frames(struct thread_context *thread_context,
 	xdp.meta_data_offset = thread_context->meta_data_offset;
 	xdp.frame_type = RTC_FRAME_TYPE;
 	xdp.tx_time = NULL;
+	xdp.ecat_enabled = rtc_config->ecat_enabled;
 
 	xdp_gen_and_send_frames(xsk, &xdp);
 }
@@ -193,6 +202,7 @@ static void *rtc_tx_thread_routine(void *data)
 		log_message(LOG_LEVEL_ERROR, "RtcTx: Failed to get Source MAC address!\n");
 		return NULL;
 	}
+	memcpy(&thread_context->source, &source, ETH_ALEN);
 
 	if_index = if_nametoindex(rtc_config->interface);
 	if (!if_index) {
@@ -322,6 +332,7 @@ static void *rtc_xdp_tx_thread_routine(void *data)
 		log_message(LOG_LEVEL_ERROR, "RtcTx: Failed to get Source MAC address!\n");
 		return NULL;
 	}
+	memcpy(&thread_context->source, &source, ETH_ALEN);
 
 	/* First half of umem area is for Rx, the second half is for Tx. */
 	frame_data = xsk_umem__get_data(xsk->umem.buffer,
@@ -476,7 +487,8 @@ static void *rtc_rx_thread_routine(void *data)
 		struct packet_receive_request recv_req = {
 			.traffic_class = thread_context->traffic_class,
 			.socket_fd = socket_fd,
-			.receive_function = receive_profinet_frame,
+			thread_context->conf->ecat_enabled ? receive_ethercat_frame
+							   : receive_profinet_frame,
 			.data = thread_context,
 		};
 
@@ -542,7 +554,9 @@ static void *rtc_xdp_rx_thread_routine(void *data)
 
 		pthread_mutex_lock(&thread_context->xdp_data_mutex);
 		received = xdp_receive_frames(xsk, frame_length, mirror_enabled,
-					      receive_profinet_frame, thread_context, NULL);
+					      (rtc_config->ecat_enabled ? receive_ethercat_frame
+									: receive_profinet_frame),
+					      thread_context, NULL);
 		thread_context->received_frames = received;
 		pthread_mutex_unlock(&thread_context->xdp_data_mutex);
 

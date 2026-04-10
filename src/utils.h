@@ -50,6 +50,8 @@ void increment_period(struct timespec *time, int64_t period_ns);
 void swap_mac_addresses(void *buffer, size_t len);
 void insert_vlan_tag(void *buffer, size_t len, uint16_t ether_type, uint16_t vlan_tci);
 
+void ecat_add_timestamp(unsigned char *buffer, uint64_t tx_timestamp, size_t frame_length);
+
 /*
  * This function takes an received Ethernet frame by AF_PACKET sockets and performs two tasks:
  *
