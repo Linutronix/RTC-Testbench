@@ -491,14 +491,14 @@ Working Clock
 IEEE 60802 (the industrial TSN profile for automation) defines at least two time domains:
 
 - **Global time**: Is a global time domain e.g., based on UTC. It is used to correlate events and
-  for logging and diagnosis. Can be distributed by NTP or PTP.
+  for logging and diagnosis. Can be distributed by NTP or gPTP.
 - **Working clock**: This is a high precision time domain used for scheduling and packet
-  transmission inside a TSN network. It is not necessarily based on UTC, but rather starts at
-  zero. It is distributed by gPTP.
+  transmission inside a TSN network. It is not necessarily based on UTC. It can be based on an
+  arbitrary point in time. It is distributed by gPTP.
 
 In this test case, the following Linux clocks are involved:
 
-- ``CLOCK_REALTIME``, ``CLOCK_TAI``: Is set by NTP e.g., chrony.
+- ``CLOCK_REALTIME`` and ``CLOCK_TAI``: Is set by NTP or gPTP.
 - ``CLOCK_AUX0``: Is set by ``phc2sys`` from network gPTP time.
 
 Both clocks are completely independent from each other. The Testbench applications run on
@@ -510,7 +510,14 @@ Both clocks are completely independent from each other. The Testbench applicatio
 .. Note:: The Linux kernel does not support ``clock_nanosleep(2)`` for ``CLOCK_AUX`` yet. To run
           this test case successfully we have to wait for Linux >= v7.1.
 
-All required configuration files and scripts are located in ``tests/working_clock/``.
+All required configuration files and scripts are located in ``tests/working_clock/`` and
+``tests/working_clock_2/``.
+
+Difference between these two test cases:
+
+- **working_clock**: ``CLOCK_REALTIME`` set by NTP, e.g. chrony.
+- **working_clock_2**: ``CLOCK_REALTIME`` set by dedicated gPTP domain. Test utilizes Linux PTP
+  vClocks for gPTP multi domain support.
 
 Hardware: Intel CPU with Intel i225/i226.
 
