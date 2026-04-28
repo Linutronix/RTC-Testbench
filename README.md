@@ -88,7 +88,6 @@ The following list contains ideas for further development:
 
 - Add configurations for other hardware platforms (hybrid!) and NIC(s)
 - Add integration with `ClockManager`
-- Package for Debian
 
 ## Documentation
 
