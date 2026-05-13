@@ -67,6 +67,17 @@ PREEMPT_RT is recommended. In addition, the following configuration options have
 - CONFIG_NET_SCH_ETF
 - CONFIG_NET_SCH_INGRESS
 - CONFIG_NET_CLS_*
+- CONFIG_POSIX_AUX_CLOCKS
+
+The following script ``scripts/check_kconfig.pl`` can be used to verify a given Linux kernel
+configuration ``.config`` file.
+
+Example: No errors should be printed. Warnings can be evaluated on a case by case basis.
+
+.. code:: bash
+
+   kurt@jax linux % ~/work/RTC-Testbench/scripts/check_kconfig.pl .config
+   Checking config file '.config'...
 
 Additional Options
 ^^^^^^^^^^^^^^^^^^
