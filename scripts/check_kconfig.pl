@@ -36,6 +36,8 @@ my (%config, @err, @warn, @musthave, @disabled, $file, $help);
     "CONFIG_NET_SCH_TAPRIO",
     "CONFIG_NET_SCH_ETF",
     "CONFIG_NET_SCH_INGRESS",
+    "CONFIG_NET_CLS",
+    "CONFIG_NET_CLS_FLOWER",
     "CONFIG_POSIX_AUX_CLOCKS",
    );
 

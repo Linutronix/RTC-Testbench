@@ -66,7 +66,8 @@ PREEMPT_RT is recommended. In addition, the following configuration options have
 - CONFIG_NET_SCH_TAPRIO
 - CONFIG_NET_SCH_ETF
 - CONFIG_NET_SCH_INGRESS
-- CONFIG_NET_CLS_*
+- CONFIG_NET_CLS
+- CONFIG_NET_CLS_FLOWER
 - CONFIG_POSIX_AUX_CLOCKS
 
 The following script ``scripts/check_kconfig.pl`` can be used to verify a given Linux kernel
