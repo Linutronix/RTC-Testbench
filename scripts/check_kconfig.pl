@@ -38,6 +38,9 @@ my (%config, @err, @warn, @musthave, @disabled, $file, $help);
     "CONFIG_NET_SCH_INGRESS",
     "CONFIG_NET_CLS",
     "CONFIG_NET_CLS_FLOWER",
+    "CONFIG_VLAN_8021Q",
+    "CONFIG_MACVLAN",
+    "CONFIG_VETH",
     "CONFIG_POSIX_AUX_CLOCKS",
    );
 

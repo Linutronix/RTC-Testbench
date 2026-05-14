@@ -68,6 +68,9 @@ PREEMPT_RT is recommended. In addition, the following configuration options have
 - CONFIG_NET_SCH_INGRESS
 - CONFIG_NET_CLS
 - CONFIG_NET_CLS_FLOWER
+- CONFIG_VLAN_8021Q
+- CONFIG_MACVLAN
+- CONFIG_VETH
 - CONFIG_POSIX_AUX_CLOCKS
 
 The following script ``scripts/check_kconfig.pl`` can be used to verify a given Linux kernel
