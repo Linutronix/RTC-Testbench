@@ -65,9 +65,8 @@ PHCINDEX_VCLOCK2=$(ls -1 /sys/class/net/${INTERFACE}/device/ptp/${PHC_PHYSICAL} 
 
 # Checkout and build phc2sys capable handling CLOCK_AUX0
 if ! [ -d linuxptp ]; then
-  git clone https://github.com/mlichvar/linuxptp.git
+  git clone https://github.com/richardcochran/linuxptp
   pushd linuxptp
-  git checkout staging
   make -j$(nproc)
   popd
 fi

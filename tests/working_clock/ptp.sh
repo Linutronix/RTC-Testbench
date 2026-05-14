@@ -38,9 +38,8 @@ pkill phc2sys || true
 
 # Build phc2sys with support for CLOCK_AUX
 if ! [ -d linuxptp ]; then
-  git clone https://github.com/mlichvar/linuxptp.git
+  git clone https://github.com/richardcochran/linuxptp
   pushd linuxptp
-  git checkout staging
   make -j$(nproc)
   popd
 fi
