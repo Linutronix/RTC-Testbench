@@ -20,9 +20,6 @@
 # Note 1: This test case requires an update-to-date Linux kernel >= 7.2 for clock_gettime(2) and
 # clock_nanosleep(2) support on CLOCK_AUX*.
 #
-# Note 2: This test case requires an patched version of phc2sys. Code is available at
-# https://github.com/mlichvar/linuxptp.git branch=staging.
-#
 
 set -e
 

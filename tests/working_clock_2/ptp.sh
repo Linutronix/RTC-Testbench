@@ -20,12 +20,9 @@
 # Note 1: This test case requires an update-to-date Linux kernel >= 7.2 for clock_gettime(2) and
 #         clock_nanosleep(2) support on CLOCK_AUX*.
 #
-# Note 2: This test case requires an patched version of phc2sys. Code is available at
-#         https://github.com/mlichvar/linuxptp.git branch=staging.
+# Note 2: This example does not use CMLDS.
 #
-# Note 3: This example does not use CMLDS.
-#
-# Note 4: This example does not align the Testbench threads with the physical free running clock,
+# Note 3: This example does not align the Testbench threads with the physical free running clock,
 #         which is used for Qbv in i226. One idea would be to apply the required offset adjustments
 #         to the TAPRIO schedules.
 #

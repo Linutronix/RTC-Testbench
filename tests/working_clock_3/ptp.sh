@@ -20,12 +20,9 @@
 # Note 1: This test case requires an update-to-date Linux kernel >= 7.2 for clock_gettime(2) and
 #         clock_nanosleep(2) support on CLOCK_AUX*.
 #
-# Note 2: This test case requires an patched version of phc2sys. Code is available at
-#         https://github.com/mlichvar/linuxptp.git branch=staging.
+# Note 2: This example does not use CMLDS.
 #
-# Note 3: This example does not use CMLDS.
-#
-# Note 4: Working Clock does not use vClock, but rather the physical clock. This allows EST to work.
+# Note 3: Working Clock does not use vClock, but rather the physical clock. This allows EST to work.
 #         This does only work, because igc implements .getcyclesx64 callback using hardware timer 1.
 #
 

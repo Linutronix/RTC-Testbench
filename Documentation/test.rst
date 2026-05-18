@@ -504,16 +504,16 @@ In this test case, the following Linux clocks are involved:
 Both clocks are completely independent from each other. The Testbench applications run on
 ``CLOCK_AUX0``.
 
-.. Note:: ``phc2sys`` requires additional patches to use ``CLOCK_AUX``. The patches can be found
-          here: https://github.com/mlichvar/linuxptp/tree/staging.
+.. Note:: ``phc2sys`` requires additional patches to use ``CLOCK_AUX``. The patches are not yet
+	  released, but in the master branch of ``linuxptp``.
 
 .. Note:: The Linux kernel does not support ``clock_nanosleep(2)`` for ``CLOCK_AUX`` yet. To run
           this test case successfully we have to wait for Linux >= v7.2.
 
-All required configuration files and scripts are located in ``tests/working_clock/`` and
-``tests/working_clock_2/``.
+All required configuration files and scripts are located in ``tests/working_clock/``,
+``tests/working_clock_2/`` and ``tests/working_clock_3/``.
 
-Difference between these two test cases:
+Difference between these three test cases:
 
 - **working_clock**: ``CLOCK_REALTIME`` set by NTP, e.g. chrony.
 - **working_clock_2**: ``CLOCK_REALTIME`` set by dedicated gPTP domain. Test utilizes Linux PTP
