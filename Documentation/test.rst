@@ -508,7 +508,7 @@ Both clocks are completely independent from each other. The Testbench applicatio
           here: https://github.com/mlichvar/linuxptp/tree/staging.
 
 .. Note:: The Linux kernel does not support ``clock_nanosleep(2)`` for ``CLOCK_AUX`` yet. To run
-          this test case successfully we have to wait for Linux >= v7.1.
+          this test case successfully we have to wait for Linux >= v7.2.
 
 All required configuration files and scripts are located in ``tests/working_clock/`` and
 ``tests/working_clock_2/``.

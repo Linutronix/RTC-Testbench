@@ -17,7 +17,7 @@
 # The point is CLOCK_AUX0 is an arbitrary time domain (e.g. starting at zero), whereas
 # CLOCK_REALTIME points to valid UTC time. Both time domains are independent of each other.
 #
-# Note 1: This test case requires an update-to-date Linux kernel >= 7.1 for clock_gettime(2) and
+# Note 1: This test case requires an update-to-date Linux kernel >= 7.2 for clock_gettime(2) and
 #         clock_nanosleep(2) support on CLOCK_AUX*.
 #
 # Note 2: This test case requires an patched version of phc2sys. Code is available at
