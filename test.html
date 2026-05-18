@@ -686,6 +686,9 @@ this test case successfully we have to wait for Linux &gt;= v7.1.</p>
 <li><p><strong>working_clock</strong>: <code class="docutils literal notranslate"><span class="pre">CLOCK_REALTIME</span></code> set by NTP, e.g. chrony.</p></li>
 <li><p><strong>working_clock_2</strong>: <code class="docutils literal notranslate"><span class="pre">CLOCK_REALTIME</span></code> set by dedicated gPTP domain. Test utilizes Linux PTP
 vClocks for gPTP multi domain support.</p></li>
+<li><p><strong>working_clock_3</strong>: <code class="docutils literal notranslate"><span class="pre">CLOCK_REALTIME</span></code> set by dedicated gPTP domain. Test utilizes Linux PTP
+vClocks for gPTP multi domain support. However, the WC is not derived from vClock, but rather uses
+a separate physical PHC. This allows to combine multi domain with EST.</p></li>
 </ul>
 <p>Hardware: Intel CPU with Intel i225/i226.</p>
 </section>

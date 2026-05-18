@@ -518,6 +518,9 @@ Difference between these two test cases:
 - **working_clock**: ``CLOCK_REALTIME`` set by NTP, e.g. chrony.
 - **working_clock_2**: ``CLOCK_REALTIME`` set by dedicated gPTP domain. Test utilizes Linux PTP
   vClocks for gPTP multi domain support.
+- **working_clock_3**: ``CLOCK_REALTIME`` set by dedicated gPTP domain. Test utilizes Linux PTP
+  vClocks for gPTP multi domain support. However, the WC is not derived from vClock, but rather uses
+  a separate physical PHC. This allows to combine multi domain with EST.
 
 Hardware: Intel CPU with Intel i225/i226.
 

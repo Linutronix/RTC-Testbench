@@ -174,8 +174,20 @@ PREEMPT_RT is recommended. In addition, the following configuration options have
 <li><p>CONFIG_NET_SCH_TAPRIO</p></li>
 <li><p>CONFIG_NET_SCH_ETF</p></li>
 <li><p>CONFIG_NET_SCH_INGRESS</p></li>
-<li><p>CONFIG_NET_CLS_*</p></li>
+<li><p>CONFIG_NET_CLS</p></li>
+<li><p>CONFIG_NET_CLS_FLOWER</p></li>
+<li><p>CONFIG_VLAN_8021Q</p></li>
+<li><p>CONFIG_MACVLAN</p></li>
+<li><p>CONFIG_VETH</p></li>
+<li><p>CONFIG_POSIX_AUX_CLOCKS</p></li>
 </ul>
+<p>The following script <code class="docutils literal notranslate"><span class="pre">scripts/check_kconfig.pl</span></code> can be used to verify a given Linux kernel
+configuration <code class="docutils literal notranslate"><span class="pre">.config</span></code> file.</p>
+<p>Example: No errors should be printed. Warnings can be evaluated on a case by case basis.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kurt@jax<span class="w"> </span>linux<span class="w"> </span>%<span class="w"> </span>~/work/RTC-Testbench/scripts/check_kconfig.pl<span class="w"> </span>.config
+Checking<span class="w"> </span>config<span class="w"> </span>file<span class="w"> </span><span class="s1">&#39;.config&#39;</span>...
+</pre></div>
+</div>
 <section id="additional-options">
 <h2>Additional Options<a class="headerlink" href="#additional-options" title="Permalink to this heading"></a></h2>
 <p>Some features are added by using additional CMake opitions, the table bellow presents those features
