@@ -198,7 +198,7 @@ static int create_raw_socket(const char *if_name, int socket_priority)
 
 	interface = if_nametoindex(if_name);
 	if (!interface) {
-		perror("ioctl() failed");
+		perror("if_nametoindex() failed");
 		goto err_index;
 	}
 
