@@ -153,7 +153,7 @@ if ((${LIBNL3_FOUND}) AND (${LIBNL_GENL3_FOUND}) AND
   message(STATUS "Found libnl3: Building napictl configuration tool")
 
   add_executable(napictl src/napictl.c)
-  target_compile_options(napictl PRIVATE -Wall -Wshadow -std=gnu99 -Wvla)
+  target_compile_options(napictl PRIVATE -Wall -Wextra -Wshadow -std=gnu99 -Wvla)
   target_compile_definitions(napictl PRIVATE -D_GNU_SOURCE)
 
   target_link_libraries(napictl ${LIBNL3_LIBRARIES})

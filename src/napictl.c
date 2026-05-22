@@ -8,6 +8,7 @@
  */
 #include <errno.h>
 #include <getopt.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -23,6 +24,8 @@
 
 #include "app_config.h"
 
+#define __unused __attribute__((unused))
+
 static struct option long_options[] = {
 	{"interface", optional_argument, NULL, 'i'},
 	{"queue", optional_argument, NULL, 'q'},
@@ -35,8 +38,8 @@ static struct option long_options[] = {
 };
 
 static const char *interface;
-static int queue;
 static int verbose;
+static unsigned queue;
 static unsigned int defer_hard_irqs;
 static unsigned int gro_flush_timeout;
 
@@ -77,7 +80,7 @@ static void vprint(const char *format, ...)
 static unsigned int napi_id_tx;
 static unsigned int napi_id_rx;
 
-static int parse_queue(struct nl_msg *msg, void *arg)
+static int parse_queue(struct nl_msg *msg, void __unused *arg)
 {
 	bool q_found = false, n_found = false, t_found = false;
 	struct nlattr *attrs[NETDEV_A_QUEUE_MAX + 1];
@@ -168,7 +171,7 @@ out:
 	return ret;
 }
 
-static int set_napi_attributes(int ifindex, unsigned int napi_id)
+static int set_napi_attributes(unsigned int napi_id)
 {
 	struct nl_sock *sock;
 	struct nl_msg *msg;
@@ -226,6 +229,24 @@ out:
 	return ret;
 }
 
+static int parse_uint(const char *value, unsigned int *ret)
+{
+	unsigned long tmp;
+	char *endptr;
+
+	errno = 0;
+	tmp = strtoul(value, &endptr, 10);
+	if (errno != 0 || endptr == value || *endptr != '\0')
+		return -ERANGE;
+
+	if (tmp > UINT_MAX)
+		return -ERANGE;
+
+	*ret = tmp;
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	int c, ret, ifindex;
@@ -242,13 +263,16 @@ int main(int argc, char **argv)
 			interface = optarg;
 			break;
 		case 'q':
-			queue = atoi(optarg);
+			if (parse_uint(optarg, &queue))
+				print_usage_and_die();
 			break;
 		case 'd':
-			defer_hard_irqs = atoi(optarg);
+			if (parse_uint(optarg, &defer_hard_irqs))
+				print_usage_and_die();
 			break;
 		case 'g':
-			gro_flush_timeout = atoi(optarg);
+			if (parse_uint(optarg, &gro_flush_timeout))
+				print_usage_and_die();
 			break;
 		case 'h':
 		default:
@@ -256,7 +280,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!interface || queue < 0 || defer_hard_irqs < 0 || gro_flush_timeout < 0)
+	if (!interface)
 		print_usage_and_die();
 
 	ifindex = if_nametoindex(interface);
@@ -271,13 +295,13 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	vprint("> Tx NAPI ID for queue %d: %u\n", queue, napi_id_tx);
-	vprint("> Rx NAPI ID for queue %d: %u\n", queue, napi_id_rx);
+	vprint("> Tx NAPI ID for queue %u: %u\n", queue, napi_id_tx);
+	vprint("> Rx NAPI ID for queue %u: %u\n", queue, napi_id_rx);
 
 	vprint("> Set defer-hard-irqs %u and gro-flush-time %u to NAPI ID %u\n", defer_hard_irqs,
 	       gro_flush_timeout, napi_id_rx);
 
-	ret = set_napi_attributes(ifindex, napi_id_rx);
+	ret = set_napi_attributes(napi_id_rx);
 	if (ret) {
 		fprintf(stderr, "set_napi_attributes() failed\n");
 		return EXIT_FAILURE;
@@ -286,7 +310,7 @@ int main(int argc, char **argv)
 	vprint("> Set defer-hard-irqs %u and gro-flush-time %u to NAPI ID %u\n", defer_hard_irqs,
 	       gro_flush_timeout, napi_id_tx);
 
-	ret = set_napi_attributes(ifindex, napi_id_tx);
+	ret = set_napi_attributes(napi_id_tx);
 	if (ret) {
 		fprintf(stderr, "set_napi_attributes() failed\n");
 		return EXIT_FAILURE;
