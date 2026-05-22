@@ -466,7 +466,7 @@ int create_rta_socket(void)
 	/* Mark socket as non-blocking */
 	ret = mark_socket_non_blocking(socket_fd);
 	if (ret) {
-		fprintf(stderr, "Failed to mark TSN High socket as non-blocking!\n");
+		fprintf(stderr, "Failed to mark Rta socket as non-blocking!\n");
 		goto err_filter;
 	}
 
