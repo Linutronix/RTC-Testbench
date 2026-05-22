@@ -75,9 +75,10 @@ static const char *log_level_to_string(enum log_level level)
 void log_message(enum log_level level, const char *format, ...)
 {
 	unsigned char buffer[4096];
-	int written, len, ret;
 	struct timespec time;
+	size_t len, written;
 	va_list args;
+	int ret;
 	char *p;
 
 	/* Stop trace on error if desired. */
@@ -93,18 +94,24 @@ void log_message(enum log_level level, const char *format, ...)
 	if (ret)
 		memset(&time, '\0', sizeof(time));
 
-	len = sizeof(buffer) - 1;
+	len = sizeof(buffer);
 	p = (char *)buffer;
 
-	written = snprintf(p, len, "[%08lld.%09ld]: [%s]: ", (long long int)time.tv_sec,
-			   time.tv_nsec, log_level_to_string(level));
-	p += written;
-	len -= written;
+	ret = snprintf(p, len, "[%08lld.%09ld]: [%s]: ", (long long int)time.tv_sec, time.tv_nsec,
+		       log_level_to_string(level));
+	ret = snprintf_err_handling(&p, &len, ret);
+	if (ret)
+		return;
 
 	va_start(args, format);
-	written += vsnprintf(p, len, format, args);
+	ret = vsnprintf(p, len, format, args);
+	ret = snprintf_err_handling(&p, &len, ret);
 	va_end(args);
 
+	if (ret)
+		return;
+
+	written = sizeof(buffer) - len;
 	ring_buffer_add(global_log_ring_buffer, buffer, written);
 }
 
