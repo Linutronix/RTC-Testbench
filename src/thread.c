@@ -113,24 +113,31 @@ static struct thread_context *find_next_pn_thread(struct thread_context *pn_thre
 	case TSN_HIGH_THREAD:
 		if (config_is_traffic_class_active("TsnLow"))
 			return &pn_threads[TSN_LOW_THREAD];
+		/* fall through */
 	case TSN_LOW_THREAD:
 		if (config_is_traffic_class_active("Rtc"))
 			return &pn_threads[RTC_THREAD];
+		/* fall through */
 	case RTC_THREAD:
 		if (config_is_traffic_class_active("Rta"))
 			return &pn_threads[RTA_THREAD];
+		/* fall through */
 	case RTA_THREAD:
 		if (config_is_traffic_class_active("Dcp"))
 			return &pn_threads[DCP_THREAD];
+		/* fall through */
 	case DCP_THREAD:
 		if (config_is_traffic_class_active("Lldp"))
 			return &pn_threads[LLDP_THREAD];
+		/* fall through */
 	case LLDP_THREAD:
 		if (config_is_traffic_class_active("UdpHigh"))
 			return &pn_threads[UDP_HIGH_THREAD];
+		/* fall through */
 	case UDP_HIGH_THREAD:
 		if (config_is_traffic_class_active("UdpLow"))
 			return &pn_threads[UDP_LOW_THREAD];
+		/* fall through */
 	case UDP_LOW_THREAD:
 		return NULL;
 	}
