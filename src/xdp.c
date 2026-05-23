@@ -43,7 +43,7 @@ static enum xdp_attach_mode xdp_flags(bool skb_mode)
 	return skb_mode ? XDP_MODE_SKB : XDP_MODE_NATIVE;
 }
 
-static void xdp_set_prog_bind_flags(struct bpf_object *obj, unsigned int if_index)
+static void xdp_set_prog_bind_flags(struct bpf_object __unused *obj, unsigned int __unused if_index)
 {
 #ifdef RX_TIMESTAMP
 	struct bpf_program *bpf_prog = bpf_object__find_program_by_name(obj, "xdp_sock_prog");
@@ -623,8 +623,8 @@ void xdp_complete_tx(struct xdp_socket *xsk)
 }
 
 static unsigned char *xdp_prepare_tx_desc(struct xdp_socket *xsk, struct xdp_desc *tx_desc,
-					  const struct xdp_tx_time *tx_time, int i, int num_frames,
-					  bool tx)
+					  const struct xdp_tx_time __unused *tx_time,
+					  int __unused i, int __unused num_frames, bool __unused tx)
 {
 	unsigned char *data;
 

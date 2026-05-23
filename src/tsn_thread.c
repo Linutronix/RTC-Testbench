@@ -120,8 +120,8 @@ static int tsn_send_frames(struct thread_context *thread_context, unsigned char 
 }
 
 static int tsn_gen_and_send_frames(struct thread_context *thread_context, int socket_fd,
-				   struct sockaddr_ll *destination, uint64_t wakeup_time,
-				   uint64_t sequence_counter_begin, uint64_t duration)
+				   struct sockaddr_ll *destination, uint64_t sequence_counter_begin,
+				   uint64_t duration)
 {
 	const struct traffic_class_config *tsn_config = thread_context->conf;
 	struct timespec tx_time = {};
@@ -164,8 +164,7 @@ static int tsn_gen_and_send_frames(struct thread_context *thread_context, int so
 
 static void tsn_gen_and_send_xdp_frames(struct thread_context *thread_context,
 					struct xdp_socket *xsk, uint64_t sequence_counter,
-					uint64_t wakeup_time, uint64_t duration,
-					uint32_t *frame_number)
+					uint64_t duration, uint32_t *frame_number)
 {
 	const struct traffic_class_config *tsn_config = thread_context->conf;
 	struct xdp_tx_time tx_time = {
@@ -296,7 +295,7 @@ static void *tsn_tx_thread_routine(void *data)
 		 */
 		if (!mirror_enabled) {
 			tsn_gen_and_send_frames(thread_context, socket_fd, &destination,
-						ts_to_ns(&wakeup_time), sequence_counter, duration);
+						sequence_counter, duration);
 
 			sequence_counter += tsn_config->num_frames_per_cycle;
 		} else {
@@ -425,8 +424,7 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 		 *  b) Use received ones if mirror enabled
 		 */
 		if (!mirror_enabled) {
-			tsn_gen_and_send_xdp_frames(thread_context, xsk, sequence_counter,
-						    ts_to_ns(&wakeup_time), duration,
+			tsn_gen_and_send_xdp_frames(thread_context, xsk, sequence_counter, duration,
 						    &frame_number);
 			sequence_counter += num_frames;
 		} else {

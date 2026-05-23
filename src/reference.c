@@ -42,7 +42,7 @@ static struct log_thread_context *log_thread;
 static struct thread_context *g2_threads;
 static struct thread_context *threads;
 
-static void term_handler(int sig)
+static void term_handler(int __unused sig)
 {
 	int i;
 
@@ -67,7 +67,7 @@ static void term_handler(int sig)
 			threads[i].stop = 1;
 }
 
-static void reset_stats_handler(int sig)
+static void reset_stats_handler(int __unused sig)
 {
 	reset_stats = 1;
 }

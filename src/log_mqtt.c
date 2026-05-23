@@ -26,6 +26,8 @@
 #include "utils.h"
 
 #ifndef WITH_MQTT
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 struct log_mqtt_thread_context *log_mqtt_thread_create(void)
 {
 	return NULL;
@@ -38,7 +40,7 @@ void log_mqtt_thread_wait_for_finish(struct log_mqtt_thread_context *thread_cont
 void log_mqtt_thread_free(struct log_mqtt_thread_context *thread_context)
 {
 }
-
+#pragma GCC diagnostic pop
 #else
 
 static struct statistics statistics_per_period[NUM_FRAME_TYPES];
@@ -61,7 +63,7 @@ static void log_mqtt_add_traffic_class(struct mosquitto *mosq, const char *mqtt_
 		fprintf(stderr, "MQTT: Error publishing: %s\n", mosquitto_strerror(result_pub));
 }
 
-static void log_mqtt_on_connect(struct mosquitto *mosq, void *obj, int reason_code)
+static void log_mqtt_on_connect(struct mosquitto *mosq, void __unused *obj, int reason_code)
 {
 	if (reason_code != 0)
 		mosquitto_disconnect(mosq);

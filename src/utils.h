@@ -35,6 +35,8 @@
 #define USEC_PER_SEC 1000000
 #define NSEC_PER_SEC 1000000000LL
 
+#define __unused __attribute__((unused))
+
 static inline void ns_to_ts(int64_t ns, struct timespec *ts)
 {
 	ts->tv_sec = ns / NSEC_PER_SEC;

@@ -133,8 +133,8 @@ if(TX_TIMESTAMP)
   endif()
 endif()
 
-target_compile_options(reference PRIVATE -Wall -Wshadow -std=gnu99 -Wvla)
-target_compile_options(mirror PRIVATE -Wall -Wshadow -std=gnu99 -Wvla)
+target_compile_options(reference PRIVATE -Wall -Wunused-parameter -Wshadow -std=gnu99 -Wvla)
+target_compile_options(mirror PRIVATE -Wall -Wunused-parameter -Wshadow -std=gnu99 -Wvla)
 
 target_compile_definitions(reference PRIVATE -D_GNU_SOURCE)
 target_compile_definitions(mirror PRIVATE -D_GNU_SOURCE)

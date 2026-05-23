@@ -301,8 +301,7 @@ static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_
 }
 
 #ifdef TX_TIMESTAMP
-static void stat_frame_sent_latency_common(struct statistics *stat, enum stat_frame_type frame_type,
-					   uint64_t tx_latency_us)
+static void stat_frame_sent_latency_common(struct statistics *stat, uint64_t tx_latency_us)
 {
 	stat_update_min_max(tx_latency_us, &stat->tx_min, &stat->tx_max);
 
@@ -311,8 +310,7 @@ static void stat_frame_sent_latency_common(struct statistics *stat, enum stat_fr
 	stat->tx_avg = stat->tx_sum / (double)stat->tx_count;
 }
 
-static void stat_frame_proc_first_common(struct statistics *stat, enum stat_frame_type frame_type,
-					 uint64_t proc_first_us)
+static void stat_frame_proc_first_common(struct statistics *stat, uint64_t proc_first_us)
 {
 	/* Check for outliers - processing time exceeding cycle time */
 	if (proc_first_us > app_config.application_base_cycle_time_ns / 1000)
@@ -324,8 +322,7 @@ static void stat_frame_proc_first_common(struct statistics *stat, enum stat_fram
 	stat->proc_first_avg = stat->proc_first_sum / (double)stat->proc_first_count;
 }
 
-static void stat_frame_proc_batch_common(struct statistics *stat, enum stat_frame_type frame_type,
-					 uint64_t proc_batch_us)
+static void stat_frame_proc_batch_common(struct statistics *stat, uint64_t proc_batch_us)
 {
 	/* Check for outliers - processing time exceeding cycle time */
 	if (proc_batch_us > app_config.application_base_cycle_time_ns / 1000)
@@ -385,7 +382,7 @@ static void stat_frame_sent_latency_per_period(enum stat_frame_type frame_type,
 {
 	struct statistics *stat_per_period = &statistics_per_period[frame_type];
 
-	stat_frame_sent_latency_common(stat_per_period, frame_type, tx_latency_us);
+	stat_frame_sent_latency_common(stat_per_period, tx_latency_us);
 }
 
 static void stat_frame_proc_first_per_period(enum stat_frame_type frame_type,
@@ -393,7 +390,7 @@ static void stat_frame_proc_first_per_period(enum stat_frame_type frame_type,
 {
 	struct statistics *stat_per_period = &statistics_per_period[frame_type];
 
-	stat_frame_proc_first_common(stat_per_period, frame_type, proc_first_us);
+	stat_frame_proc_first_common(stat_per_period, proc_first_us);
 }
 
 static void stat_frame_proc_batch_per_period(enum stat_frame_type frame_type,
@@ -401,10 +398,12 @@ static void stat_frame_proc_batch_per_period(enum stat_frame_type frame_type,
 {
 	struct statistics *stat_per_period = &statistics_per_period[frame_type];
 
-	stat_frame_proc_batch_common(stat_per_period, frame_type, proc_batch_us);
+	stat_frame_proc_batch_common(stat_per_period, proc_batch_us);
 }
 #endif
 #else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 static void stat_frame_received_per_period(enum stat_frame_type frame_type, uint64_t curr_time,
 					   uint64_t rt_time, bool out_of_order,
 					   bool payload_mismatch, bool frame_id_mismatch,
@@ -436,6 +435,7 @@ static void stat_frame_proc_batch_per_period(enum stat_frame_type frame_type,
 					     uint64_t proc_batch_us)
 {
 }
+#pragma GCC diagnostic pop
 #endif
 #endif
 
@@ -514,7 +514,7 @@ void stat_frame_sent_latency(enum stat_frame_type frame_type, uint64_t seq)
 			    (unsigned long long)hw_ts, (long long)latency, idx);
 
 		/* Update global stats */
-		stat_frame_sent_latency_common(stat, frame_type, latency);
+		stat_frame_sent_latency_common(stat, latency);
 
 		/* Update stats per collection interval */
 		stat_frame_sent_latency_per_period(frame_type, latency);
@@ -693,7 +693,7 @@ void stat_proc_first_latency(enum stat_frame_type frame_type, uint64_t cycle_num
 			    rx_hw_ts, tx_hw_timestamp);
 
 		/* Update global stats */
-		stat_frame_proc_first_common(stat, frame_type, proc_first_latency);
+		stat_frame_proc_first_common(stat, proc_first_latency);
 
 		/* Update stats per collection interval */
 		stat_frame_proc_first_per_period(frame_type, proc_first_latency);
@@ -750,7 +750,7 @@ void stat_proc_batch_latency(enum stat_frame_type frame_type, uint64_t cycle_num
 			    rx_hw_ts, last_tx_hw_timestamp);
 
 		/* Update global stats */
-		stat_frame_proc_batch_common(stat, frame_type, proc_batch_latency);
+		stat_frame_proc_batch_common(stat, proc_batch_latency);
 
 		/* Update stats per collection interval */
 		stat_frame_proc_batch_per_period(frame_type, proc_batch_latency);

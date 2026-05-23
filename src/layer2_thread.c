@@ -187,8 +187,8 @@ static int generic_l2_gen_and_send_frames(struct thread_context *thread_context,
 
 static void generic_l2_gen_and_send_xdp_frames(struct thread_context *thread_context,
 					       size_t num_frames_per_cycle,
-					       uint64_t sequence_counter, uint64_t wakeup_time,
-					       uint64_t duration, uint32_t *frame_number)
+					       uint64_t sequence_counter, uint64_t duration,
+					       uint32_t *frame_number)
 {
 	const struct traffic_class_config *l2_config = thread_context->conf;
 	struct xdp_tx_time tx_time = {
@@ -382,8 +382,8 @@ static void *generic_l2_xdp_tx_thread_routine(void *data)
 
 		if (!mirror_enabled) {
 			generic_l2_gen_and_send_xdp_frames(thread_context, num_frames,
-							   sequence_counter, ts_to_ns(&wakeup_time),
-							   duration, &frame_number);
+							   sequence_counter, duration,
+							   &frame_number);
 			sequence_counter += num_frames;
 		} else {
 			unsigned int received;
