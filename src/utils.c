@@ -200,7 +200,7 @@ void prepare_iv(const unsigned char *iv_prefix, uint64_t sequence_counter, struc
 
 void prepare_openssl(struct security_context *context)
 {
-	unsigned char iv[SECURITY_IV_LEN] = "012345678901";
+	unsigned char iv[SECURITY_IV_LEN + 1] = "012345678901";
 	unsigned char dummy_frame[2048] = {5};
 
 	if (!context)
