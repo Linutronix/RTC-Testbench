@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2024 Linutronix GmbH
+# Copyright (C) 2024-2026 Linutronix GmbH
 # Author Kurt Kanzenbach <kurt@linutronix.de>
 #
 # SPDX-License-Identifier: BSD-2-Clause
@@ -21,15 +21,22 @@ cd $(dirname $0)
 
 pushd ../..
 
+combos=("")
+for option in $OPTIONS; do
+  new_combos=()
+  for combo in "${combos[@]}"; do
+    new_combos+=("$combo -D$option=OFF")
+    new_combos+=("$combo -D$option=ON")
+  done
+  combos=("${new_combos[@]}")
+done
+
 for compiler in $COMPILER; do
-  for option in $OPTIONS; do
+  for combo in "${combos[@]}"; do
     mkdir -p build
     pushd build
-    echo "Trying 'CC=$compiler cmake -D$option=OFF' ..."
-    CC=$compiler cmake -D$option=OFF ..
-    make -j$(nproc)
-    echo "Trying 'CC=$compiler cmake -D$option=ON' ..."
-    CC=$compiler cmake -D$option=ON ..
+    echo "Trying 'CC=$compiler cmake$combo' ..."
+    CC=$compiler cmake $combo ..
     make -j$(nproc)
     popd
     rm -rf build
