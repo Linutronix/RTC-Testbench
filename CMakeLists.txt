@@ -239,12 +239,28 @@ function(add_xdp_prog name)
   install(FILES ${CMAKE_BINARY_DIR}/${name}.o DESTINATION ${CMAKE_INSTALL_LIBDIR}/rtc-testbench/ebpf)
 endfunction()
 
-add_xdp_prog(xdp_kern_profinet_vid100)
-add_xdp_prog(xdp_kern_opcua_vid100)
-add_xdp_prog(xdp_kern_profinet_vid200)
-add_xdp_prog(xdp_kern_opcua_vid200)
-add_xdp_prog(xdp_kern_opcua_vid300)
-add_xdp_prog(xdp_kern_avtp_vid400)
+function(add_xdp_prog_tb name vid eth_type priority check_profinet)
+  set(defs -DEBPF_VID=${vid} -DEBPF_ETH_TYPE=${eth_type} -DEBPF_PRIORITY=${priority})
+  if(check_profinet)
+    list(APPEND defs -DEBPF_CHECK_FRAMEID=1)
+  endif()
+
+  add_custom_target(${name} ALL
+    COMMAND clang ${CLANG_FLAGS} ${defs} -target bpf -c -g -o ${CMAKE_BINARY_DIR}/${name}.o xdp_kern_tb.c
+    DEPENDS reference
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
+    SOURCES src/xdp_kern_tb.c
+  )
+
+  install(FILES ${CMAKE_BINARY_DIR}/${name}.o DESTINATION ${CMAKE_INSTALL_LIBDIR}/rtc-testbench/ebpf)
+endfunction()
+
+add_xdp_prog_tb(xdp_kern_profinet_vid100 100 0x8892 10 1)
+add_xdp_prog_tb(xdp_kern_opcua_vid100    100 0xb62c 20 0)
+add_xdp_prog_tb(xdp_kern_profinet_vid200 200 0x8892 10 1)
+add_xdp_prog_tb(xdp_kern_opcua_vid200    200 0xb62c 20 0)
+add_xdp_prog_tb(xdp_kern_opcua_vid300    300 0xb62c 20 0)
+add_xdp_prog_tb(xdp_kern_avtp_vid400     400 0x22f0 20 0)
 add_xdp_prog(xdp_kern_profinet_veth_dispatch)
 
 install(TARGETS reference DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT binaries)

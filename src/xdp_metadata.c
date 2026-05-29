@@ -9,7 +9,7 @@
 
 extern int bpf_xdp_metadata_rx_timestamp(const struct xdp_md *ctx, __u64 *timestamp) __ksym;
 
-void populate_rx_timestamp(struct xdp_md *ctx)
+static __always_inline void populate_rx_timestamp(struct xdp_md *ctx)
 {
 #ifdef RX_TIMESTAMP
 	struct xdp_meta *meta;
