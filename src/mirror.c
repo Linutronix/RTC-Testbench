@@ -35,7 +35,7 @@ static struct option long_options[] = {
 	{"config", optional_argument, NULL, 'c'},
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'V'},
-	{NULL},
+	{},
 };
 
 static struct log_mqtt_thread_context *log_mqtt_thread;

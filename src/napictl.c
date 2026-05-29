@@ -34,7 +34,7 @@ static struct option long_options[] = {
 	{"help", no_argument, NULL, 'h'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"version", no_argument, NULL, 'V'},
-	{NULL},
+	{},
 };
 
 static const char *interface;
