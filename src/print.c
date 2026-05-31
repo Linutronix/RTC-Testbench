@@ -22,10 +22,8 @@ void print_stats(void)
 		stat_get_global_stats(global_statistics, sizeof(global_statistics));
 
 		for (int i = 0; i < NUM_FRAME_TYPES; i++) {
-			const char *name = i == GENERICL2_FRAME_TYPE
-						   ? app_config.classes[GENERICL2_FRAME_TYPE].name
-						   : stat_frame_type_to_string(i);
 			const struct statistics *stat = &global_statistics[i];
+			const char *name = stat_frame_type_to_string(i);
 			uint64_t errors;
 
 			errors = stat->frame_id_errors + stat->out_of_order_errors +

@@ -143,6 +143,9 @@ int stat_init(enum log_stat_options log_selection)
 
 	log_stat_user_selected = log_selection;
 
+	/* L2 can be anything. Update name accordingly. */
+	stat_frame_type_names[GENERICL2_FRAME_TYPE] = app_config.classes[GENERICL2_FRAME_TYPE].name;
+
 	return 0;
 }
 
