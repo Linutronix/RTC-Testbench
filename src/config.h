@@ -429,7 +429,7 @@ void config_free(void);
 		}                                                                                  \
 	} while (0)
 
-bool config_is_traffic_class_active(const char *traffic_class);
+bool config_is_traffic_class_active(enum stat_frame_type type);
 
 static inline bool config_have_busy_poll(void)
 {

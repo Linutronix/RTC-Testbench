@@ -357,7 +357,7 @@ static void *log_thread_routine(void *data)
 		stat_message_length = sizeof(stat_message);
 
 		for (i = 0; i < NUM_FRAME_TYPES; i++) {
-			if (config_is_traffic_class_active(stat_frame_type_to_string(i))) {
+			if (config_is_traffic_class_active(i)) {
 				const char *name =
 					i == GENERICL2_FRAME_TYPE
 						? app_config.classes[GENERICL2_FRAME_TYPE].name

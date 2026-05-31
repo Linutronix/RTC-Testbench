@@ -444,7 +444,7 @@ int lldp_threads_create(struct thread_context *thread_context)
 	struct traffic_class_config *lldp_config;
 	int ret;
 
-	if (!config_is_traffic_class_active("Lldp"))
+	if (!config_is_traffic_class_active(LLDP_FRAME_TYPE))
 		goto out;
 
 	thread_context->conf = lldp_config = &app_config.classes[LLDP_FRAME_TYPE];

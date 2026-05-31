@@ -424,7 +424,7 @@ int dcp_threads_create(struct thread_context *thread_context)
 	struct traffic_class_config *dcp_config;
 	int ret;
 
-	if (!config_is_traffic_class_active("Dcp"))
+	if (!config_is_traffic_class_active(DCP_FRAME_TYPE))
 		goto out;
 
 	thread_context->conf = dcp_config = &app_config.classes[DCP_FRAME_TYPE];

@@ -31,7 +31,7 @@ void print_stats(void)
 			errors = stat->frame_id_errors + stat->out_of_order_errors +
 				 stat->payload_errors;
 
-			if (config_is_traffic_class_active(stat_frame_type_to_string(i))) {
+			if (config_is_traffic_class_active(i)) {
 				printf("%-8s: Tx:%10" PRIu64 " Rx:%10" PRIu64
 				       " RttMin[us]:%10" PRIu64
 				       " RttAvg[us]:%10lf RttMax[us]:%10" PRIu64 " Err:%8" PRIu64

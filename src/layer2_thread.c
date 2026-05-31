@@ -679,7 +679,7 @@ struct thread_context *generic_l2_threads_create(void)
 	if (!thread_context)
 		return NULL;
 
-	if (!config_is_traffic_class_active("GenericL2"))
+	if (!config_is_traffic_class_active(GENERICL2_FRAME_TYPE))
 		goto out;
 
 	thread_context->conf = l2_config = &app_config.classes[GENERICL2_FRAME_TYPE];

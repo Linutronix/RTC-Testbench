@@ -111,31 +111,31 @@ static struct thread_context *find_next_pn_thread(struct thread_context *pn_thre
 {
 	switch (start) {
 	case TSN_HIGH_THREAD:
-		if (config_is_traffic_class_active("TsnLow"))
+		if (config_is_traffic_class_active(TSN_LOW_FRAME_TYPE))
 			return &pn_threads[TSN_LOW_THREAD];
 		/* fall through */
 	case TSN_LOW_THREAD:
-		if (config_is_traffic_class_active("Rtc"))
+		if (config_is_traffic_class_active(RTC_FRAME_TYPE))
 			return &pn_threads[RTC_THREAD];
 		/* fall through */
 	case RTC_THREAD:
-		if (config_is_traffic_class_active("Rta"))
+		if (config_is_traffic_class_active(RTA_FRAME_TYPE))
 			return &pn_threads[RTA_THREAD];
 		/* fall through */
 	case RTA_THREAD:
-		if (config_is_traffic_class_active("Dcp"))
+		if (config_is_traffic_class_active(DCP_FRAME_TYPE))
 			return &pn_threads[DCP_THREAD];
 		/* fall through */
 	case DCP_THREAD:
-		if (config_is_traffic_class_active("Lldp"))
+		if (config_is_traffic_class_active(LLDP_FRAME_TYPE))
 			return &pn_threads[LLDP_THREAD];
 		/* fall through */
 	case LLDP_THREAD:
-		if (config_is_traffic_class_active("UdpHigh"))
+		if (config_is_traffic_class_active(UDP_HIGH_FRAME_TYPE))
 			return &pn_threads[UDP_HIGH_THREAD];
 		/* fall through */
 	case UDP_HIGH_THREAD:
-		if (config_is_traffic_class_active("UdpLow"))
+		if (config_is_traffic_class_active(UDP_LOW_FRAME_TYPE))
 			return &pn_threads[UDP_LOW_THREAD];
 		/* fall through */
 	case UDP_LOW_THREAD:
@@ -169,13 +169,13 @@ int link_pn_threads(struct thread_context *pn_threads)
 	 *
 	 * GenericL2 has nothing todo with Profinet.
 	 */
-	if (config_is_traffic_class_active("TsnHigh")) {
+	if (config_is_traffic_class_active(TSN_HIGH_FRAME_TYPE)) {
 		pn_threads[TSN_HIGH_THREAD].is_first = true;
 		t = &pn_threads[TSN_HIGH_THREAD];
-	} else if (config_is_traffic_class_active("Rtc")) {
+	} else if (config_is_traffic_class_active(RTC_FRAME_TYPE)) {
 		pn_threads[RTC_THREAD].is_first = true;
 		t = &pn_threads[RTC_THREAD];
-	} else if (config_is_traffic_class_active("GenericL2")) {
+	} else if (config_is_traffic_class_active(GENERICL2_FRAME_TYPE)) {
 		return 0;
 	} else {
 		return -EINVAL;

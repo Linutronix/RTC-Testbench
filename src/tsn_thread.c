@@ -615,13 +615,7 @@ int tsn_threads_create(struct thread_context *thread_context)
 	const struct traffic_class_config *tsn_config = thread_context->conf;
 	int ret;
 
-	if (thread_context->frame_type == TSN_HIGH_FRAME_TYPE &&
-	    !config_is_traffic_class_active("TsnHigh")) {
-		ret = 0;
-		goto out;
-	}
-	if (thread_context->frame_type == TSN_LOW_FRAME_TYPE &&
-	    !config_is_traffic_class_active("TsnLow")) {
+	if (!config_is_traffic_class_active(thread_context->frame_type)) {
 		ret = 0;
 		goto out;
 	}

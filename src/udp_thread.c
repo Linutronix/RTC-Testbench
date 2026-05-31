@@ -382,13 +382,7 @@ static int udp_threads_create(struct thread_context *thread_context)
 	const struct traffic_class_config *udp_config = thread_context->conf;
 	int ret;
 
-	if (thread_context->frame_type == UDP_HIGH_FRAME_TYPE &&
-	    !config_is_traffic_class_active("UdpHigh")) {
-		ret = 0;
-		goto out;
-	}
-	if (thread_context->frame_type == UDP_LOW_FRAME_TYPE &&
-	    !config_is_traffic_class_active("UdpLow")) {
+	if (!config_is_traffic_class_active(thread_context->frame_type)) {
 		ret = 0;
 		goto out;
 	}

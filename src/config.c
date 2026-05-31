@@ -60,9 +60,10 @@ static enum stat_frame_type config_opt_to_type(const char *opt)
 	return NUM_FRAME_TYPES;
 }
 
-bool config_is_traffic_class_active(const char *traffic_class)
+bool config_is_traffic_class_active(enum stat_frame_type type)
 {
-	enum stat_frame_type type = config_opt_to_type(traffic_class);
+	if (type >= NUM_FRAME_TYPES)
+		return false;
 
 	return app_config.classes[type].enabled &&
 	       app_config.classes[type].num_frames_per_cycle > 0;
@@ -682,7 +683,7 @@ void config_print_values(void)
 	       "\n");
 
 	conf = &app_config.classes[TSN_HIGH_FRAME_TYPE];
-	if (config_is_traffic_class_active("TsnHigh")) {
+	if (config_is_traffic_class_active(TSN_HIGH_FRAME_TYPE)) {
 		printf("TsnHighEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("TsnHighRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
 		printf("TsnHighXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
@@ -735,7 +736,7 @@ void config_print_values(void)
 	}
 
 	conf = &app_config.classes[TSN_LOW_FRAME_TYPE];
-	if (config_is_traffic_class_active("TsnLow")) {
+	if (config_is_traffic_class_active(TSN_LOW_FRAME_TYPE)) {
 		printf("TsnLowEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("TsnLowRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
 		printf("TsnLowXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
@@ -774,7 +775,7 @@ void config_print_values(void)
 	}
 
 	conf = &app_config.classes[RTC_FRAME_TYPE];
-	if (config_is_traffic_class_active("Rtc")) {
+	if (config_is_traffic_class_active(RTC_FRAME_TYPE)) {
 		printf("RtcEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("RtcRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
 		printf("RtcXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
@@ -822,7 +823,7 @@ void config_print_values(void)
 	}
 
 	conf = &app_config.classes[RTA_FRAME_TYPE];
-	if (config_is_traffic_class_active("Rta")) {
+	if (config_is_traffic_class_active(RTA_FRAME_TYPE)) {
 		printf("RtaEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("RtaRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
 		printf("RtaXdpEnabled=%s\n", conf->xdp_enabled ? "True" : "False");
@@ -859,7 +860,7 @@ void config_print_values(void)
 	}
 
 	conf = &app_config.classes[DCP_FRAME_TYPE];
-	if (config_is_traffic_class_active("Dcp")) {
+	if (config_is_traffic_class_active(DCP_FRAME_TYPE)) {
 		printf("DcpEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("DcpRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
 		printf("DcpIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
@@ -885,7 +886,7 @@ void config_print_values(void)
 	}
 
 	conf = &app_config.classes[LLDP_FRAME_TYPE];
-	if (config_is_traffic_class_active("Lldp")) {
+	if (config_is_traffic_class_active(LLDP_FRAME_TYPE)) {
 		printf("LldpEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("LldpRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
 		printf("LldpIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
@@ -909,7 +910,7 @@ void config_print_values(void)
 	}
 
 	conf = &app_config.classes[UDP_HIGH_FRAME_TYPE];
-	if (config_is_traffic_class_active("UdpHigh")) {
+	if (config_is_traffic_class_active(UDP_HIGH_FRAME_TYPE)) {
 		printf("UdpHighEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("UdpHighRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
 		printf("UdpHighIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
@@ -934,7 +935,7 @@ void config_print_values(void)
 	}
 
 	conf = &app_config.classes[UDP_LOW_FRAME_TYPE];
-	if (config_is_traffic_class_active("UdpLow")) {
+	if (config_is_traffic_class_active(UDP_LOW_FRAME_TYPE)) {
 		printf("UdpLowEnabled=%s\n", conf->enabled ? "True" : "False");
 		printf("UdpLowRxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
 		printf("UdpLowIgnoreRxErrors=%s\n", conf->ignore_rx_errors ? "True" : "False");
@@ -959,7 +960,7 @@ void config_print_values(void)
 	}
 
 	conf = &app_config.classes[GENERICL2_FRAME_TYPE];
-	if (config_is_traffic_class_active("GenericL2")) {
+	if (config_is_traffic_class_active(GENERICL2_FRAME_TYPE)) {
 		printf("GenericL2Name=%s\n", conf->name);
 		printf("GenericL2Enabled=%s\n", conf->enabled ? "True" : "False");
 		printf("GenericL2RxMirrorEnabled=%s\n", conf->rx_mirror_enabled ? "True" : "False");
@@ -1528,12 +1529,15 @@ bool config_sanity_check(void)
 	size_t min_frame_size;
 
 	/* Either GenericL2 or PROFINET should be active. */
-	if (config_is_traffic_class_active("GenericL2") &&
-	    (config_is_traffic_class_active("TsnHigh") ||
-	     config_is_traffic_class_active("TsnLow") || config_is_traffic_class_active("Rtc") ||
-	     config_is_traffic_class_active("Rta") || config_is_traffic_class_active("Dcp") ||
-	     config_is_traffic_class_active("Lldp") || config_is_traffic_class_active("UdpHigh") ||
-	     config_is_traffic_class_active("UdpLow"))) {
+	if (config_is_traffic_class_active(GENERICL2_FRAME_TYPE) &&
+	    (config_is_traffic_class_active(TSN_HIGH_FRAME_TYPE) ||
+	     config_is_traffic_class_active(TSN_LOW_FRAME_TYPE) ||
+	     config_is_traffic_class_active(RTC_FRAME_TYPE) ||
+	     config_is_traffic_class_active(RTA_FRAME_TYPE) ||
+	     config_is_traffic_class_active(DCP_FRAME_TYPE) ||
+	     config_is_traffic_class_active(LLDP_FRAME_TYPE) ||
+	     config_is_traffic_class_active(UDP_HIGH_FRAME_TYPE) ||
+	     config_is_traffic_class_active(UDP_LOW_FRAME_TYPE))) {
 		fprintf(stderr, "Either use PROFINET or GenericL2!\n");
 		fprintf(stderr, "For simulation of PROFINET and other middlewares in parallel "
 				"start multiple instances of ref&mirror application(s) with "
