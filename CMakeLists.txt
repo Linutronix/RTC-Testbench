@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-2-Clause
 #
-# Copyright (C) 2020-2025 Linutronix GmbH
+# Copyright (C) 2020-2026 Linutronix GmbH
 # Author Kurt Kanzenbach <kurt@linutronix.de>
 #
 
@@ -80,7 +80,8 @@ add_executable(reference
   src/hist.c
   src/workload.c
   src/print.c
-  src/profinet.c)
+  src/profinet.c
+  src/tb.c)
 add_executable(mirror
   src/mirror.c
   src/config.c
@@ -106,7 +107,8 @@ add_executable(mirror
   src/hist.c
   src/workload.c
   src/print.c
-  src/profinet.c)
+  src/profinet.c
+  src/tb.c)
 
 option(WITH_MQTT, "Enable/Disable logging via MQTT" OFF)
 if (WITH_MQTT)
