@@ -132,8 +132,6 @@ static void *log_mqtt_thread_routine(void *data)
 		}
 	}
 
-	return NULL;
-
 err_mqtt_outof_memory:
 err_mqtt_connect:
 err_mqtt_start:
@@ -174,12 +172,6 @@ void log_mqtt_thread_free(struct log_mqtt_thread_context *thread_context)
 {
 	if (!thread_context)
 		return;
-
-	if (app_config.log_mqtt) {
-		if (thread_context->mosq)
-			mosquitto_destroy(thread_context->mosq);
-		mosquitto_lib_cleanup();
-	}
 
 	free(thread_context);
 }
