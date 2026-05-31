@@ -37,10 +37,12 @@ struct security_context *security_init(enum security_algorithm algorithm, const 
 
 	/* Set key and cipher */
 	if (1 != EVP_EncryptInit_ex2(context->ctx, context->cipher, key, NULL, NULL))
-		goto err_ctx;
+		goto err_init;
 
 	return context;
 
+err_init:
+	EVP_CIPHER_CTX_free(context->ctx);
 err_ctx:
 	EVP_CIPHER_free(context->cipher);
 err_cipher:
