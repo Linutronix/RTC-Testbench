@@ -110,7 +110,7 @@ add_executable(mirror
   src/profinet.c
   src/tb.c)
 
-option(WITH_MQTT, "Enable/Disable logging via MQTT" OFF)
+option(WITH_MQTT "Enable/Disable logging via MQTT" OFF)
 if (WITH_MQTT)
   pkg_search_module(MOSQUITTO libmosquitto REQUIRED)
   target_link_libraries(reference ${MOSQUITTO_LIBRARIES})
@@ -141,7 +141,7 @@ target_compile_options(mirror PRIVATE -Wall -Wextra -Wno-sign-compare -Wshadow -
 target_compile_definitions(reference PRIVATE -D_GNU_SOURCE)
 target_compile_definitions(mirror PRIVATE -D_GNU_SOURCE)
 
-option(WITH_ASAN, "Build with AddressSanitizer for debugging" OFF)
+option(WITH_ASAN "Build with AddressSanitizer for debugging" OFF)
 if (WITH_ASAN)
   target_compile_options(reference PRIVATE -fsanitize=address)
   target_compile_options(mirror PRIVATE -fsanitize=address)
