@@ -81,11 +81,15 @@ void ring_buffer_fetch(struct ring_buffer *rb, unsigned char *data, size_t len, 
 	intptr_t available;
 	size_t real_len;
 
-	if (!rb)
+	if (!rb) {
+		*out_len = 0;
 		return;
+	}
 
-	if (len > rb->size)
+	if (len > rb->size) {
+		*out_len = 0;
 		return;
+	}
 
 	pthread_mutex_lock(&rb->mutex);
 
