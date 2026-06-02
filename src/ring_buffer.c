@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2024 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -12,126 +12,121 @@
 #include "ring_buffer.h"
 #include "thread.h"
 
-struct ring_buffer *ring_buffer_allocate(size_t buffer_size)
+struct ring_buffer *ring_buffer_allocate(size_t size)
 {
-	struct ring_buffer *ring_buffer;
+	struct ring_buffer *rb;
 
-	ring_buffer = calloc(1, sizeof(*ring_buffer));
-	if (!ring_buffer)
+	rb = calloc(1, sizeof(*rb));
+	if (!rb)
 		return NULL;
 
-	ring_buffer->data = calloc(buffer_size, sizeof(unsigned char));
-	if (!ring_buffer->data) {
-		free(ring_buffer);
+	rb->data = calloc(size, sizeof(unsigned char));
+	if (!rb->data) {
+		free(rb);
 		return NULL;
 	}
 
-	ring_buffer->buffer_size = buffer_size;
-	ring_buffer->buffer_write_pointer = ring_buffer->data;
-	ring_buffer->buffer_read_pointer = ring_buffer->data;
+	rb->size = size;
+	rb->wp = rb->data;
+	rb->rp = rb->data;
 
-	init_mutex(&ring_buffer->data_mutex);
+	init_mutex(&rb->mutex);
 
-	return ring_buffer;
+	return rb;
 }
 
-void ring_buffer_free(struct ring_buffer *ring_buffer)
+void ring_buffer_free(struct ring_buffer *rb)
 {
-	if (!ring_buffer)
+	if (!rb)
 		return;
 
-	free(ring_buffer->data);
-	free(ring_buffer);
+	free(rb->data);
+	free(rb);
 }
 
-void ring_buffer_add(struct ring_buffer *ring_buffer, const unsigned char *data, size_t len)
+void ring_buffer_add(struct ring_buffer *rb, const unsigned char *data, size_t len)
 {
 	size_t available;
 
-	if (!ring_buffer)
+	if (!rb)
 		return;
 
-	if (len > ring_buffer->buffer_size)
+	if (len > rb->size)
 		return;
 
-	pthread_mutex_lock(&ring_buffer->data_mutex);
+	pthread_mutex_lock(&rb->mutex);
 
 	/* Wrap? */
-	available =
-		(ring_buffer->data + ring_buffer->buffer_size) - ring_buffer->buffer_write_pointer;
+	available = (rb->data + rb->size) - rb->wp;
 	if (len <= available) {
-		memcpy(ring_buffer->buffer_write_pointer, data, len);
-		ring_buffer->buffer_write_pointer += len;
+		memcpy(rb->wp, data, len);
+		rb->wp += len;
 	} else {
-		memcpy(ring_buffer->buffer_write_pointer, data, available);
+		memcpy(rb->wp, data, available);
 		len -= available;
 		data += available;
-		ring_buffer->buffer_write_pointer = ring_buffer->data;
-		memcpy(ring_buffer->buffer_write_pointer, data, len);
-		ring_buffer->buffer_write_pointer += len;
+		rb->wp = rb->data;
+		memcpy(rb->wp, data, len);
+		rb->wp += len;
 	}
 
-	if ((ring_buffer->data + ring_buffer->buffer_size) == ring_buffer->buffer_write_pointer)
-		ring_buffer->buffer_write_pointer = ring_buffer->data;
+	if ((rb->data + rb->size) == rb->wp)
+		rb->wp = rb->data;
 
-	pthread_mutex_unlock(&ring_buffer->data_mutex);
+	pthread_mutex_unlock(&rb->mutex);
 }
 
-void ring_buffer_fetch(struct ring_buffer *ring_buffer, unsigned char *data, size_t len,
-		       size_t *out_len)
+void ring_buffer_fetch(struct ring_buffer *rb, unsigned char *data, size_t len, size_t *out_len)
 {
 	intptr_t available;
 	size_t real_len;
 
-	if (!ring_buffer)
+	if (!rb)
 		return;
 
-	if (len > ring_buffer->buffer_size)
+	if (len > rb->size)
 		return;
 
-	pthread_mutex_lock(&ring_buffer->data_mutex);
+	pthread_mutex_lock(&rb->mutex);
 
-	available = ring_buffer->buffer_write_pointer - ring_buffer->buffer_read_pointer;
+	available = rb->wp - rb->rp;
 
 	/* Simple case: Copy difference between read and write ptr. */
 	if (available > 0) {
 		real_len = available > len ? len : available;
-		memcpy(data, ring_buffer->buffer_read_pointer, real_len);
+		memcpy(data, rb->rp, real_len);
 		*out_len = real_len;
-		ring_buffer->buffer_read_pointer += real_len;
+		rb->rp += real_len;
 	} else if (available < 0) {
 		/* Copy first part */
-		available = (ring_buffer->data + ring_buffer->buffer_size) -
-			    ring_buffer->buffer_read_pointer;
+		available = (rb->data + rb->size) - rb->rp;
 		real_len = available > len ? len : available;
-		memcpy(data, ring_buffer->buffer_read_pointer, real_len);
+		memcpy(data, rb->rp, real_len);
 
 		len -= real_len;
 		data += real_len;
 		*out_len = real_len;
-		ring_buffer->buffer_read_pointer += real_len;
+		rb->rp += real_len;
 
-		if (ring_buffer->buffer_read_pointer ==
-		    (ring_buffer->data + ring_buffer->buffer_size))
-			ring_buffer->buffer_read_pointer = ring_buffer->data;
+		if (rb->rp == (rb->data + rb->size))
+			rb->rp = rb->data;
 
 		/* Copy second part */
 		if (len > 0) {
-			available = ring_buffer->buffer_write_pointer -
-				    ring_buffer->buffer_read_pointer;
+			available = rb->wp - rb->rp;
 			real_len = available > len ? len : available;
 
-			memcpy(data, ring_buffer->buffer_read_pointer, real_len);
+			memcpy(data, rb->rp, real_len);
 
-			ring_buffer->buffer_read_pointer += real_len;
+			rb->rp += real_len;
 			*out_len += real_len;
 		}
 	} else {
 		*out_len = 0;
 	}
 
-	if (ring_buffer->buffer_read_pointer == (ring_buffer->data + ring_buffer->buffer_size))
-		ring_buffer->buffer_read_pointer = ring_buffer->data;
+	if (rb->rp == (rb->data + rb->size))
+		rb->rp = rb->data;
 
-	pthread_mutex_unlock(&ring_buffer->data_mutex);
+	pthread_mutex_unlock(&rb->mutex);
 }

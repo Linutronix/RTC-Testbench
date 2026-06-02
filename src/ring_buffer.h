@@ -25,17 +25,16 @@
  * logging.
  */
 struct ring_buffer {
-	size_t buffer_size;
-	unsigned char *buffer_write_pointer;
-	unsigned char *buffer_read_pointer;
+	size_t size;
+	unsigned char *wp;
+	unsigned char *rp;
 	unsigned char *data;
-	pthread_mutex_t data_mutex;
+	pthread_mutex_t mutex;
 };
 
-struct ring_buffer *ring_buffer_allocate(size_t buffer_size);
-void ring_buffer_add(struct ring_buffer *ring_buffer, const unsigned char *data, size_t len);
-void ring_buffer_fetch(struct ring_buffer *ring_buffer, unsigned char *data, size_t len,
-		       size_t *out_len);
-void ring_buffer_free(struct ring_buffer *ring_buffer);
+struct ring_buffer *ring_buffer_allocate(size_t size);
+void ring_buffer_add(struct ring_buffer *rb, const unsigned char *data, size_t len);
+void ring_buffer_fetch(struct ring_buffer *rb, unsigned char *data, size_t len, size_t *out_len);
+void ring_buffer_free(struct ring_buffer *rb);
 
 #endif /* _RING_BUFFER_H_ */
