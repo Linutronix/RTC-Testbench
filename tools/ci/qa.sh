@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# Copyright (C) 2024 Linutronix GmbH
+# Copyright (C) 2024-2026 Linutronix GmbH
 # Author Kurt Kanzenbach <kurt@linutronix.de>
 #
 # SPDX-License-Identifier: BSD-2-Clause
 #
-# Check coding style.
+# Check coding style and unit tests.
 #
 
 set -e
@@ -27,6 +27,15 @@ pushd build
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
 make -j$(nproc)
 run-clang-tidy
+popd
+rm -rf build
+
+echo "Building and running unit tests ..."
+mkdir build
+pushd build
+cmake -DWITH_TESTS=ON ..
+make -j$(nproc)
+ctest
 popd
 rm -rf build
 
