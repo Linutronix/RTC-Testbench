@@ -1,6 +1,6 @@
 ---
 #
-# Copyright (C) 2024 Linutronix GmbH
+# Copyright (C) 2024-2026 Linutronix GmbH
 # Author Kurt Kanzenbach <kurt@linutronix.de>
 #
 # SPDX-License-Identifier: BSD-2-Clause
@@ -29,7 +29,7 @@ jobs:
           packages: >-
             clang llvm cmake pkg-config libbpf-dev libyaml-dev libc6-dev build-essential libxdp-dev
             libssl-dev libmosquitto-dev bash sphinx python3-sphinx-rtd-theme clang-tidy clang-format
-            reuse
+            reuse libcmocka-dev
           version: 1.0
 
       - name: Check code
