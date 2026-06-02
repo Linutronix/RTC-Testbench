@@ -271,3 +271,10 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/tests/ DESTINATION ${CMAKE_INSTALL_DATAROO
 
 # Add workloads subdirectory for automatic compilation
 add_subdirectory(tests/workloads)
+
+# Add unit tests
+option(WITH_TESTS "Build unit tests (requires cmocka)" OFF)
+if (WITH_TESTS)
+  enable_testing()
+  add_subdirectory(tests/unit)
+endif()
