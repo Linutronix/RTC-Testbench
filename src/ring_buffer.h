@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (C) 2020 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -15,6 +15,14 @@
  *  b) Logging
  *
  * Introduce a "generic" ring buffer suitable for both scenarios.
+ *
+ * The policy is drop oldest data first and keep the newest. The functions will not block. Old data
+ * is overwritten without any warning.
+ *
+ * The locking is done with PI mutex. This is fine for the Ethernet frame data, because there's no
+ * lock contention (Tx and Rx run at different time slots). However, in case of logging lots of
+ * messages, there might be contention. FIXME: To get rid of this, implement per traffic class
+ * logging.
  */
 struct ring_buffer {
 	size_t buffer_size;
