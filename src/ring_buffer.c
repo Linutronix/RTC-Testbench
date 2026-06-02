@@ -27,6 +27,7 @@ struct ring_buffer *ring_buffer_allocate(size_t size)
 	}
 
 	rb->size = size;
+	rb->count = 0;
 	rb->wp = rb->data;
 	rb->rp = rb->data;
 
@@ -63,23 +64,28 @@ void ring_buffer_add(struct ring_buffer *rb, const unsigned char *data, size_t l
 		rb->wp += len;
 	} else {
 		memcpy(rb->wp, data, available);
-		len -= available;
-		data += available;
 		rb->wp = rb->data;
-		memcpy(rb->wp, data, len);
-		rb->wp += len;
+		memcpy(rb->wp, data + available, len - available);
+		rb->wp += len - available;
 	}
 
 	if ((rb->data + rb->size) == rb->wp)
 		rb->wp = rb->data;
+
+	/* Advance read pointer in case of overflow. Oldest data get's dropped first. */
+	if (rb->count + len > rb->size) {
+		rb->rp = rb->wp;
+		rb->count = rb->size;
+	} else {
+		rb->count += len;
+	}
 
 	pthread_mutex_unlock(&rb->mutex);
 }
 
 void ring_buffer_fetch(struct ring_buffer *rb, unsigned char *data, size_t len, size_t *out_len)
 {
-	intptr_t available;
-	size_t real_len;
+	size_t available, real_len;
 
 	if (!rb) {
 		*out_len = 0;
@@ -93,44 +99,32 @@ void ring_buffer_fetch(struct ring_buffer *rb, unsigned char *data, size_t len, 
 
 	pthread_mutex_lock(&rb->mutex);
 
-	available = rb->wp - rb->rp;
-
-	/* Simple case: Copy difference between read and write ptr. */
-	if (available > 0) {
-		real_len = available > len ? len : available;
-		memcpy(data, rb->rp, real_len);
-		*out_len = real_len;
-		rb->rp += real_len;
-	} else if (available < 0) {
-		/* Copy first part */
-		available = (rb->data + rb->size) - rb->rp;
-		real_len = available > len ? len : available;
-		memcpy(data, rb->rp, real_len);
-
-		len -= real_len;
-		data += real_len;
-		*out_len = real_len;
-		rb->rp += real_len;
-
-		if (rb->rp == (rb->data + rb->size))
-			rb->rp = rb->data;
-
-		/* Copy second part */
-		if (len > 0) {
-			available = rb->wp - rb->rp;
-			real_len = available > len ? len : available;
-
-			memcpy(data, rb->rp, real_len);
-
-			rb->rp += real_len;
-			*out_len += real_len;
-		}
-	} else {
+	if (rb->count == 0) {
 		*out_len = 0;
+		pthread_mutex_unlock(&rb->mutex);
+		return;
+	}
+
+	real_len = len < rb->count ? len : rb->count;
+	available = (rb->data + rb->size) - rb->rp;
+
+	if (real_len <= available) {
+		/* Simple case: Copy in direction towards end */
+		memcpy(data, rb->rp, real_len);
+		rb->rp += real_len;
+	} else {
+		/* Wrap case: Copy first and second part */
+		memcpy(data, rb->rp, available);
+		memcpy(data + available, rb->data, real_len - available);
+
+		rb->rp = rb->data + (real_len - available);
 	}
 
 	if (rb->rp == (rb->data + rb->size))
 		rb->rp = rb->data;
+
+	rb->count -= real_len;
+	*out_len = real_len;
 
 	pthread_mutex_unlock(&rb->mutex);
 }

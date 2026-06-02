@@ -26,6 +26,7 @@
  */
 struct ring_buffer {
 	size_t size;
+	size_t count;
 	unsigned char *wp;
 	unsigned char *rp;
 	unsigned char *data;
