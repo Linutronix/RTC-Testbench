@@ -306,13 +306,21 @@ static int xdp_prog_init(const char *interface, const char *xdp_program, int skb
 	return 0;
 }
 
-static void xdp_prog_exit(unsigned int if_index, int skb_mode)
+static void xdp_prog_exit(const char *interface, int skb_mode)
 {
+	unsigned int if_index;
+
 	xdp_init.initialized--;
 
 	/* Last XDP socket detaches the XDP program. */
 	if (xdp_init.initialized)
 		return;
+
+	if_index = if_nametoindex(interface);
+	if (!if_index) {
+		fprintf(stderr, "if_nametoindex() failed\n");
+		return;
+	}
 
 	xdp_program__detach(xdp_init.prog, if_index, xdp_flags(skb_mode), 0);
 	xdp_program__close(xdp_init.prog);
@@ -442,7 +450,7 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 
 	ret = xdp_prog_init(interface, xdp_program, skb_mode);
 	if (ret)
-		goto err;
+		goto err_prog;
 
 #ifdef TX_TIMESTAMP
 	/* Enable HW TX timestamping if requested */
@@ -450,7 +458,7 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 		ret = xdp_enable_hw_tx_timestamping(interface);
 		if (ret) {
 			fprintf(stderr, "Failed to enable HW TX timestamping on %s!\n", interface);
-			goto err;
+			goto err_hw_ts;
 		}
 	}
 #endif
@@ -459,14 +467,14 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 	ret = xdp_umem_create(xsk, tx_time_mode, tx_hwtstamp_mode);
 	if (ret) {
 		fprintf(stderr, "Failed to allocate AF_XDP UMEM area!\n");
-		goto err2;
+		goto err_umem;
 	}
 
 	/* Add some buffers */
 	ret = xsk_ring_prod__reserve(&xsk->umem.fq, XSK_RING_PROD__DEFAULT_NUM_DESCS, &idx);
 	if (ret != XSK_RING_PROD__DEFAULT_NUM_DESCS) {
 		fprintf(stderr, "xsk_ring_prod__reserve() failed\n");
-		goto err3;
+		goto err_reserve;
 	}
 
 	for (i = 0; i < XSK_RING_PROD__DEFAULT_NUM_DESCS; i++) {
@@ -495,7 +503,7 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 				 &xsk_cfg);
 	if (ret) {
 		fprintf(stderr, "xsk_socket__create() failed: %s\n", strerror(-ret));
-		goto err3;
+		goto err_socket;
 	}
 
 	/* Add xsk into xsks_map */
@@ -503,46 +511,44 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 	ret = bpf_map_update_elem(xdp_init.xsks_map, &queue, &fd, 0);
 	if (ret) {
 		fprintf(stderr, "bpf_map_update_elem() failed: %s\n", strerror(-ret));
-		goto err4;
+		goto err_xsksmap;
 	}
 
 	/* Set socket options */
 	ret = xdp_configure_socket_options(xsk, busy_poll_mode);
 	if (ret) {
 		fprintf(stderr, "Failed to configure busy polling!\n");
-		goto err4;
+		goto err_conf;
 	}
 
 	return xsk;
 
-err4:
+err_conf:
+err_xsksmap:
 	xsk_socket__delete(xsk->xsk);
-err3:
-	free(xsk->umem.buffer);
+err_socket:
+err_reserve:
 	xsk_umem__delete(xsk->umem.umem);
-err2:
-err:
+	free(xsk->umem.buffer);
+err_umem:
+#ifdef TX_TIMESTAMP
+err_hw_ts:
+#endif
+	xdp_prog_exit(interface, skb_mode);
+err_prog:
 	free(xsk);
 	return NULL;
 }
 
 void xdp_close_socket(struct xdp_socket *xsk, const char *interface, bool skb_mode)
 {
-	unsigned int if_index;
-
 	if (!xsk)
 		return;
 
 	xsk_socket__delete(xsk->xsk);
 	xsk_umem__delete(xsk->umem.umem);
 
-	if_index = if_nametoindex(interface);
-	if (!if_index) {
-		fprintf(stderr, "if_nametoindex() failed\n");
-		return;
-	}
-
-	xdp_prog_exit(if_index, skb_mode);
+	xdp_prog_exit(interface, skb_mode);
 
 	free(xsk->umem.buffer);
 	free(xsk);
