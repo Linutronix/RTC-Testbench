@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2021-2025 Linutronix GmbH
+ * Copyright (C) 2021-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -35,8 +35,11 @@
 #include "xdp.h"
 #include "xdp_metadata.h"
 
-static int program_loaded;
-static int xsks_map;
+static struct xdp_init {
+	struct xdp_program *prog;
+	int initialized;
+	int xsks_map;
+} xdp_init;
 
 static enum xdp_attach_mode xdp_flags(bool skb_mode)
 {
@@ -230,8 +233,7 @@ static void xdp_process_tx_timestamp(struct xdp_socket *xsk, uint32_t idx_cq)
 }
 #endif
 
-static int xdp_load_program(struct xdp_socket *xsk, const char *interface, const char *xdp_program,
-			    int skb_mode)
+static int xdp_prog_init(const char *interface, const char *xdp_program, int skb_mode)
 {
 	struct xdp_program *prog;
 	struct bpf_object *obj;
@@ -254,8 +256,10 @@ static int xdp_load_program(struct xdp_socket *xsk, const char *interface, const
 	 * dispatcher master program. Therefore, all applications have to use libxdp and specify
 	 * their metadata e.g., priority accordingly.
 	 */
-	if (program_loaded)
+	if (xdp_init.initialized) {
+		xdp_init.initialized++;
 		return 0;
+	}
 
 	if_index = if_nametoindex(interface);
 	if (!if_index) {
@@ -290,16 +294,31 @@ static int xdp_load_program(struct xdp_socket *xsk, const char *interface, const
 
 	/* Locate xsks_map for AF_XDP socket code */
 	map = bpf_object__find_map_by_name(obj, "xsks_map");
-	xsks_map = bpf_map__fd(map);
-	if (xsks_map < 0) {
+	xdp_init.xsks_map = bpf_map__fd(map);
+	if (xdp_init.xsks_map < 0) {
 		fprintf(stderr, "No xsks_map found!\n");
 		return -EINVAL;
 	}
 
-	program_loaded = 1;
-	xsk->prog = prog;
+	xdp_init.initialized = 1;
+	xdp_init.prog = prog;
 
 	return 0;
+}
+
+static void xdp_prog_exit(unsigned int if_index, int skb_mode)
+{
+	xdp_init.initialized--;
+
+	/* Last XDP socket detaches the XDP program. */
+	if (xdp_init.initialized)
+		return;
+
+	xdp_program__detach(xdp_init.prog, if_index, xdp_flags(skb_mode), 0);
+	xdp_program__close(xdp_init.prog);
+
+	xdp_init.xsks_map = 0;
+	xdp_init.prog = NULL;
 }
 
 static int xdp_configure_socket_options(struct xdp_socket *xsk, bool busy_poll_mode)
@@ -421,7 +440,7 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 	if (!xsk)
 		return NULL;
 
-	ret = xdp_load_program(xsk, interface, xdp_program, skb_mode);
+	ret = xdp_prog_init(interface, xdp_program, skb_mode);
 	if (ret)
 		goto err;
 
@@ -481,7 +500,7 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 
 	/* Add xsk into xsks_map */
 	fd = xsk_socket__fd(xsk->xsk);
-	ret = bpf_map_update_elem(xsks_map, &queue, &fd, 0);
+	ret = bpf_map_update_elem(xdp_init.xsks_map, &queue, &fd, 0);
 	if (ret) {
 		fprintf(stderr, "bpf_map_update_elem() failed: %s\n", strerror(-ret));
 		goto err4;
@@ -523,11 +542,7 @@ void xdp_close_socket(struct xdp_socket *xsk, const char *interface, bool skb_mo
 		return;
 	}
 
-	if (xsk->prog) {
-		xdp_program__detach(xsk->prog, if_index, xdp_flags(skb_mode), 0);
-		xdp_program__close(xsk->prog);
-		program_loaded = 0;
-	}
+	xdp_prog_exit(if_index, skb_mode);
 
 	free(xsk->umem.buffer);
 	free(xsk);

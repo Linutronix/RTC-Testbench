@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: BSD-2-Clause */
 /*
- * Copyright (C) 2021-2025 Linutronix GmbH
+ * Copyright (C) 2021-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -57,7 +57,6 @@ struct xdp_socket {
 	struct xsk_ring_prod tx;
 	struct xsk_umem_info umem;
 	struct xsk_socket *xsk;
-	struct xdp_program *prog;
 	/* TX hardware timestamping context */
 	struct xdp_tx_hwts tx_hwts;
 	int fd;
