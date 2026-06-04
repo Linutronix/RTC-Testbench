@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2024 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -255,7 +255,7 @@ void configure_cpu_latency(void)
 
 void restore_cpu_latency(void)
 {
-	if (latency_fd > 0)
+	if (latency_fd >= 0)
 		close(latency_fd);
 }
 
