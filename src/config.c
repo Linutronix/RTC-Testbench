@@ -166,7 +166,7 @@ static int config_parse_cpu_list(const char *value, int *array, int array_len, i
 		i++;
 
 		/* CPU list too long? */
-		if (i >= array_len) {
+		if (i >= array_len && p) {
 			ret = -ERANGE;
 			goto out;
 		}
