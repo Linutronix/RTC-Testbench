@@ -620,8 +620,10 @@ int config_read_from_file(const char *config_file)
 			if (!strcmp(key, "ApplicationBaseStartTimeNS"))
 				base_time_seen = true;
 
-			if (key)
+			if (key) {
 				free(key);
+				key = NULL;
+			}
 
 		default:
 			break;
