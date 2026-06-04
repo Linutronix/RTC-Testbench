@@ -234,310 +234,118 @@ int get_interface_link_speed(const char *if_name, uint32_t *speed)
 	return 0;
 }
 
-int create_tsn_high_socket(void)
+static int create_socket(enum stat_frame_type frame_type, struct sock_filter *filter,
+			 size_t filter_len)
 {
-	const struct sock_fprog tsn_high_filter_program = {.len = ARRAY_SIZE(tsn_high_frame_filter),
-							   .filter = tsn_high_frame_filter};
+	const struct sock_fprog filter_program = {.len = filter_len, .filter = filter};
 	struct sock_txtime sk_txtime;
 	int socket_fd, ret;
 
-	socket_fd = create_raw_socket(app_config.classes[TSN_HIGH_FRAME_TYPE].interface,
-				      app_config.classes[TSN_HIGH_FRAME_TYPE].socket_priority);
+	socket_fd = create_raw_socket(app_config.classes[frame_type].interface,
+				      app_config.classes[frame_type].socket_priority);
 	if (socket_fd < 0) {
-		fprintf(stderr, "Failed to create RAW socket for Profinet TSN High Frames!\n");
+		fprintf(stderr, "Failed to create RAW socket for %s Frames!\n",
+			stat_frame_type_to_string(frame_type));
 		return socket_fd;
 	}
 
+	ret = setsockopt(socket_fd, SOL_SOCKET, SO_ATTACH_FILTER, &filter_program,
+			 sizeof(filter_program));
+	if (ret < 0) {
+		perror("setsockopt() failed");
+		goto err_filter;
+	}
+
+	/* Mark socket as non-blocking */
+	ret = mark_socket_non_blocking(socket_fd);
+	if (ret) {
+		fprintf(stderr, "Failed to mark %s socket as non-blocking!\n",
+			stat_frame_type_to_string(frame_type));
+		goto err_filter;
+	}
+
+	/* Enable SO_TXTIME */
+	if (!app_config.classes[frame_type].tx_time_enabled)
+		goto out;
+
+	sk_txtime.clockid = CLOCK_TAI; /* For hardware offload CLOCK_TAI is mandatory */
+	sk_txtime.flags = 1 << 1;      /* Enable error reporting */
+	ret = setsockopt(socket_fd, SOL_SOCKET, SO_TXTIME, &sk_txtime, sizeof(sk_txtime));
+	if (ret) {
+		perror("setsockopt() failed");
+		goto err_filter;
+	}
+
+out:
+	return socket_fd;
+
+err_filter:
+	close(socket_fd);
+	return -errno;
+}
+
+int create_tsn_high_socket(void)
+{
 	/* Adjust filter: VLAN TCI */
 	tsn_high_frame_filter[3].k = app_config.classes[TSN_HIGH_FRAME_TYPE].vid |
 				     app_config.classes[TSN_HIGH_FRAME_TYPE].pcp << VLAN_PCP_SHIFT;
 
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_ATTACH_FILTER, &tsn_high_filter_program,
-			 sizeof(tsn_high_filter_program));
-	if (ret < 0) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-	/* Mark socket as non-blocking */
-	ret = mark_socket_non_blocking(socket_fd);
-	if (ret) {
-		fprintf(stderr, "Failed to mark TSN High socket as non-blocking!\n");
-		goto err_filter;
-	}
-
-	/* Enable SO_TXTIME */
-	if (!app_config.classes[TSN_HIGH_FRAME_TYPE].tx_time_enabled)
-		goto out;
-
-	sk_txtime.clockid = CLOCK_TAI; /* For hardware offload CLOCK_TAI is mandatory */
-	sk_txtime.flags = 1 << 1;      /* Enable error reporting */
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_TXTIME, &sk_txtime, sizeof(sk_txtime));
-	if (ret) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-out:
-	return socket_fd;
-
-err_filter:
-	close(socket_fd);
-	return -errno;
+	return create_socket(TSN_HIGH_FRAME_TYPE, tsn_high_frame_filter,
+			     ARRAY_SIZE(tsn_high_frame_filter));
 }
 
 int create_tsn_low_socket(void)
 {
-	const struct sock_fprog tsn_low_filter_program = {.len = ARRAY_SIZE(tsn_low_frame_filter),
-							  .filter = tsn_low_frame_filter};
-	struct sock_txtime sk_txtime;
-	int socket_fd, ret;
-
-	socket_fd = create_raw_socket(app_config.classes[TSN_LOW_FRAME_TYPE].interface,
-				      app_config.classes[TSN_LOW_FRAME_TYPE].socket_priority);
-	if (socket_fd < 0) {
-		fprintf(stderr, "Failed to create RAW socket for Profinet TSN Low Frames!\n");
-		return socket_fd;
-	}
-
 	/* Adjust filter: VLAN TCI */
 	tsn_low_frame_filter[3].k = app_config.classes[TSN_LOW_FRAME_TYPE].vid |
 				    app_config.classes[TSN_LOW_FRAME_TYPE].pcp << VLAN_PCP_SHIFT;
 
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_ATTACH_FILTER, &tsn_low_filter_program,
-			 sizeof(tsn_low_filter_program));
-	if (ret < 0) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-	/* Mark socket as non-blocking */
-	ret = mark_socket_non_blocking(socket_fd);
-	if (ret) {
-		fprintf(stderr, "Failed to mark TSN Low socket as non-blocking!\n");
-		goto err_filter;
-	}
-
-	/* Enable SO_TXTIME */
-	if (!app_config.classes[TSN_LOW_FRAME_TYPE].tx_time_enabled)
-		goto out;
-
-	sk_txtime.clockid = CLOCK_TAI; /* For hardware offload CLOCK_TAI is mandatory */
-	sk_txtime.flags = 1 << 1;      /* Enable error reporting */
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_TXTIME, &sk_txtime, sizeof(sk_txtime));
-	if (ret) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-out:
-	return socket_fd;
-
-err_filter:
-	close(socket_fd);
-	return -errno;
+	return create_socket(TSN_LOW_FRAME_TYPE, tsn_low_frame_filter,
+			     ARRAY_SIZE(tsn_low_frame_filter));
 }
 
 int create_rtc_socket(void)
 {
-	const struct sock_fprog rtc_filter_program = {.len = ARRAY_SIZE(rtc_frame_filter),
-						      .filter = rtc_frame_filter};
-	int socket_fd, ret;
-
-	socket_fd = create_raw_socket(app_config.classes[RTC_FRAME_TYPE].interface,
-				      app_config.classes[RTC_FRAME_TYPE].socket_priority);
-	if (socket_fd < 0) {
-		fprintf(stderr, "Failed to create RAW socket for Profinet RTC Frames!\n");
-		return socket_fd;
-	}
-
 	/* Adjust filter: VLAN TCI */
 	rtc_frame_filter[3].k = app_config.classes[RTC_FRAME_TYPE].vid |
 				app_config.classes[RTC_FRAME_TYPE].pcp << VLAN_PCP_SHIFT;
 
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_ATTACH_FILTER, &rtc_filter_program,
-			 sizeof(rtc_filter_program));
-	if (ret < 0) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-	/* Mark socket as non-blocking */
-	ret = mark_socket_non_blocking(socket_fd);
-	if (ret) {
-		fprintf(stderr, "Failed to mark Rtc socket as non-blocking!\n");
-		goto err_filter;
-	}
-
-	return socket_fd;
-
-err_filter:
-	close(socket_fd);
-	return -errno;
+	return create_socket(RTC_FRAME_TYPE, rtc_frame_filter, ARRAY_SIZE(rtc_frame_filter));
 }
 
 int create_rta_socket(void)
 {
-	const struct sock_fprog rta_filter_program = {.len = ARRAY_SIZE(rta_frame_filter),
-						      .filter = rta_frame_filter};
-	int socket_fd, ret;
-
-	socket_fd = create_raw_socket(app_config.classes[RTA_FRAME_TYPE].interface,
-				      app_config.classes[RTA_FRAME_TYPE].socket_priority);
-	if (socket_fd < 0) {
-		fprintf(stderr, "Failed to create RAW socket for Profinet RTA Frames!\n");
-		return socket_fd;
-	}
-
 	/* Adjust filter: VLAN TCI */
 	rta_frame_filter[3].k = app_config.classes[RTA_FRAME_TYPE].vid |
 				app_config.classes[RTA_FRAME_TYPE].pcp << VLAN_PCP_SHIFT;
 
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_ATTACH_FILTER, &rta_filter_program,
-			 sizeof(rta_filter_program));
-	if (ret < 0) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-	/* Mark socket as non-blocking */
-	ret = mark_socket_non_blocking(socket_fd);
-	if (ret) {
-		fprintf(stderr, "Failed to mark Rta socket as non-blocking!\n");
-		goto err_filter;
-	}
-
-	return socket_fd;
-
-err_filter:
-	close(socket_fd);
-	return -errno;
+	return create_socket(RTA_FRAME_TYPE, rta_frame_filter, ARRAY_SIZE(rta_frame_filter));
 }
 
 int create_dcp_socket(void)
 {
-	const struct sock_fprog dcp_filter_program = {.len = ARRAY_SIZE(dcp_frame_filter),
-						      .filter = dcp_frame_filter};
-	int socket_fd, ret;
-
-	socket_fd = create_raw_socket(app_config.classes[DCP_FRAME_TYPE].interface,
-				      app_config.classes[DCP_FRAME_TYPE].socket_priority);
-	if (socket_fd < 0) {
-		fprintf(stderr, "Failed to create RAW socket for Profinet DCP Frames!\n");
-		return socket_fd;
-	}
-
 	/* Adjust filter: VLAN TCI */
 	dcp_frame_filter[3].k = app_config.classes[DCP_FRAME_TYPE].vid |
 				app_config.classes[DCP_FRAME_TYPE].pcp << VLAN_PCP_SHIFT;
 
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_ATTACH_FILTER, &dcp_filter_program,
-			 sizeof(dcp_filter_program));
-	if (ret < 0) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-	/* Mark socket as non-blocking */
-	ret = mark_socket_non_blocking(socket_fd);
-	if (ret) {
-		fprintf(stderr, "Failed to mark Dcp socket as non-blocking!\n");
-		goto err_filter;
-	}
-
-	return socket_fd;
-
-err_filter:
-	close(socket_fd);
-	return -errno;
+	return create_socket(DCP_FRAME_TYPE, dcp_frame_filter, ARRAY_SIZE(dcp_frame_filter));
 }
 
 int create_lldp_socket(void)
 {
-	const struct sock_fprog lldp_filter_program = {.len = ARRAY_SIZE(lldp_frame_filter),
-						       .filter = lldp_frame_filter};
-	int socket_fd, ret;
-
-	socket_fd = create_raw_socket(app_config.classes[LLDP_FRAME_TYPE].interface,
-				      app_config.classes[LLDP_FRAME_TYPE].socket_priority);
-	if (socket_fd < 0) {
-		fprintf(stderr, "Failed to create RAW socket for LLDP Frames!\n");
-		return socket_fd;
-	}
-
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_ATTACH_FILTER, &lldp_filter_program,
-			 sizeof(lldp_filter_program));
-	if (ret < 0) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-	/* Mark socket as non-blocking */
-	ret = mark_socket_non_blocking(socket_fd);
-	if (ret) {
-		fprintf(stderr, "Failed to mark Lldp socket as non-blocking!\n");
-		goto err_filter;
-	}
-
-	return socket_fd;
-
-err_filter:
-	close(socket_fd);
-	return -errno;
+	return create_socket(LLDP_FRAME_TYPE, lldp_frame_filter, ARRAY_SIZE(lldp_frame_filter));
 }
 
 int create_generic_l2_socket(void)
 {
-	const struct sock_fprog generic_l2_filter_program = {
-		.len = ARRAY_SIZE(generic_l2_frame_filter), .filter = generic_l2_frame_filter};
-	struct sock_txtime sk_txtime;
-	int socket_fd, ret;
-
-	socket_fd = create_raw_socket(app_config.classes[GENERICL2_FRAME_TYPE].interface,
-				      app_config.classes[GENERICL2_FRAME_TYPE].socket_priority);
-	if (socket_fd < 0) {
-		fprintf(stderr, "Failed to create RAW socket for Generic L2 Frames!\n");
-		return socket_fd;
-	}
-
 	/* Adjust filter: EtherType and VLAN TCI */
 	generic_l2_frame_filter[1].k = app_config.classes[GENERICL2_FRAME_TYPE].ether_type;
 	generic_l2_frame_filter[3].k = app_config.classes[GENERICL2_FRAME_TYPE].vid |
 				       app_config.classes[GENERICL2_FRAME_TYPE].pcp
 					       << VLAN_PCP_SHIFT;
 
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_ATTACH_FILTER, &generic_l2_filter_program,
-			 sizeof(generic_l2_filter_program));
-	if (ret < 0) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-	/* Mark socket as non-blocking */
-	ret = mark_socket_non_blocking(socket_fd);
-	if (ret) {
-		fprintf(stderr, "Failed to mark Generic L2 socket as non-blocking!\n");
-		goto err_filter;
-	}
-
-	/* Enable SO_TXTIME */
-	if (!app_config.classes[GENERICL2_FRAME_TYPE].tx_time_enabled)
-		goto out;
-
-	sk_txtime.clockid = CLOCK_TAI; /* For hardware offload CLOCK_TAI is mandatory */
-	sk_txtime.flags = 1 << 1;      /* Enable error reporting */
-	ret = setsockopt(socket_fd, SOL_SOCKET, SO_TXTIME, &sk_txtime, sizeof(sk_txtime));
-	if (ret) {
-		perror("setsockopt() failed");
-		goto err_filter;
-	}
-
-out:
-	return socket_fd;
-
-err_filter:
-	close(socket_fd);
-	return -errno;
+	return create_socket(GENERICL2_FRAME_TYPE, generic_l2_frame_filter,
+			     ARRAY_SIZE(generic_l2_frame_filter));
 }
 
 static int dns_lookup(const char *host, const char *port, struct sockaddr_storage *addr,
