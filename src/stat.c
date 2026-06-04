@@ -110,7 +110,7 @@ int stat_init(enum log_stat_options log_selection)
 		}
 
 		if (allocation_error)
-			return -ENOMEM;
+			goto err_alloc;
 	}
 
 	for (i = 0; i < NUM_FRAME_TYPES; i++) {
@@ -147,6 +147,11 @@ int stat_init(enum log_stat_options log_selection)
 	stat_frame_type_names[GENERICL2_FRAME_TYPE] = app_config.classes[GENERICL2_FRAME_TYPE].name;
 
 	return 0;
+
+err_alloc:
+	for (i = 0; i < NUM_FRAME_TYPES; i++)
+		free(round_trip_contexts[i].backlog);
+	return -ENOMEM;
 }
 
 void stat_free(void)
