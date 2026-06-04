@@ -381,6 +381,7 @@ void config_free(void);
 			if (strcasecmp(value, "none") && strcasecmp(value, "ao") &&                \
 			    strcasecmp(value, "ae")) {                                             \
 				fprintf(stderr, "Invalid security mode specified!\n");             \
+				ret = -EINVAL;                                                     \
 				goto err_parse;                                                    \
 			}                                                                          \
                                                                                                    \
@@ -401,6 +402,7 @@ void config_free(void);
 			if (strcasecmp(value, "aes256-gcm") && strcasecmp(value, "aes128-gcm") &&  \
 			    strcasecmp(value, "chacha20-poly1305")) {                              \
 				fprintf(stderr, "Invalid security algorithm specified!\n");        \
+				ret = -EINVAL;                                                     \
 				goto err_parse;                                                    \
 			}                                                                          \
 			if (!strcasecmp(value, "aes256-gcm"))                                      \
@@ -417,12 +419,11 @@ void config_free(void);
 	do {                                                                                       \
 		if (!strcmp(key, #name)) {                                                         \
 			enum stat_frame_type type = config_opt_to_type(#name);                     \
-			int __ret;                                                                 \
                                                                                                    \
-			__ret = config_parse_cpu_list(value, app_config.classes[type].var,         \
-						      WORKLOAD_MAX,                                \
-						      &app_config.classes[type].var##_num);        \
-			if (__ret) {                                                               \
+			ret = config_parse_cpu_list(value, app_config.classes[type].var,           \
+						    WORKLOAD_MAX,                                  \
+						    &app_config.classes[type].var##_num);          \
+			if (ret) {                                                                 \
 				fprintf(stderr, "The value for " #name " is invalid!\n");          \
 				goto err_parse;                                                    \
 			}                                                                          \

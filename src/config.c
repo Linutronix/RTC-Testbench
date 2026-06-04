@@ -273,6 +273,7 @@ int config_read_from_file(const char *config_file)
 				/* Save key */
 				key = strdup(value);
 				if (!key) {
+					ret = -ENOMEM;
 					fprintf(stderr, "No memory left!\n");
 					goto err_parse;
 				}
