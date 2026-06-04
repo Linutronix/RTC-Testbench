@@ -193,14 +193,13 @@ int packet_receive_messages(struct packet_context *context, struct packet_receiv
 
 		len = recvmmsg(recv_req->socket_fd, msgs, context->num_frames_per_cycle, 0, NULL);
 		if (len == -1) {
-			if (errno != EAGAIN && errno != EWOULDBLOCK) {
-				log_message(LOG_LEVEL_ERROR, "%sRx: recvmmsg() failed: %s\n",
-					    recv_req->traffic_class, strerror(errno));
-				continue;
-			} else {
-				/* No more frames. Comeback within next period. */
+			/* No more frames. Come back within next period. */
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
 				break;
-			}
+
+			log_message(LOG_LEVEL_ERROR, "%sRx: recvmmsg() failed: %s\n",
+				    recv_req->traffic_class, strerror(errno));
+			break;
 		}
 
 		/* Process received frames. */

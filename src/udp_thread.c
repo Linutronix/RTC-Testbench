@@ -260,12 +260,12 @@ static void *udp_rx_thread_routine(void *data)
 			if (len == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
 				log_message(LOG_LEVEL_ERROR, "%sRx: recv() failed: %s\n",
 					    thread_context->traffic_class, strerror(errno));
-				continue;
+				break;
 			}
 			if (len == 0)
 				continue;
 
-			/* No more frames. Comeback within next period. */
+			/* No more frames. Come back within next period. */
 			if (len == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
 				break;
 
