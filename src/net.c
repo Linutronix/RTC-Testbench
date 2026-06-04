@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 /*
- * Copyright (C) 2020-2025 Linutronix GmbH
+ * Copyright (C) 2020-2026 Linutronix GmbH
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
@@ -31,94 +31,31 @@
 #include "utils.h"
 
 /*
- * Filter for Profinet TSN High Frames:
+ * Filter for Profinet frames:
  *   ldh [12]
  *   jne #0x8892, drop
  *   ld vlan_tci
  *   jne #VlanTCI, drop
  *   ldh [14]
- *   jlt #0x0100, drop
- *   jgt #0x01ff, drop
+ *   jlt #frame_id_low, drop
+ *   jgt #frame_id_high, drop
  *   ret #-1
  *   drop: ret #0
  */
-static struct sock_filter tsn_high_frame_filter[] = {
-	{0x28, 0, 0, 0x0000000c}, {0x15, 0, 6, 0x00008892}, {0x20, 0, 0, 0xfffff02c},
-	{0x15, 0, 4, 0x00001234}, {0x28, 0, 0, 0x0000000e}, {0x35, 0, 2, 0x00000100},
-	{0x25, 1, 0, 0x000001ff}, {0x06, 0, 0, 0xffffffff}, {0x06, 0, 0, 0000000000},
-};
+#define PROFINET_FRAME_FILTER(frame_id_low, frame_id_high)                                         \
+	{                                                                                          \
+		{0x28, 0, 0, 0x0000000c},      {0x15, 0, 6, 0x00008892},                           \
+		{0x20, 0, 0, 0xfffff02c},      {0x15, 0, 4, 0x00001234},                           \
+		{0x28, 0, 0, 0x0000000e},      {0x35, 0, 2, (frame_id_low)},                       \
+		{0x25, 1, 0, (frame_id_high)}, {0x06, 0, 0, 0xffffffff},                           \
+		{0x06, 0, 0, 0000000000},                                                          \
+	}
 
-/*
- * Filter for Profinet TSN Low Frames:
- *   ldh [12]
- *   jne #0x8892, drop
- *   ld vlan_tci
- *   jne #VlanTCI, drop
- *   ldh [14]
- *   jlt #0x0200, drop
- *   jgt #0x03ff, drop
- *   ret #-1
- *   drop: ret #0
- */
-static struct sock_filter tsn_low_frame_filter[] = {
-	{0x28, 0, 0, 0x0000000c}, {0x15, 0, 6, 0x00008892}, {0x20, 0, 0, 0xfffff02c},
-	{0x15, 0, 4, 0x00001234}, {0x28, 0, 0, 0x0000000e}, {0x35, 0, 2, 0x00000200},
-	{0x25, 1, 0, 0x000003ff}, {0x06, 0, 0, 0xffffffff}, {0x06, 0, 0, 0000000000},
-};
-
-/*
- * Filter for Profinet RTC Frames:
- *   ldh [12]
- *   jne #0x8892, drop
- *   ld vlan_tci
- *   jne #VlanTCI, drop
- *   ldh [14]
- *   jlt #0x8000, drop
- *   jgt #0xbbff, drop
- *   ret #-1
- *   drop: ret #0
- */
-static struct sock_filter rtc_frame_filter[] = {
-	{0x28, 0, 0, 0x0000000c}, {0x15, 0, 6, 0x00008892}, {0x20, 0, 0, 0xfffff02c},
-	{0x15, 0, 4, 0x00001234}, {0x28, 0, 0, 0x0000000e}, {0x35, 0, 2, 0x00008000},
-	{0x25, 1, 0, 0x0000bbff}, {0x06, 0, 0, 0xffffffff}, {0x06, 0, 0, 0000000000},
-};
-
-/*
- * Filter for Profinet RTA Frames:
- *   ldh [12]
- *   jne #0x8892, drop
- *   ld vlan_tci
- *   jne #VlanTCI, drop
- *   ldh [14]
- *   jlt #0xfc01, drop
- *   jgt #0xfc02, drop
- *   ret #-1
- *   drop: ret #0
- */
-static struct sock_filter rta_frame_filter[] = {
-	{0x28, 0, 0, 0x0000000c}, {0x15, 0, 6, 0x00008892}, {0x20, 0, 0, 0xfffff02c},
-	{0x15, 0, 4, 0x00001234}, {0x28, 0, 0, 0x0000000e}, {0x35, 0, 2, 0x0000fc01},
-	{0x25, 1, 0, 0x0000fc02}, {0x06, 0, 0, 0xffffffff}, {0x06, 0, 0, 0000000000},
-};
-
-/*
- * Filter for Profinet DCP Frames:
- *   ldh [12]
- *   jne #0x8892, drop
- *   ld vlan_tci
- *   jne #VlanTCI, drop
- *   ldh [14]
- *   jlt #0xfefe, drop
- *   jgt #0xfeff, drop
- *   ret #-1
- *   drop: ret #0
- */
-static struct sock_filter dcp_frame_filter[] = {
-	{0x28, 0, 0, 0x0000000c}, {0x15, 0, 6, 0x00008892}, {0x20, 0, 0, 0xfffff02c},
-	{0x15, 0, 4, 0x00001234}, {0x28, 0, 0, 0x0000000e}, {0x35, 0, 2, 0x0000fefe},
-	{0x25, 1, 0, 0x0000feff}, {0x06, 0, 0, 0xffffffff}, {0x06, 0, 0, 0000000000},
-};
+static struct sock_filter tsn_high_frame_filter[] = PROFINET_FRAME_FILTER(0x0100, 0x01ff);
+static struct sock_filter tsn_low_frame_filter[] = PROFINET_FRAME_FILTER(0x0200, 0x03ff);
+static struct sock_filter rtc_frame_filter[] = PROFINET_FRAME_FILTER(0x8000, 0xbbff);
+static struct sock_filter rta_frame_filter[] = PROFINET_FRAME_FILTER(0xfc01, 0xfc02);
+static struct sock_filter dcp_frame_filter[] = PROFINET_FRAME_FILTER(0xfefe, 0xfeff);
 
 /*
  * Filter for LLDP Frames:
