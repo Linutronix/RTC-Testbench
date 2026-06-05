@@ -282,17 +282,19 @@ static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_
 	stat->oneway_avg = stat->oneway_sum / (double)stat->oneway_count;
 
 	if (rx_hw2app_time != 0 && rx_hw2xdp_time != 0 && rx_xdp2app_time != 0) {
+		stat->rx_count++;
+
 		stat_update_min_max(rx_hw2app_time, &stat->rx_min, &stat->rx_max);
 		stat->rx_sum += rx_hw2app_time;
-		stat->rx_avg = stat->rx_sum / (double)stat->oneway_count;
+		stat->rx_avg = stat->rx_sum / (double)stat->rx_count;
 
 		stat_update_min_max(rx_hw2xdp_time, &stat->rx_hw2xdp_min, &stat->rx_hw2xdp_max);
 		stat->rx_hw2xdp_sum += rx_hw2xdp_time;
-		stat->rx_hw2xdp_avg = stat->rx_hw2xdp_sum / (double)stat->oneway_count;
+		stat->rx_hw2xdp_avg = stat->rx_hw2xdp_sum / (double)stat->rx_count;
 
 		stat_update_min_max(rx_xdp2app_time, &stat->rx_xdp2app_min, &stat->rx_xdp2app_max);
 		stat->rx_xdp2app_sum += rx_xdp2app_time;
-		stat->rx_xdp2app_avg = stat->rx_xdp2app_sum / (double)stat->oneway_count;
+		stat->rx_xdp2app_avg = stat->rx_xdp2app_sum / (double)stat->rx_count;
 	}
 
 	stat->frames_received++;
