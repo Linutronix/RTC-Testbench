@@ -101,6 +101,7 @@ struct statistics {
 	/* Rx latency from NIC Rx Hw timestamp to user space timestamp */
 	uint64_t rx_min;
 	uint64_t rx_max;
+	uint64_t rx_count;
 	double rx_sum;
 	double rx_avg;
 	/* Rx latency from NIC Rx Hw timestamp to Xdp prog timestamp */
