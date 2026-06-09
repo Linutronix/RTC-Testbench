@@ -43,12 +43,10 @@ struct xsk_umem_info {
 struct xdp_tx_hwts {
 	/* Store HW timestamps from AF_XDP completion queue */
 	struct round_trip_context *rtt;
-	/* Sequence number for TX HW timestamp (available one cycle later) */
-	int64_t seq_lagged;
-	/* Counter for tracking TX HW timestamp completions in current cycle (max 2: first+last) */
-	uint32_t count;
 	/* Total number of frames per cycle (needed to identify last packet) */
 	uint32_t frames_per_cycle;
+	/* Offset of reference_meta_data within the frame (for sequence counter extraction) */
+	uint32_t meta_data_offset;
 };
 
 struct xdp_socket {
