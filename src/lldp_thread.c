@@ -162,8 +162,8 @@ static int lldp_gen_and_send_frames(struct thread_context *thread_context, int s
 	len = lldp_send_messages(thread_context, socket_fd, destination,
 				 thread_context->tx_frame_data, lldp_config->num_frames_per_cycle);
 
-	for (i = 0; i < len; i++)
-		stat_frame_sent(LLDP_FRAME_TYPE, sequence_counter_begin + i);
+	if (len > 0)
+		stat_frames_sent_batch(LLDP_FRAME_TYPE, sequence_counter_begin, len);
 
 	return len;
 }
@@ -493,6 +493,9 @@ int lldp_threads_create(struct thread_context *thread_context)
 		}
 	}
 
+	thread_context->meta_data_offset =
+		get_meta_data_offset(LLDP_FRAME_TYPE, SECURITY_MODE_NONE);
+
 	ret = create_rt_thread(&thread_context->tx_task_id, lldp_config->tx_thread_priority,
 			       lldp_config->tx_thread_cpu, lldp_tx_thread_routine, thread_context,
 			       "LldpTxThread");
@@ -519,9 +522,6 @@ int lldp_threads_create(struct thread_context *thread_context)
 		fprintf(stderr, "Failed to create Lldp Rx Thread!\n");
 		goto err_thread_rx;
 	}
-
-	thread_context->meta_data_offset =
-		get_meta_data_offset(LLDP_FRAME_TYPE, SECURITY_MODE_NONE);
 
 out:
 	ret = 0;

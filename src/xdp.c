@@ -130,102 +130,80 @@ static void xdp_process_tx_timestamp(struct xdp_socket *xsk, uint32_t idx_cq)
 	struct xsk_tx_metadata *meta =
 		(struct xsk_tx_metadata *)(data - sizeof(struct xsk_tx_metadata));
 
-	log_message(LOG_LEVEL_DEBUG,
-		    "XdpTxHwTs CQ[%u]: addr=0x%llx, flags=0x%llx, ts=%llu, seq_lagged=%llu\n",
+	log_message(LOG_LEVEL_DEBUG, "XdpTxHwTs CQ[%u]: addr=0x%llx, flags=0x%llx, ts=%llu\n",
 		    idx_cq, (unsigned long long)addr, (unsigned long long)meta->flags,
-		    (unsigned long long)meta->completion.tx_timestamp,
-		    (unsigned long long)xsk->tx_hwts.seq_lagged);
+		    (unsigned long long)meta->completion.tx_timestamp);
 
 	if (meta->flags & XDP_TXMD_FLAGS_TIMESTAMP) {
 		/* Determine frame type from the round trip context */
 		enum stat_frame_type frame_type = (enum stat_frame_type)(rtt - round_trip_contexts);
 
-		/* Use seq_lagged for now, but only process if HW timestamp is valid */
-		uint64_t seq = xsk->tx_hwts.seq_lagged;
-		size_t idx = seq % rtt->backlog_len;
+		/*
+		 * Derive sequence counter directly from the frame payload to correctly
+		 * correlate this completion with the backlog entry, even if the completion
+		 * arrives more than one cycle late or out of submission order.
+		 *
+		 * For multi-frame cycles only the first frame's backlog slot has a valid
+		 * sw_ts (stat_frames_sent_batch writes once per cycle). Round down to the
+		 * cycle start so that all completions within the same cycle share the same
+		 * backlog index.
+		 */
+		uint64_t fpc = xsk->tx_hwts.frames_per_cycle;
+		uint64_t seq = get_sequence_counter(data, xsk->tx_hwts.meta_data_offset, fpc);
+		uint64_t cycle_seq = (seq / fpc) * fpc;
+		uint64_t frame_in_cycle = seq - cycle_seq;
+		bool is_first = (frame_in_cycle == 0);
+		bool is_last = (frame_in_cycle == fpc - 1);
+		size_t idx = cycle_seq % rtt->backlog_len;
 
 		/* Continue only if both HW and SW timestamps are valid */
 		if (meta->completion.tx_timestamp > 0 && rtt->backlog[idx].sw_ts > 0) {
-			rtt->backlog[idx].hw_ts = meta->completion.tx_timestamp;
+			/*
+			 * Tx latency is measured against the first frame's HW timestamp.
+			 * Only the first-frame completion updates hw_ts and calls
+			 * stat_frame_sent_latency.
+			 */
+			if (is_first) {
+				rtt->backlog[idx].hw_ts = meta->completion.tx_timestamp;
+				stat_frame_sent_latency(frame_type, cycle_seq);
+			}
 
-			/* Increment TX HW timestamp count for this cycle */
-			xsk->tx_hwts.count++;
-
-			stat_frame_sent_latency(frame_type, seq);
-
-			/* Handle timestamp processing based on frames per cycle */
-			if (xsk->tx_hwts.frames_per_cycle == 1) {
-				/*
-				 * Single frame case: measure only ProcFirst (since first == last)
-				 */
-				if (log_stat_user_selected == LOG_TX_TIMESTAMPS &&
-				    config_have_rx_timestamp() &&
-				    meta->completion.tx_timestamp > rtt->backlog[idx].sw_ts) {
-					stat_proc_first_latency(frame_type, seq,
+			/*
+			 * ProcFirst / ProcBatch are decided by the frame's position within
+			 * the cycle (derived from its sequence counter), not by a counter
+			 * of arrivals. This is robust to out-of-order or dropped
+			 * completions. For fpc == 1 the same completion is both first and
+			 * last, so only ProcFirst is recorded.
+			 */
+			if (log_stat_user_selected == LOG_TX_TIMESTAMPS &&
+			    config_have_rx_timestamp() &&
+			    meta->completion.tx_timestamp > rtt->backlog[idx].sw_ts) {
+				if (is_first) {
+					stat_proc_first_latency(frame_type, cycle_seq,
 								meta->completion.tx_timestamp);
-				}
-				/* Reset TX HW timestamp count for next cycle */
-				xsk->tx_hwts.count = 0;
-			} else {
-				/*
-				 * Multiple frames case: handle first and last separately.
-				 * First timestamp completion corresponds to the first
-				 * packet (ProcFirst).
-				 */
-				if (xsk->tx_hwts.count == 1) {
-					/*
-					 * Calculate ProcFirst latency (1st RX HW to 1st TX HW) only
-					 * for mirror mode and valid HW timestamp.
-					 */
-					if (log_stat_user_selected == LOG_TX_TIMESTAMPS &&
-					    config_have_rx_timestamp() &&
-					    meta->completion.tx_timestamp >
-						    rtt->backlog[idx].sw_ts) {
-						stat_proc_first_latency(
-							frame_type, seq,
-							meta->completion.tx_timestamp);
-					}
-				}
-				/* Second timestamp completion corresponds to the last packet
-				   (ProcBatch) */
-				else if (xsk->tx_hwts.count == 2) {
-					/*
-					 * We timestamp two packets per cycle: first (i==0)
-					 * and last (i==num_frames-1). Therefore,
-					 * tx_hwts.count == 2 always refers to the last packet,
-					 * regardless of the number of frames per cycle.
-					 *
-					 * Calculate ProcBatch latency (1st RX HW to last TX HW)
-					 * for mirror mode and valid HW timestamp.
-					 */
-					if (log_stat_user_selected == LOG_TX_TIMESTAMPS &&
-					    config_have_rx_timestamp() &&
-					    meta->completion.tx_timestamp >
-						    rtt->backlog[idx].sw_ts) {
-						stat_proc_batch_latency(
-							frame_type, seq,
-							meta->completion.tx_timestamp);
-					}
-
-					/* Reset TX HW timestamp count for next cycle */
-					xsk->tx_hwts.count = 0;
+				} else if (is_last) {
+					stat_proc_batch_latency(frame_type, cycle_seq,
+								meta->completion.tx_timestamp);
 				}
 			}
 		} else {
 			log_message(LOG_LEVEL_DEBUG,
 				    "XdpTxHwTs: Invalid timestamps for seq=%llu (HW=%llu, "
 				    "SW=%llu), skipping\n",
-				    (unsigned long long)seq,
+				    (unsigned long long)cycle_seq,
 				    (unsigned long long)meta->completion.tx_timestamp,
 				    (unsigned long long)rtt->backlog[idx].sw_ts);
 		}
 	} else {
-		uint64_t seq = xsk->tx_hwts.seq_lagged;
-		size_t idx = seq % rtt->backlog_len;
+		uint64_t seq = get_sequence_counter(data, xsk->tx_hwts.meta_data_offset,
+						    xsk->tx_hwts.frames_per_cycle);
+		uint64_t cycle_seq =
+			(seq / xsk->tx_hwts.frames_per_cycle) * xsk->tx_hwts.frames_per_cycle;
+		size_t idx = cycle_seq % rtt->backlog_len;
 
 		log_message(LOG_LEVEL_WARNING,
 			    "XDP TX HW timestamp missing for expected seq %" PRIu64 ", idx=%zu\n",
-			    seq, idx);
+			    cycle_seq, idx);
 	}
 }
 #endif
@@ -624,7 +602,8 @@ void xdp_complete_tx(struct xdp_socket *xsk)
 
 static unsigned char *xdp_prepare_tx_desc(struct xdp_socket *xsk, struct xdp_desc *tx_desc,
 					  const struct xdp_tx_time __unused *tx_time,
-					  int __unused i, int __unused num_frames, bool __unused tx)
+					  int __unused i, bool __unused want_hw_timestamp,
+					  bool __unused tx)
 {
 	unsigned char *data;
 
@@ -658,8 +637,8 @@ static unsigned char *xdp_prepare_tx_desc(struct xdp_socket *xsk, struct xdp_des
 		}
 #endif
 #ifdef TX_TIMESTAMP
-		/* Timestamp first packet and last packet per cycle */
-		if (xsk->tx_hwtstamp_mode && (i == 0 || i == num_frames - 1)) {
+		/* Timestamp first and last frame of each cycle (decision made by caller) */
+		if (xsk->tx_hwtstamp_mode && want_hw_timestamp) {
 			meta->flags |= XDP_TXMD_FLAGS_TIMESTAMP;
 			/* Initialize TX HW timestamp */
 			meta->completion.tx_timestamp = 0;
@@ -714,8 +693,8 @@ void xdp_gen_and_send_frames(struct xdp_socket *xsk, const struct xdp_gen_config
 				     XSK_RING_PROD__DEFAULT_NUM_DESCS;
 
 		/* Get frame and prepare it */
-		data = xdp_prepare_tx_desc(xsk, tx_desc, xdp->tx_time, i, xdp->num_frames_per_cycle,
-					   true);
+		data = xdp_prepare_tx_desc(xsk, tx_desc, xdp->tx_time, i,
+					   i == 0 || i == xdp->num_frames_per_cycle - 1, true);
 
 		frame_config.mode = xdp->mode;
 		frame_config.security_context = xdp->security_context;
@@ -758,9 +737,6 @@ void xdp_gen_and_send_frames(struct xdp_socket *xsk, const struct xdp_gen_config
 		 */
 		stat_frames_sent_batch(xdp->frame_type, xdp->sequence_counter_begin,
 				       xdp->num_frames_per_cycle);
-
-		/* Update the sequence number for expected HW timestamp in next cycle */
-		xsk->tx_hwts.seq_lagged = xdp->sequence_counter_begin;
 		return;
 	}
 #endif
@@ -857,8 +833,30 @@ unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, boo
 			tx_desc->len = frame_length;
 
 			/* Prepare tx desc with Tx Time or Tx HW timestamp */
-			if (xsk->tx_time_mode || xsk->tx_hwtstamp_mode)
-				xdp_prepare_tx_desc(xsk, tx_desc, tx_time, i, received, false);
+			if (xsk->tx_time_mode || xsk->tx_hwtstamp_mode) {
+				bool want_hw_ts = false;
+
+#ifdef TX_TIMESTAMP
+				/*
+				 * Decide first/last HW-timestamp from the frame's
+				 * own position within its cycle, not from the RX
+				 * batch position. The RX batch is not aligned to
+				 * the sender's cycle boundaries (e.g. one frame at
+				 * a time), so using the batch index would attach
+				 * the TIMESTAMP flag to the wrong frame.
+				 */
+				if (xsk->tx_hwtstamp_mode) {
+					uint64_t fpc = xsk->tx_hwts.frames_per_cycle;
+					uint64_t seq = get_sequence_counter(
+						packet, xsk->tx_hwts.meta_data_offset, fpc);
+					uint64_t frame_in_cycle = seq % fpc;
+
+					want_hw_ts = (frame_in_cycle == 0) ||
+						     (frame_in_cycle == fpc - 1);
+				}
+#endif
+				xdp_prepare_tx_desc(xsk, tx_desc, tx_time, i, want_hw_ts, false);
+			}
 		} else {
 			/* Move buffer back to fill queue */
 			*xsk_ring_prod__fill_addr(&xsk->umem.fq, idx_fq++) = orig;

@@ -455,7 +455,6 @@ void stat_frames_sent_batch(enum stat_frame_type frame_type, uint64_t cycle_numb
 {
 	struct round_trip_context *rtt = &round_trip_contexts[frame_type];
 	struct statistics *stat = &global_statistics[frame_type];
-	size_t idx = cycle_number % rtt->backlog_len;
 	struct timespec tx_time = {};
 
 	if (frame_count == 1) {
@@ -469,9 +468,32 @@ void stat_frames_sent_batch(enum stat_frame_type frame_type, uint64_t cycle_numb
 	if ((log_stat_user_selected == LOG_REFERENCE ||
 	     log_stat_user_selected == LOG_TX_TIMESTAMPS) &&
 	    rtt->backlog) {
-		/* Record Tx SW timestamp for the first frame in the cycle */
+		uint64_t end = cycle_number + frame_count;
+		uint64_t c;
+
 		app_clock_get(&tx_time);
-		rtt->backlog[idx].sw_ts = ts_to_ns(&tx_time);
+		if (app_config.classes[frame_type].tx_hwtstamp_enabled) {
+			uint64_t fpc = app_config.classes[frame_type].num_frames_per_cycle;
+			uint64_t base = (cycle_number / fpc) * fpc;
+
+			/*
+			 * Record Tx SW timestamp at the cycle-aligned first-frame slot of each
+			 * cycle this batch covers. The completion path looks up sw_ts at the cycle
+			 * boundary (seq rounded down to fpc), so writes must use the same
+			 * alignment. Skip cycles whose first frame was sent in an earlier batch —
+			 * that slot already holds the correct sw_ts and re-stamping it now would
+			 * shrink/invert the measured latency.
+			 */
+			for (c = base; c < end; c += fpc) {
+				if (c < cycle_number)
+					continue;
+				rtt->backlog[c % rtt->backlog_len].sw_ts = ts_to_ns(&tx_time);
+			}
+		} else {
+			/* If Tx HW TS is not enabled, each frame has its own sw_ts. */
+			for (c = cycle_number; c < end; c++)
+				rtt->backlog[c % rtt->backlog_len].sw_ts = ts_to_ns(&tx_time);
+		}
 	}
 
 	/* Increment stats by frame_count */

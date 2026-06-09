@@ -143,8 +143,8 @@ static int rta_gen_and_send_frames(struct thread_context *thread_context, int so
 	len = rta_send_messages(thread_context, socket_fd, destination,
 				thread_context->tx_frame_data, rta_config->num_frames_per_cycle);
 
-	for (i = 0; i < len; i++)
-		stat_frame_sent(RTA_FRAME_TYPE, sequence_counter_begin + i);
+	if (len > 0)
+		stat_frames_sent_batch(RTA_FRAME_TYPE, sequence_counter_begin, len);
 
 	return len;
 }
@@ -301,6 +301,7 @@ static void *rta_xdp_tx_thread_routine(void *data)
 	xsk = thread_context->xsk;
 	xsk->tx_hwts.rtt = &round_trip_contexts[RTA_FRAME_TYPE];
 	xsk->tx_hwts.frames_per_cycle = rta_config->num_frames_per_cycle;
+	xsk->tx_hwts.meta_data_offset = thread_context->meta_data_offset;
 
 	ret = get_interface_mac_address(rta_config->interface, source, ETH_ALEN);
 	if (ret < 0) {
@@ -353,7 +354,6 @@ static void *rta_xdp_tx_thread_routine(void *data)
 			}
 		} else {
 			unsigned int received;
-			uint64_t i;
 
 			pthread_mutex_lock(&thread_context->xdp_data_mutex);
 
@@ -369,36 +369,12 @@ static void *rta_xdp_tx_thread_routine(void *data)
 
 			xsk_ring_prod__submit(&xsk->tx, received);
 
-			if (received > 0) {
-				if (rta_config->tx_hwtstamp_enabled) {
-					/*
-					 * Once-per-cycle: record TX SW timestamp for the first
-					 * packet in this cycle and count all frames
-					 */
-					stat_frames_sent_batch(RTA_FRAME_TYPE, sequence_counter,
-							       received);
-				} else {
-					for (i = sequence_counter; i < sequence_counter + received;
-					     ++i)
-						stat_frame_sent(RTA_FRAME_TYPE, i);
-				}
-			}
+			if (received > 0)
+				stat_frames_sent_batch(RTA_FRAME_TYPE, sequence_counter, received);
 
 			xsk->outstanding_tx += received;
 			thread_context->received_frames = 0;
 			xdp_complete_tx(xsk);
-
-#ifdef TX_TIMESTAMP
-			if (received > 0 && rta_config->tx_hwtstamp_enabled) {
-				/*
-				 * TX HW timestamp becomes available in the next cycle
-				 * after the packet is transmitted.
-				 * This is one cycle later than SW timestamp tracked
-				 * using sequence_counter
-				 */
-				xsk->tx_hwts.seq_lagged = sequence_counter;
-			}
-#endif
 
 			pthread_mutex_unlock(&thread_context->xdp_data_mutex);
 		}
@@ -673,6 +649,9 @@ int rta_threads_create(struct thread_context *thread_context)
 		thread_context->rx_security_context = NULL;
 	}
 
+	thread_context->meta_data_offset =
+		get_meta_data_offset(RTA_FRAME_TYPE, rta_config->security_mode);
+
 	ret = create_rt_thread(&thread_context->tx_task_id, rta_config->tx_thread_priority,
 			       rta_config->tx_thread_cpu,
 			       rta_config->xdp_enabled ? rta_xdp_tx_thread_routine
@@ -703,9 +682,6 @@ int rta_threads_create(struct thread_context *thread_context)
 		fprintf(stderr, "Failed to create Rta Rx Thread!\n");
 		goto err_thread_rx;
 	}
-
-	thread_context->meta_data_offset =
-		get_meta_data_offset(RTA_FRAME_TYPE, rta_config->security_mode);
 
 out:
 	return 0;
