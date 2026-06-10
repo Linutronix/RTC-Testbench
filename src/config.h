@@ -84,7 +84,7 @@ struct traffic_class_config {
 	/* Workload settings */
 	bool rx_workload_enabled;
 	bool rx_workload_prewarm;
-	int rx_workload_skip_count;
+	uint64_t rx_workload_skip_count;
 	char *workload_file;
 	size_t workload_file_length;
 	char *workload_function;

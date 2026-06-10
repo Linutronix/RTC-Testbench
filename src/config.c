@@ -334,8 +334,8 @@ int config_read_from_file(const char *config_file)
 						      rx_workload_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighRxWorkloadPrewarm,
 						      rx_workload_prewarm);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxWorkloadSkipCount,
-						     rx_workload_skip_count);
+			CONFIG_STORE_ULONG_PARAM_CLASS(TsnHighRxWorkloadSkipCount,
+						       rx_workload_skip_count);
 			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadFile, workload_file);
 			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadSetupFunction,
 							workload_setup_function);
@@ -413,8 +413,8 @@ int config_read_from_file(const char *config_file)
 			CONFIG_STORE_MAC_PARAM_CLASS(RtcDestination, l2_destination);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcRxWorkloadEnabled, rx_workload_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(RtcRxWorkloadPrewarm, rx_workload_prewarm);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcRxWorkloadSkipCount,
-						     rx_workload_skip_count);
+			CONFIG_STORE_ULONG_PARAM_CLASS(RtcRxWorkloadSkipCount,
+						       rx_workload_skip_count);
 			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadFile, workload_file);
 			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadSetupFunction,
 							workload_setup_function);
@@ -562,8 +562,8 @@ int config_read_from_file(const char *config_file)
 						      rx_workload_enabled);
 			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2RxWorkloadPrewarm,
 						      rx_workload_prewarm);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxWorkloadSkipCount,
-						     rx_workload_skip_count);
+			CONFIG_STORE_ULONG_PARAM_CLASS(GenericL2RxWorkloadSkipCount,
+						       rx_workload_skip_count);
 			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadFile, workload_file);
 			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadSetupFunction,
 							workload_setup_function);
@@ -724,7 +724,7 @@ void config_print_values(void)
 		       conf->rx_workload_enabled ? "True" : "False");
 		printf("TsnHighRxWorkloadPrewarm=%s\n",
 		       conf->rx_workload_prewarm ? "True" : "False");
-		printf("TsnHighRxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
+		printf("TsnHighRxWorkloadSkipCount=%" PRIu64 "\n", conf->rx_workload_skip_count);
 		printf("TsnHighRxWorkloadFile=%s\n", conf->workload_file);
 		printf("TsnHighRxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
 		printf("TsnHighRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
@@ -811,7 +811,7 @@ void config_print_values(void)
 		print_mac_address(conf->l2_destination);
 		printf("RtcRxWorkloadEnabled=%s\n", conf->rx_workload_enabled ? "True" : "False");
 		printf("RtcRxWorkloadPrewarm=%s\n", conf->rx_workload_prewarm ? "True" : "False");
-		printf("RtcRxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
+		printf("RtcRxWorkloadSkipCount=%" PRIu64 "\n", conf->rx_workload_skip_count);
 		printf("RtcRxWorkloadFile=%s\n", conf->workload_file);
 		printf("RtcRxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
 		printf("RtcRxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
@@ -999,7 +999,7 @@ void config_print_values(void)
 		       conf->rx_workload_enabled ? "True" : "False");
 		printf("GenericL2RxWorkloadPrewarm=%s\n",
 		       conf->rx_workload_prewarm ? "True" : "False");
-		printf("GenericL2RxWorkloadSkipCount=%d\n", conf->rx_workload_skip_count);
+		printf("GenericL2RxWorkloadSkipCount=%" PRIu64 "\n", conf->rx_workload_skip_count);
 		printf("GenericL2RxWorkloadFile=%s\n", conf->workload_file);
 		printf("GenericL2RxWorkloadSetupFunction=%s\n", conf->workload_setup_function);
 		printf("GenericL2RxWorkloadSetupArguments=%s\n", conf->workload_setup_arguments);
