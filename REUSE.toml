@@ -1,0 +1,28 @@
+version = 1
+SPDX-PackageName = "RTC-Testbench"
+SPDX-PackageSupplier = "Kurt Kanzenbach <kurt@linutronix.de>"
+SPDX-PackageDownloadLocation = "https://www.github.com/Linutronix/RTC-Testbench"
+
+[[annotations]]
+path = [".clang-format", ".clang-tidy", ".dir-locals.el", "CONTRIBUTING.md", "Documentation/Makefile", "Documentation/conf.py"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020-2024 Linutronix GmbH"
+SPDX-License-Identifier = "BSD-2-Clause"
+
+[[annotations]]
+path = ["Documentation/images/**.png", "Documentation/make.bat", "ISSUE_TEMPLATE.md", "README.md"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020-2024 Linutronix GmbH"
+SPDX-License-Identifier = "BSD-2-Clause"
+
+[[annotations]]
+path = [".github/workflows/sphinx.yml", "devtools/conda-envs/docs_env.yaml", "requirements.txt", ".github/labels.yml", ".github/workflows/label.yml"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024 Pablo Iranzo Gómez <Pablo.Iranzo@gmail.com>"
+SPDX-License-Identifier = "BSD-2-Clause"
+
+[[annotations]]
+path = "docker/mqtt-composer/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2024 Intel Corporation"
+SPDX-License-Identifier = "BSD-2-Clause"
