@@ -32,4 +32,4 @@ jobs:
           version: 1.0
 
       - name: Build code
-        run: ./tools/ci/build.sh ubuntu
+        run: ./tools/ci/build.sh
