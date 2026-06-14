@@ -1,6 +1,6 @@
 ---
 #
-# Copyright (C) 2024 Linutronix GmbH
+# Copyright (C) 2024-2026 Linutronix GmbH
 # Author Kurt Kanzenbach <kurt@linutronix.de>
 #
 # SPDX-License-Identifier: BSD-2-Clause
@@ -18,7 +18,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
