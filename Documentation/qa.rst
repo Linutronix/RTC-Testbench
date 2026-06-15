@@ -1,6 +1,6 @@
 .. SPDX-License-Identifier: BSD-2-Clause
 ..
-.. Copyright (C) 2022-2024 Linutronix GmbH
+.. Copyright (C) 2022-2026 Linutronix GmbH
 .. Author Kurt Kanzenbach <kurt@linutronix.de>
 ..
 .. Testbench documentation qa file.
@@ -64,3 +64,17 @@ fixed inplace) by running ``clang-tidy``:
    % cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
    % make -j`nproc`
    % run-clang-tidy
+
+Unit Tests
+----------
+
+Some code parts like the ring buffer have dedicated unit tests. These tests require ``cmocka``
+library. The tests can be invoked like this:
+
+.. code:: bash
+
+   % mkdir build
+   % cd build
+   % cmake -DWITH_TESTS=ON ..
+   % make -j`nproc`
+   % make test
