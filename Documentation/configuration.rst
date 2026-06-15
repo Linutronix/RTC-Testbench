@@ -1,6 +1,6 @@
 .. SPDX-License-Identifier: BSD-2-Clause
 ..
-.. Copyright (C) 2022-2025 Linutronix GmbH
+.. Copyright (C) 2022-2026 Linutronix GmbH
 .. Author Kurt Kanzenbach <kurt@linutronix.de>
 ..
 .. Testbench documentation configuration file.
@@ -67,8 +67,7 @@ Possible parameters include:
      - Drive XDP socket in busy poll mode
 
    * - <Class>TxTimeEnabled (Boolean)
-     - Use Tx Launch Time for all transmitted frames (requires ETF Qdisc and is not compatible with
-       XDP)
+     - Use Tx Launch Time for all transmitted frames (requires ETF Qdisc)
 
    * - <Class>TxTimeOffsetNS (Integer)
      - Optional Tx Launch Time offset relative to Qbv schedule and cycle time
