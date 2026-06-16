@@ -42,6 +42,7 @@ my (%config, @err, @warn, @musthave, @disabled, $file, $help);
     "CONFIG_MACVLAN",
     "CONFIG_VETH",
     "CONFIG_POSIX_AUX_CLOCKS",
+    "CONFIG_NET_RX_BUSY_POLL",
    );
 
 # Should be disabled
