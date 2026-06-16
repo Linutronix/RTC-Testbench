@@ -123,7 +123,7 @@
 <p>The buildsystem is cmake. The applications can be build and installed by:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build
 <span class="nb">cd</span><span class="w"> </span>build
-cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DWITH_MQTT<span class="o">=</span>TRUE<span class="w"> </span>..
+cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DWITH_MQTT<span class="o">=</span>TRUE<span class="w"> </span>-DRX_TIMESTAMP<span class="o">=</span>TRUE<span class="w"> </span>-DTX_TIMESTAMP<span class="o">=</span>TRUE<span class="w"> </span>..
 make<span class="w"> </span>-j<span class="sb">`</span>nproc<span class="sb">`</span>
 sudo<span class="w"> </span>make<span class="w"> </span>install
 </pre></div>
@@ -144,10 +144,6 @@ apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </s
 <span class="w">   </span>iperf3<span class="w"> </span>linuxptp<span class="w"> </span>libxdp-dev<span class="w"> </span>libssl-dev<span class="w"> </span>libmosquitto-dev<span class="w"> </span>git<span class="w"> </span>bc
 </pre></div>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For Debian Bullseye <code class="docutils literal notranslate"><span class="pre">libxdp</span></code> is packaged in backports.</p>
-</div>
 <p>For RHEL based systems do:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dnf<span class="w"> </span>-y<span class="w"> </span>upgrade
 dnf<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </span>libxdp-devel<span class="w"> </span>libyaml-devel<span class="w"> </span>clang<span class="w"> </span>mosquitto-devel<span class="w"> </span><span class="se">\</span>
@@ -161,28 +157,10 @@ dnf<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </s
 a matter of running <code class="docutils literal notranslate"><span class="pre">crb</span> <span class="pre">enable</span></code> on the subscription-manager registered system with the
 <code class="docutils literal notranslate"><span class="pre">EPEL</span></code> repository enabled.</p>
 </div>
-<p>Furthermore, the Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> requires Linux kernel version &gt;= v5.12.
-PREEMPT_RT is recommended. In addition, the following configuration options have to be set:</p>
-<ul class="simple">
-<li><p>CONFIG_PTP_1588_CLOCK</p></li>
-<li><p>CONFIG_BPF</p></li>
-<li><p>CONFIG_BPF_SYSCALL</p></li>
-<li><p>CONFIG_DEBUG_INFO</p></li>
-<li><p>CONFIG_DEBUG_INFO_BTF</p></li>
-<li><p>CONFIG_XDP_SOCKETS</p></li>
-<li><p>CONFIG_NET_SCH_MQPRIO</p></li>
-<li><p>CONFIG_NET_SCH_TAPRIO</p></li>
-<li><p>CONFIG_NET_SCH_ETF</p></li>
-<li><p>CONFIG_NET_SCH_INGRESS</p></li>
-<li><p>CONFIG_NET_CLS</p></li>
-<li><p>CONFIG_NET_CLS_FLOWER</p></li>
-<li><p>CONFIG_VLAN_8021Q</p></li>
-<li><p>CONFIG_MACVLAN</p></li>
-<li><p>CONFIG_VETH</p></li>
-<li><p>CONFIG_POSIX_AUX_CLOCKS</p></li>
-</ul>
-<p>The following script <code class="docutils literal notranslate"><span class="pre">scripts/check_kconfig.pl</span></code> can be used to verify a given Linux kernel
-configuration <code class="docutils literal notranslate"><span class="pre">.config</span></code> file.</p>
+<p>Furthermore, the Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> requires a real-time (PREEMPT_RT) Linux
+kernel. A recent LTS version is recommended. Depending on the test case specific networking options
+should be set. The following script <code class="docutils literal notranslate"><span class="pre">scripts/check_kconfig.pl</span></code> can be used to verify a given Linux
+kernel configuration <code class="docutils literal notranslate"><span class="pre">.config</span></code> file.</p>
 <p>Example: No errors should be printed. Warnings can be evaluated on a case by case basis.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>kurt@jax<span class="w"> </span>linux<span class="w"> </span>%<span class="w"> </span>~/work/RTC-Testbench/scripts/check_kconfig.pl<span class="w"> </span>.config
 Checking<span class="w"> </span>config<span class="w"> </span>file<span class="w"> </span><span class="s1">&#39;.config&#39;</span>...
@@ -212,6 +190,12 @@ and options.</p>
 </tr>
 <tr class="row-even"><td><p>Enable TX Hardware Timestamping</p></td>
 <td><p>TX_TIMESTAMP</p></td>
+</tr>
+<tr class="row-odd"><td><p>Compile with AddressSanitizer for debugging</p></td>
+<td><p>WITH_ASAN</p></td>
+</tr>
+<tr class="row-even"><td><p>Enable/Build Unit tests (requires <code class="docutils literal notranslate"><span class="pre">cmocka</span></code> library)</p></td>
+<td><p>WITH_TESTS</p></td>
 </tr>
 </tbody>
 </table>

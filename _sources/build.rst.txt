@@ -1,6 +1,6 @@
 .. SPDX-License-Identifier: BSD-2-Clause
 ..
-.. Copyright (C) 2022-2025 Linutronix GmbH
+.. Copyright (C) 2022-2026 Linutronix GmbH
 .. Author Kurt Kanzenbach <kurt@linutronix.de>
 ..
 .. Testbench documentation build file.
@@ -15,7 +15,7 @@ The buildsystem is cmake. The applications can be build and installed by:
 
    mkdir build
    cd build
-   cmake -DCMAKE_BUILD_TYPE=Release -DWITH_MQTT=TRUE ..
+   cmake -DCMAKE_BUILD_TYPE=Release -DWITH_MQTT=TRUE -DRX_TIMESTAMP=TRUE -DTX_TIMESTAMP=TRUE ..
    make -j`nproc`
    sudo make install
 
@@ -38,8 +38,6 @@ For Debian based systems do:
       libbpf-dev libyaml-dev libc6-dev rt-tests ethtool iproute2 \
       iperf3 linuxptp libxdp-dev libssl-dev libmosquitto-dev git bc
 
-.. Note:: For Debian Bullseye ``libxdp`` is packaged in backports.
-
 For RHEL based systems do:
 
 .. code:: bash
@@ -53,28 +51,10 @@ For RHEL based systems do:
           a matter of running ``crb enable`` on the subscription-manager registered system with the
           ``EPEL`` repository enabled.
 
-Furthermore, the Linux RealTime Communication ``Testbench`` requires Linux kernel version >= v5.12.
-PREEMPT_RT is recommended. In addition, the following configuration options have to be set:
-
-- CONFIG_PTP_1588_CLOCK
-- CONFIG_BPF
-- CONFIG_BPF_SYSCALL
-- CONFIG_DEBUG_INFO
-- CONFIG_DEBUG_INFO_BTF
-- CONFIG_XDP_SOCKETS
-- CONFIG_NET_SCH_MQPRIO
-- CONFIG_NET_SCH_TAPRIO
-- CONFIG_NET_SCH_ETF
-- CONFIG_NET_SCH_INGRESS
-- CONFIG_NET_CLS
-- CONFIG_NET_CLS_FLOWER
-- CONFIG_VLAN_8021Q
-- CONFIG_MACVLAN
-- CONFIG_VETH
-- CONFIG_POSIX_AUX_CLOCKS
-
-The following script ``scripts/check_kconfig.pl`` can be used to verify a given Linux kernel
-configuration ``.config`` file.
+Furthermore, the Linux RealTime Communication ``Testbench`` requires a real-time (PREEMPT_RT) Linux
+kernel. A recent LTS version is recommended. Depending on the test case specific networking options
+should be set. The following script ``scripts/check_kconfig.pl`` can be used to verify a given Linux
+kernel configuration ``.config`` file.
 
 Example: No errors should be printed. Warnings can be evaluated on a case by case basis.
 
@@ -104,3 +84,9 @@ and options.
 
    * - Enable TX Hardware Timestamping
      - TX_TIMESTAMP
+
+   * - Compile with AddressSanitizer for debugging
+     - WITH_ASAN
+
+   * - Enable/Build Unit tests (requires ``cmocka`` library)
+     - WITH_TESTS

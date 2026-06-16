@@ -1,6 +1,6 @@
 .. SPDX-License-Identifier: BSD-2-Clause
 ..
-.. Copyright (C) 2025 Linutronix GmbH
+.. Copyright (C) 2025-2026 Linutronix GmbH
 .. Copyright (C) 2025 Intel Corporation
 ..
 .. Testbench documentation workload file.
@@ -46,7 +46,7 @@ The following options are used to configure a RX workload:
      - Description
 
    * - <Class>RxWorkloadEnabled (Boolean)
-     - Enable/disable workload execution for TSN High traffic class
+     - Enable/disable workload execution for traffic class
 
    * - <Class>RxWorkloadFile (String)
      - Path to the shared library containing the workload
@@ -56,6 +56,9 @@ The following options are used to configure a RX workload:
 
    * - <Class>RxWorkloadSetupArguments (String)
      - Arguments passed to the setup function (space-separated string)
+
+   * - <Class>RxWorkloadTeardownFunction (String)
+     - Name of the teardown function to call during close
 
    * - <Class>RxWorkloadFunction (String)
      - Name of the runtime function called each cycle

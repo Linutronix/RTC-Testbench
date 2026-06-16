@@ -90,6 +90,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Quality Assurance</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#license-checks">License Checks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#coding-style-check">Coding Style Check</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
 </ul>
 </li>
 </ul>
@@ -165,6 +166,18 @@ fixed inplace) by running <code class="docutils literal notranslate"><span class
 %<span class="w"> </span>cmake<span class="w"> </span>-DCMAKE_EXPORT_COMPILE_COMMANDS<span class="o">=</span>ON<span class="w"> </span>..
 %<span class="w"> </span>make<span class="w"> </span>-j<span class="sb">`</span>nproc<span class="sb">`</span>
 %<span class="w"> </span>run-clang-tidy
+</pre></div>
+</div>
+</section>
+<section id="unit-tests">
+<h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Permalink to this heading"></a></h2>
+<p>Some code parts like the ring buffer have dedicated unit tests. These tests require <code class="docutils literal notranslate"><span class="pre">cmocka</span></code>
+library. The tests can be invoked like this:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>%<span class="w"> </span>mkdir<span class="w"> </span>build
+%<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
+%<span class="w"> </span>cmake<span class="w"> </span>-DWITH_TESTS<span class="o">=</span>ON<span class="w"> </span>..
+%<span class="w"> </span>make<span class="w"> </span>-j<span class="sb">`</span>nproc<span class="sb">`</span>
+%<span class="w"> </span>make<span class="w"> </span><span class="nb">test</span>
 </pre></div>
 </div>
 </section>
