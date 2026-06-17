@@ -74,6 +74,8 @@ static void udp_send_frame(struct thread_context *thread_context, const unsigned
 		ret = sendto(socket_fd, frame_data, frame_length, 0,
 			     (struct sockaddr_in6 *)destination, sizeof(struct sockaddr_in6));
 		break;
+	default:
+		ret = -EINVAL;
 	}
 	if (ret < 0) {
 		log_message(LOG_LEVEL_ERROR, "%sTx: send() for %" PRIu64 " failed: %s\n",
