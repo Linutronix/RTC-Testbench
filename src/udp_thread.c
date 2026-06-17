@@ -95,7 +95,7 @@ static void udp_gen_and_send_frame(struct thread_context *thread_context, unsign
 	struct timespec tx_time = {};
 	ssize_t ret = -1;
 
-	clock_gettime(app_config.application_clock_id, &tx_time);
+	app_clock_get(&tx_time);
 
 	/* Adjust meta data */
 	meta = (struct reference_meta_data *)frame_data;
