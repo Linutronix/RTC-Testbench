@@ -47,9 +47,9 @@ struct {
 #ifdef EBPF_CHECK_FRAMEID
 static __always_inline bool check_frame_id(struct profinet_rt_header *rt)
 {
-	__be16 frame_id;
+	__u16 frame_id;
 
-	frame_id = bpf_htons(rt->frame_id);
+	frame_id = bpf_ntohs(rt->frame_id);
 	switch (frame_id) {
 	case TSN_HIGH_FRAMEID:
 	case TSN_HIGH_SEC_FRAMEID:
