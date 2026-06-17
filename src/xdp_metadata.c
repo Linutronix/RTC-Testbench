@@ -32,7 +32,7 @@ static __always_inline void populate_rx_timestamp(struct xdp_md *ctx)
 		meta->rx_hw_timestamp_err = err;
 		meta->hint_valid = 0;
 	} else {
-		meta->hint_valid |= XDP_META_FIELD_TS;
+		meta->hint_valid = XDP_META_FIELD_TS;
 	}
 #endif
 }
