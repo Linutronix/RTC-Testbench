@@ -10,7 +10,7 @@ SPDX-FileCopyrightText = "2020-2024 Linutronix GmbH"
 SPDX-License-Identifier = "BSD-2-Clause"
 
 [[annotations]]
-path = ["Documentation/images/**.png", "Documentation/make.bat", "ISSUE_TEMPLATE.md", "README.md"]
+path = ["Documentation/images/**.png", "Documentation/make.bat", "ISSUE_TEMPLATE.md", "README.md", "AGENTS.md"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2020-2024 Linutronix GmbH"
 SPDX-License-Identifier = "BSD-2-Clause"
