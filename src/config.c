@@ -579,6 +579,8 @@ int config_read_from_file(const char *config_file)
 							  workload_thread_cpus);
 			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxWorkloadThreadPriority,
 						     workload_thread_priority);
+			CONFIG_STORE_PROTOCOL_TYPE_PARAM_CLASS(GenericL2ProtocolType,
+							       protocol_type);
 
 			CONFIG_STORE_INT_PARAM(LogThreadPriority, log_thread_priority);
 			CONFIG_STORE_INT_PARAM(LogThreadCpu, log_thread_cpu);
@@ -1010,6 +1012,7 @@ void config_print_values(void)
 		printf("GenericL2RxWorkloadThreadCpu=");
 		print_cpu_list(conf->workload_thread_cpus, conf->workload_thread_cpus_num);
 		printf("GenericL2RxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
+		printf("GenericL2ProtocolType=%d\n", conf->protocol_type);
 		printf("---------------------------------------------------------------------------"
 		       "-----\n");
 	}
@@ -1431,6 +1434,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_thread_priority = 98;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* Logging */
 	app_config.log_thread_priority = 1;

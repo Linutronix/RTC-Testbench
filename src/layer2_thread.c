@@ -24,6 +24,7 @@
 #include "app_config.h"
 
 #include "config.h"
+#include "ethercat.h"
 #include "layer2_thread.h"
 #include "log.h"
 #include "net.h"
@@ -65,28 +66,32 @@ static void generic_l2_initialize_frame(struct thread_context *thread_context,
 		frame_data += sizeof(struct xsk_tx_metadata);
 #endif
 
-	eth = (struct vlan_ethernet_header *)frame_data;
-	l2 = (struct generic_l2_header *)(frame_data + sizeof(*eth));
+	if (l2_config->protocol_type == ETHERCAT_PROTOCOL_TYPE) {
+		initialize_ethercat_frame(frame_data, l2_config->frame_length, source, destination);
+	} else {
+		eth = (struct vlan_ethernet_header *)frame_data;
+		l2 = (struct generic_l2_header *)(frame_data + sizeof(*eth));
 
-	/* Ethernet header */
-	memcpy(eth->destination, destination, ETH_ALEN);
-	memcpy(eth->source, source, ETH_ALEN);
+		/* Ethernet header */
+		memcpy(eth->destination, destination, ETH_ALEN);
+		memcpy(eth->source, source, ETH_ALEN);
 
-	/* VLAN Header */
-	eth->vlan_proto = htons(ETH_P_8021Q);
-	eth->vlantci = htons(l2_config->vid | l2_config->pcp << VLAN_PCP_SHIFT);
-	eth->vlan_encapsulated_proto = htons(l2_config->ether_type);
+		/* VLAN Header */
+		eth->vlan_proto = htons(ETH_P_8021Q);
+		eth->vlantci = htons(l2_config->vid | l2_config->pcp << VLAN_PCP_SHIFT);
+		eth->vlan_encapsulated_proto = htons(l2_config->ether_type);
 
-	/* Generic L2 header */
-	l2->meta_data.frame_counter = 0;
-	l2->meta_data.cycle_counter = 0;
+		/* Generic L2 header */
+		l2->meta_data.frame_counter = 0;
+		l2->meta_data.cycle_counter = 0;
 
-	/* Payload */
-	payload_offset = sizeof(*eth) + sizeof(*l2);
-	memcpy(frame_data + payload_offset, l2_config->payload_pattern,
-	       l2_config->payload_pattern_length);
+		/* Payload */
+		payload_offset = sizeof(*eth) + sizeof(*l2);
+		memcpy(frame_data + payload_offset, l2_config->payload_pattern,
+		       l2_config->payload_pattern_length);
 
-	/* Padding: '\0' */
+		/* Padding: '\0' */
+	}
 }
 
 static void generic_l2_initialize_frames(struct thread_context *thread_context,
@@ -157,6 +162,7 @@ static int generic_l2_gen_and_send_frames(struct thread_context *thread_context,
 					  struct sockaddr_ll *destination,
 					  uint64_t sequence_counter_begin, uint64_t duration)
 {
+	const struct traffic_class_config *l2_config = thread_context->conf;
 	struct vlan_ethernet_header *eth;
 	struct generic_l2_header *l2;
 	struct timespec tx_time = {};
@@ -164,14 +170,17 @@ static int generic_l2_gen_and_send_frames(struct thread_context *thread_context,
 
 	app_clock_get(&tx_time);
 
-	/* Adjust meta data */
-	for (i = 0; i < num_frames_per_cycle; i++) {
-		l2 = (struct generic_l2_header *)(frame_idx(thread_context->tx_frame_data, i) +
-						  sizeof(*eth));
-		sequence_counter_to_meta_data(&l2->meta_data, sequence_counter_begin + i,
-					      num_frames_per_cycle);
+	if (l2_config->protocol_type != ETHERCAT_PROTOCOL_TYPE) {
+		/* Adjust meta data */
+		for (i = 0; i < num_frames_per_cycle; i++) {
+			l2 = (struct generic_l2_header *)(frame_idx(thread_context->tx_frame_data,
+								    i) +
+							  sizeof(*eth));
+			sequence_counter_to_meta_data(&l2->meta_data, sequence_counter_begin + i,
+						      num_frames_per_cycle);
 
-		tx_timestamp_to_meta_data(&l2->meta_data, ts_to_ns(&tx_time));
+			tx_timestamp_to_meta_data(&l2->meta_data, ts_to_ns(&tx_time));
+		}
 	}
 
 	/* Send them */
@@ -211,6 +220,7 @@ static void generic_l2_gen_and_send_xdp_frames(struct thread_context *thread_con
 		.meta_data_offset = thread_context->meta_data_offset,
 		.frame_type = GENERICL2_FRAME_TYPE,
 		.tx_time = l2_config->tx_time_enabled ? &tx_time : NULL,
+		.protocol_type = l2_config->protocol_type,
 	};
 
 	xdp_gen_and_send_frames(thread_context->xsk, &xdp);
@@ -240,6 +250,8 @@ static void *generic_l2_tx_thread_routine(void *data)
 		log_message(LOG_LEVEL_ERROR, "GenericL2Tx: Failed to get Source MAC address!\n");
 		return NULL;
 	}
+
+	memcpy(&thread_context->source, &source, ETH_ALEN);
 
 	ret = get_interface_link_speed(l2_config->interface, &link_speed);
 	if (ret) {
@@ -340,6 +352,8 @@ static void *generic_l2_xdp_tx_thread_routine(void *data)
 		log_message(LOG_LEVEL_ERROR, "GenericL2Tx: Failed to get Source MAC address!\n");
 		return NULL;
 	}
+
+	memcpy(&thread_context->source, &source, ETH_ALEN);
 
 	ret = get_interface_link_speed(l2_config->interface, &link_speed);
 	if (ret) {
@@ -554,7 +568,10 @@ static void *generic_l2_rx_thread_routine(void *data)
 		struct packet_receive_request recv_req = {
 			.traffic_class = thread_context->traffic_class,
 			.socket_fd = socket_fd,
-			.receive_function = generic_l2_rx_frame,
+			.receive_function =
+				(thread_context->conf->protocol_type == ETHERCAT_PROTOCOL_TYPE)
+					? receive_ethercat_frame
+					: generic_l2_rx_frame,
 			.data = thread_context,
 		};
 
@@ -635,8 +652,12 @@ static void *generic_l2_xdp_rx_thread_routine(void *data)
 		}
 
 		pthread_mutex_lock(&thread_context->xdp_data_mutex);
-		received = xdp_receive_frames(xsk, frame_length, mirror_enabled,
-					      generic_l2_rx_frame, thread_context, &tx_time);
+		received = xdp_receive_frames(
+			xsk, frame_length, mirror_enabled,
+			(thread_context->conf->protocol_type == ETHERCAT_PROTOCOL_TYPE)
+				? receive_ethercat_frame
+				: generic_l2_rx_frame,
+			thread_context, &tx_time);
 		thread_context->received_frames = received;
 		pthread_mutex_unlock(&thread_context->xdp_data_mutex);
 

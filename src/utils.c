@@ -103,8 +103,21 @@ void build_vlan_frame_from_rx(const unsigned char *old_frame, size_t old_frame_l
 
 int prepare_frame_for_tx(const struct prepare_frame_config *frame_config)
 {
+	/* GenericL2 EtherCAT */
+	if ((frame_config->frame_type == GENERICL2_FRAME_TYPE) &&
+	    (frame_config->protocol_type == ETHERCAT_PROTOCOL_TYPE)) {
+		__be16 ecat_length = ((frame_config->frame_length - 14) & 0x7FF) | 0x1000;
+		__be16 cmd_length = (frame_config->frame_length - 28) & 0x7FF;
+
+		memcpy(&frame_config->frame_data[ECAT_TX_TIMESTAMP_OFF],
+		       &(frame_config->tx_timestamp), sizeof(uint64_t));
+		memcpy(&frame_config->frame_data[ECAT_LENGTH_OFF], &ecat_length, sizeof(__be16));
+		memcpy(&frame_config->frame_data[ECAT_CMD_LENGTH_OFF], &cmd_length, sizeof(__be16));
+
+		return 0;
+	}
 	/* mode == NONE may be called from PROFINET or GenericL2 */
-	if (frame_config->mode == SECURITY_MODE_NONE) {
+	else if (frame_config->mode == SECURITY_MODE_NONE) {
 		/* Adjust meta data in frame */
 		struct reference_meta_data *meta_data =
 			(struct reference_meta_data *)(frame_config->frame_data +

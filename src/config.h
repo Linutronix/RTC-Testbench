@@ -23,6 +23,12 @@
 #include "security.h"
 #include "stat.h"
 
+enum protocol_type {
+	GENERICL2_PROTOCOL_TYPE = 0,
+	ETHERCAT_PROTOCOL_TYPE,
+	NUM_PROTOCOL_FRAME_TYPES,
+};
+
 struct traffic_class_config {
 	/* General */
 	bool enabled;
@@ -52,6 +58,7 @@ struct traffic_class_config {
 	size_t frame_length;
 	int rx_queue;
 	int tx_queue;
+	enum protocol_type protocol_type;
 
 	/* Layer 2/3 settings */
 	char interface[IF_NAMESIZE];
@@ -427,6 +434,23 @@ void config_free(void);
 				fprintf(stderr, "The value for " #name " is invalid!\n");          \
 				goto err_parse;                                                    \
 			}                                                                          \
+		}                                                                                  \
+	} while (0)
+
+#define CONFIG_STORE_PROTOCOL_TYPE_PARAM_CLASS(name, var)                                          \
+	do {                                                                                       \
+		if (!strcmp(key, #name)) {                                                         \
+			enum stat_frame_type type = config_opt_to_type(#name);                     \
+                                                                                                   \
+			if (strcasecmp(value, "L2") && strcasecmp(value, "EtherCAT")) {            \
+				fprintf(stderr, "Invalid protocol type specified!\n");             \
+				goto err_parse;                                                    \
+			}                                                                          \
+                                                                                                   \
+			if (!strcasecmp(value, "L2"))                                              \
+				app_config.classes[type].var = GENERICL2_PROTOCOL_TYPE;            \
+			if (!strcasecmp(value, "EtherCAT"))                                        \
+				app_config.classes[type].var = ETHERCAT_PROTOCOL_TYPE;             \
 		}                                                                                  \
 	} while (0)
 
