@@ -16,9 +16,9 @@ my (@yaml_files, $help, $mac_src, $mac_dst, $ip_src, $ip_dst, $inf);
 
 sub print_usage
 {
-    select(STDERR);
+	select(STDERR);
 
-    print <<'EOF';
+	print <<'EOF';
 usage: prepare_config.pl [options] -- <yaml_files>
 
 options:
@@ -35,51 +35,55 @@ EOF
 
 sub get_args
 {
-    GetOptions("help"        => \$help,
-	       "a|mac_src=s" => \$mac_src,
-	       "b|mac_dst=s" => \$mac_dst,
-	       "c|ip_src=s"  => \$ip_src,
-	       "d|ip_dst=s"  => \$ip_dst,
-	       "i|inf=s"     => \$inf) || print_usage();
+	GetOptions(
+		"help"        => \$help,
+		"a|mac_src=s" => \$mac_src,
+		"b|mac_dst=s" => \$mac_dst,
+		"c|ip_src=s"  => \$ip_src,
+		"d|ip_dst=s"  => \$ip_dst,
+		"i|inf=s"     => \$inf
+	) || print_usage();
 
-    @yaml_files = @ARGV;
-    print_usage() unless @yaml_files;
+	@yaml_files = @ARGV;
+	print_usage() unless @yaml_files;
 }
 
 sub process_yaml_file
 {
-    my ($file) = @_;
-    my (@lines, $fh, $line, $mirror, $l2_dst, $l3_src, $l3_dst);
+	my ($file) = @_;
+	my (@lines, $fh, $line, $mirror, $l2_dst, $l3_src, $l3_dst);
 
-    $mirror = $file =~ /mirror/;
+	$mirror = $file =~ /mirror/;
 
-    $l2_dst = $mirror ? $mac_src : $mac_dst;
-    $l3_dst = $mirror ? $ip_src : $ip_dst;
-    $l3_src = $mirror ? $ip_dst : $ip_src;
+	$l2_dst = $mirror ? $mac_src : $mac_dst;
+	$l3_dst = $mirror ? $ip_src  : $ip_dst;
+	$l3_src = $mirror ? $ip_dst  : $ip_src;
 
-    open $fh, '<', $file or die;
+	open $fh, '<', $file or die;
 
-    while ($line = <$fh>) {
-	$line =~ s/(TsnHigh|TsnLow|Rtc|Rta|Dcp|Lldp|UdpHigh|UpdLow|GenericL2)Interface: \w+/$1Interface: $inf/g
-	    if $inf;
+	while ($line = <$fh>) {
+		$line =~
+s/(TsnHigh|TsnLow|Rtc|Rta|Dcp|Lldp|UdpHigh|UpdLow|GenericL2)Interface: \w+/$1Interface: $inf/g
+			if $inf;
 
-	$line =~ s/(TsnHigh|TsnLow|Rtc|Rta|Dcp|Lldp|GenericL2)Destination: [0-9a-fA-F:]+/$1Destination: $l2_dst/g
-	    if $l2_dst;
+		$line =~
+s/(TsnHigh|TsnLow|Rtc|Rta|Dcp|Lldp|GenericL2)Destination: [0-9a-fA-F:]+/$1Destination: $l2_dst/g
+			if $l2_dst;
 
-	$line =~ s/(UdpHigh|UpdLow)Destination: \w+/$1Destination: $l3_dst/g
-	    if $l3_dst;
+		$line =~ s/(UdpHigh|UpdLow)Destination: \w+/$1Destination: $l3_dst/g
+			if $l3_dst;
 
-	$line =~ s/(UdpHigh|UpdLow)Source: \w+/$1Source: $l3_src/g
-	    if $l3_src;
+		$line =~ s/(UdpHigh|UpdLow)Source: \w+/$1Source: $l3_src/g
+			if $l3_src;
 
-	push @lines, $line;
-    }
+		push @lines, $line;
+	}
 
-    close $fh;
+	close $fh;
 
-    open $fh, '>', $file or die;
-    print $fh $_ for @lines;
-    close $fh;
+	open $fh, '>', $file or die;
+	print $fh $_ for @lines;
+	close $fh;
 }
 
 get_args;

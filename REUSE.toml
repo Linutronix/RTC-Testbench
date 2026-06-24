@@ -4,7 +4,7 @@ SPDX-PackageSupplier = "Kurt Kanzenbach <kurt@linutronix.de>"
 SPDX-PackageDownloadLocation = "https://www.github.com/Linutronix/RTC-Testbench"
 
 [[annotations]]
-path = [".clang-format", ".clang-tidy", ".dir-locals.el", "CONTRIBUTING.md", "Documentation/Makefile", "Documentation/conf.py"]
+path = [".clang-format", ".clang-tidy", ".perltidyrc", ".dir-locals.el", "CONTRIBUTING.md", "Documentation/Makefile", "Documentation/conf.py"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2020-2024 Linutronix GmbH"
 SPDX-License-Identifier = "BSD-2-Clause"

@@ -1,0 +1,20 @@
+# perltidy configuration for RTC-Testbench.
+#
+# clang-format does not support Perl, so perltidy is used for the Perl scripts
+# in scripts/. These options reproduce the Linux kernel coding style used for
+# the C sources (see .clang-format) as closely as perltidy allows.
+
+--maximum-line-length=100        # -l   : ColumnLimit: 100
+--indent-columns=8               # -i   : IndentWidth: 8
+--continuation-indentation=8     # -ci  : ContinuationIndentWidth: 8
+--entab-leading-whitespace=8     # -et  : indent with tabs, TabWidth: 8
+
+--opening-sub-brace-on-new-line  # -sbl : AfterFunction: true (sub brace on own line)
+                                 #        control-statement braces stay cuddled (default -nbl)
+
+--paren-tightness=2              # -pt  : SpacesInParentheses: false
+--square-bracket-tightness=2     # -sbt : SpacesInSquareBrackets: false
+--nospace-for-semicolon          # -nsfs: C-style for (;;) without space before ';'
+
+--standard-error-output          # -se  : errors to stderr, do not create .ERR files
+--cuddled-else                   # -cd  : cuddled control braces

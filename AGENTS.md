@@ -129,8 +129,9 @@ strict-priority order within each cycle. `is_first`/`is_last` mark the chain end
 ## Code style
 
 Linux kernel coding style. Run `clang-format` (config in `.clang-format`) on C files when unsure;
-`.clang-tidy` is also present. Use **reverse xmas tree** (RCS) local-variable ordering — longest
-declarations first:
+`.clang-tidy` is also present. Perl scripts in `scripts/` use the same style via `perltidy` (config
+in `.perltidyrc`, since clang-format does not support Perl); run `perltidy -b <file>.pl`. Use
+**reverse xmas tree** (RCS) local-variable ordering — longest declarations first:
 
 ```c
 unsigned long long big_variable;

@@ -47,7 +47,9 @@ https://www.kernel.org/doc/html/latest/process/submitting-patches.html#sign-your
 ## Code Style
 
 The coding style is the Linux kernel one. If unsure about it, run
-`clang-format` on the C files.
+`clang-format` on the C files. The Perl scripts in `scripts/` follow the same
+style via `perltidy` (config in `.perltidyrc`); run `perltidy -b <file>.pl` to
+format them.
 
 In addition, the reverse xmas tree variable ordering is used:
 

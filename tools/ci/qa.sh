@@ -21,6 +21,11 @@ echo "Checking coding style with clang-format ..."
 clang-format --Werror --dry-run src/*.c src/*.h
 clang-format --Werror --dry-run tests/workloads/*/*.c tests/workloads/*/*.h
 
+echo "Checking Perl coding style with perltidy ..."
+for f in scripts/*.pl; do
+  perltidy --assert-tidy -st "$f" >/dev/null
+done
+
 echo "Checking naming style with clang-tidy ..."
 mkdir build
 pushd build

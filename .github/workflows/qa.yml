@@ -29,7 +29,7 @@ jobs:
           packages: >-
             clang llvm cmake pkg-config libbpf-dev libyaml-dev libc6-dev build-essential libxdp-dev
             libssl-dev libmosquitto-dev bash sphinx python3-sphinx-rtd-theme clang-tidy clang-format
-            reuse libcmocka-dev
+            reuse libcmocka-dev perltidy
           version: 1.0
 
       - name: Check code

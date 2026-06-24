@@ -32,9 +32,9 @@ my ($server, $port, $help, $measurement, $tc, @stats);
 
 sub print_usage
 {
-    select(STDERR);
+	select(STDERR);
 
-    print <<'EOF';
+	print <<'EOF';
 usage: stat.pl [options]
 
 options:
@@ -50,46 +50,48 @@ EOF
 
 sub get_args
 {
-    GetOptions("help"          => \$help,
-	       "port=s"        => \$port,
-	       "measurement=s" => \$measurement,
-	       "tc=s"          => \$tc,
-	       "stats=s"       => \@stats)
-	|| print_usage;
-    print_usage if $help;
-    print_usage unless $port;
+	GetOptions(
+		"help"          => \$help,
+		"port=s"        => \$port,
+		"measurement=s" => \$measurement,
+		"tc=s"          => \$tc,
+		"stats=s"       => \@stats
+	) || print_usage;
+	print_usage if $help;
+	print_usage unless $port;
 }
 
 sub main
 {
-    my ($peer, $data, $json);
+	my ($peer, $data, $json);
 
-    # Open UDP server socket
-    $server = IO::Socket::IP->new(LocalPort => $port,
-				  Proto     => "udp")
-	or die "Could not open UDP socket on $port: $@\n";
+	# Open UDP server socket
+	$server = IO::Socket::IP->new(
+		LocalPort => $port,
+		Proto     => "udp"
+	) or die "Could not open UDP socket on $port: $@\n";
 
-    # Receive datagrams
-    while ($peer = $server->recv($data, 4096)) {
-	$json = decode_json $data;
+	# Receive datagrams
+	while ($peer = $server->recv($data, 4096)) {
+		$json = decode_json $data;
 
-	if ($measurement) {
-	    next unless $json->{testbench}{MeasurementName} eq $measurement;
+		if ($measurement) {
+			next unless $json->{testbench}{MeasurementName} eq $measurement;
+		}
+
+		if ($tc) {
+			next unless $json->{testbench}{stats}{TCName} eq $tc;
+		}
+
+		print "Measurement: $measurement -- TC: $json->{testbench}{stats}{TCName}\n";
+		foreach my $stat (sort keys %{ $json->{testbench}{stats} }) {
+			if (scalar @stats) {
+				next unless grep $stat =~ /$_/, @stats;
+			}
+
+			print "  $stat: $json->{testbench}{stats}{$stat}\n";
+		}
 	}
-
-	if ($tc) {
-	    next unless $json->{testbench}{stats}{TCName} eq $tc;
-	}
-
-	print "Measurement: $measurement -- TC: $json->{testbench}{stats}{TCName}\n";
-	foreach my $stat (sort keys %{ $json->{testbench}{stats} }) {
-	    if (scalar @stats) {
-		next unless grep $stat =~ /$_/, @stats;
-	    }
-
-	    print "  $stat: $json->{testbench}{stats}{$stat}\n";
-	}
-    }
 }
 
 get_args;
