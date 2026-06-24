@@ -81,6 +81,21 @@ repos:
 
         types:
           - shell
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v22.1.5
+    hooks:
+      - id: clang-format
+        files: \.(c|h)$
+  - repo: local
+    hooks:
+      - id: perltidy
+        name: perltidy
+        entry: perltidy --pro=.perltidyrc -b -bext=/
+        language: perl
+        additional_dependencies:
+          - "Perl::Tidy@20250912"
+        types:
+          - perl
   - hooks:
       - id: blacken-docs
     repo: https://github.com/asottile/blacken-docs
