@@ -20,7 +20,7 @@ TsnHigh:
   TsnHighXdpSkbMode: false
   TsnHighXdpZcMode: true
   TsnHighXdpWakeupMode: true
-  TsnHighXdpBusyPollMode: true
+  TsnHighXdpBusyPollMode: false
   TsnHighTxTimeStampEnabled: false
   TsnHighVid: 100
   TsnHighNumFramesPerCycle: 1
