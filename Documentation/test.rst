@@ -453,6 +453,8 @@ All required configuration files and scripts are located in
 
 Hardware: Intel CPU with Intel i225/i226
 
+.. _Busypolling:
+
 Busypolling
 ^^^^^^^^^^^
 
@@ -461,6 +463,11 @@ order to reduce jitter introduced by hardware and software interrupts. The follo
 is designed to test busy polling with AF_XDP sockets.
 
 .. Note:: Busy polling on ``PREEMPT_RT`` only works with Linux kernel >= v6.5.
+
+.. Note:: The per-queue NAPI parameters (``defer-hard-irqs`` and ``gro-flush-timeout``) required for
+          busy polling can be configured with the ``napictl`` helper. See
+          :ref:`NAPI Configuration (napictl) <napictl>`. The ``tests/busypolling_napiconf/`` and
+          ``tests/er26/`` scenarios use it.
 
 .. list-table:: Busypolling Test
    :widths: 28 28 12 12 12 12

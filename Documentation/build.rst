@@ -6,6 +6,8 @@
 .. Testbench documentation build file.
 ..
 
+.. _Build:
+
 Build
 =====
 

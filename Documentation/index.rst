@@ -46,6 +46,11 @@ Welcome to Linux RealTime Communication Testbench's documentation!
 .. toctree::
    :maxdepth: 2
 
+   napictl.rst
+
+.. toctree::
+   :maxdepth: 2
+
    statistics.rst
 
 .. toctree::
