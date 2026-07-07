@@ -7,7 +7,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(rtc-testbench)
 
-set(VERSION "5.4")
+set(VERSION "5.5")
 
 include(CheckIncludeFiles)
 include(CheckFunctionExists)

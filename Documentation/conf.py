@@ -22,7 +22,7 @@ copyright = "2022-2026, Linutronix GmbH"
 author = "Kurt Kanzenbach"
 
 # The full version, including alpha/beta/rc tags
-release = "v5.4"
+release = "v5.5"
 
 
 # -- General configuration ---------------------------------------------------
