@@ -1,0 +1,299 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NAPI Configuration (napictl) &mdash; Linux RealTime Communication Testbench v5.5 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=dd8df913"></script>
+      <script src="_static/doctools.js?v=888ff710"></script>
+      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Statistics" href="statistics.html" />
+    <link rel="prev" title="Configuration" href="configuration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Linux RealTime Communication Testbench
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contribution</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="build.html">Build</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">NAPI Configuration (napictl)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#background">Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-usage">Command Line Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-it-works">How It Works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="statistics.html">Statistics</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="processing_latency.html">Processing Latency</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="security.html">Security</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="mqtt.html">MQTT and Grafana Integration</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="histogram.html">Histograms</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="test.html">Test runs</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="workload.html">Real Time Compute Workloads</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="wireshark.html">Wireshark</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="qa.html">Quality Assurance</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Linux RealTime Communication Testbench</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">NAPI Configuration (napictl)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/napictl.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="napi-configuration-napictl">
+<span id="napictl"></span><h1>NAPI Configuration (napictl)<a class="headerlink" href="#napi-configuration-napictl" title="Permalink to this heading"></a></h1>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">napictl</span></code> is a small standalone helper that configures the NAPI parameters
+<code class="docutils literal notranslate"><span class="pre">defer-hard-irqs</span></code> and <code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code> for an individual queue of a network
+interface. It is primarily used to enable kernel side busy polling for the queue that
+carries the real time traffic, which reduces the jitter introduced by hardware and software
+interrupts. See the <a class="reference internal" href="test.html#busypolling"><span class="std std-ref">Busypolling</span></a> test for the corresponding use case.</p>
+</section>
+<section id="background">
+<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading"></a></h2>
+<p>The Linux kernel exposes two NAPI parameters relevant for busy polling:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">defer-hard-irqs</span></code>: How often the NAPI processing is deferred, i.e. how many times the
+kernel busy polls a queue before re-arming the hardware interrupt.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code>: Timeout (in nanoseconds) after which the kernel takes over the NAPI
+processing again. For cyclic real time traffic it has to be larger than the application
+cycle time, otherwise the kernel falls back to interrupt driven processing within a cycle.</p></li>
+</ul>
+<p>Both parameters can be set globally for a whole interface via <code class="docutils literal notranslate"><span class="pre">sysfs</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">sys</span><span class="o">/</span><span class="n">class</span><span class="o">/</span><span class="n">net</span><span class="o">/&lt;</span><span class="n">interface</span><span class="o">&gt;/</span><span class="n">napi_defer_hard_irqs</span>
+<span class="o">/</span><span class="n">sys</span><span class="o">/</span><span class="n">class</span><span class="o">/</span><span class="n">net</span><span class="o">/&lt;</span><span class="n">interface</span><span class="o">&gt;/</span><span class="n">gro_flush_timeout</span>
+</pre></div>
+</div>
+<p>However, in a converged TSN setup only the queue(s) carrying the real time streams should be
+busy polled, while the remaining queues stay interrupt driven to save CPU cycles. The <code class="docutils literal notranslate"><span class="pre">sysfs</span></code>
+interface cannot express this per-queue granularity. <code class="docutils literal notranslate"><span class="pre">napictl</span></code> therefore uses the netlink
+<code class="docutils literal notranslate"><span class="pre">netdev</span></code> generic netlink API to resolve the NAPI instance(s) backing a given queue and to set
+both parameters only for that queue.</p>
+</section>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">napictl</span></code> is only built when its build and runtime requirements are met:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">libnl-3</span></code> and <code class="docutils literal notranslate"><span class="pre">libnl-genl-3</span></code> development packages at build time.</p></li>
+<li><p>Linux kernel v6.13+ headers providing the <code class="docutils literal notranslate"><span class="pre">netdev</span></code> generic netlink commands
+<code class="docutils literal notranslate"><span class="pre">NETDEV_CMD_QUEUE_GET</span></code> and <code class="docutils literal notranslate"><span class="pre">NETDEV_CMD_NAPI_SET</span></code>.</p></li>
+<li><p>A network driver that supports per-queue NAPI configuration. This currently works for the
+Intel <code class="docutils literal notranslate"><span class="pre">igc</span></code> (i225/i226) and <code class="docutils literal notranslate"><span class="pre">igb</span></code> drivers.</p></li>
+</ul>
+<p>If the requirements are not satisfied, <code class="docutils literal notranslate"><span class="pre">cmake</span></code> skips the target and prints:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Building</span> <span class="n">napictl</span> <span class="n">configuration</span> <span class="n">tool</span> <span class="n">requires</span> <span class="n">kernel</span> <span class="n">v6</span><span class="mf">.13</span><span class="o">+</span>
+</pre></div>
+</div>
+<p>When the requirements are met, <code class="docutils literal notranslate"><span class="pre">cmake</span></code> prints <code class="docutils literal notranslate"><span class="pre">Found</span> <span class="pre">libnl3:</span> <span class="pre">Building</span> <span class="pre">napictl</span> <span class="pre">configuration</span>
+<span class="pre">tool</span></code> and the binary is produced as <code class="docutils literal notranslate"><span class="pre">build/napictl</span></code>. See <a class="reference internal" href="build.html#build"><span class="std std-ref">Build</span></a> for the package names
+on Debian and RHEL based systems.</p>
+</section>
+<section id="command-line-usage">
+<h2>Command Line Usage<a class="headerlink" href="#command-line-usage" title="Permalink to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host:<span class="w"> </span>./napictl<span class="w"> </span>-h
+usage:<span class="w"> </span>napictl<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+<span class="w">  </span>options:
+<span class="w">    </span>-i,<span class="w"> </span>--interface:<span class="w">         </span>Network<span class="w"> </span>interface<span class="w"> </span>to<span class="w"> </span>configure
+<span class="w">    </span>-q,<span class="w"> </span>--queue:<span class="w">             </span>Queue<span class="w"> </span>of<span class="w"> </span>network<span class="w"> </span>interface<span class="w"> </span>to<span class="w"> </span>configure
+<span class="w">    </span>-d,<span class="w"> </span>--defer-hard-irqs:<span class="w">   </span>Set<span class="w"> </span>defer-hard-irqs
+<span class="w">    </span>-g,<span class="w"> </span>--gro-flush-timeout:<span class="w"> </span>Set<span class="w"> </span>gro-flush-timeout
+<span class="w">    </span>-h,<span class="w"> </span>--help:<span class="w">              </span>Print<span class="w"> </span>this<span class="w"> </span><span class="nb">help</span><span class="w"> </span>text
+<span class="w">    </span>-v,<span class="w"> </span>--verbose:<span class="w">           </span>Print<span class="w"> </span>verbose<span class="w"> </span>messages
+<span class="w">    </span>-V,<span class="w"> </span>--version:<span class="w">           </span>Print<span class="w"> </span>version
+</pre></div>
+</div>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Options</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-i</span></code>, <code class="docutils literal notranslate"><span class="pre">--interface</span></code></p></td>
+<td><p>Network interface to configure (mandatory).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-q</span></code>, <code class="docutils literal notranslate"><span class="pre">--queue</span></code></p></td>
+<td><p>Queue index to configure. Defaults to <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-d</span></code>, <code class="docutils literal notranslate"><span class="pre">--defer-hard-irqs</span></code></p></td>
+<td><p>Value for <code class="docutils literal notranslate"><span class="pre">defer-hard-irqs</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-g</span></code>, <code class="docutils literal notranslate"><span class="pre">--gro-flush-timeout</span></code></p></td>
+<td><p>Value for <code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code> in nanoseconds. Defaults to <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-v</span></code>, <code class="docutils literal notranslate"><span class="pre">--verbose</span></code></p></td>
+<td><p>Print the resolved NAPI ids and the applied settings.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-V</span></code>, <code class="docutils literal notranslate"><span class="pre">--version</span></code></p></td>
+<td><p>Print the version and exit.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-h</span></code>, <code class="docutils literal notranslate"><span class="pre">--help</span></code></p></td>
+<td><p>Print the usage and exit.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">napictl</span></code> modifies network interface settings and therefore requires
+<code class="docutils literal notranslate"><span class="pre">CAP_NET_ADMIN</span></code> (e.g. run it as <code class="docutils literal notranslate"><span class="pre">root</span></code>).</p>
+</div>
+</section>
+<section id="how-it-works">
+<h2>How It Works<a class="headerlink" href="#how-it-works" title="Permalink to this heading"></a></h2>
+<p>For the requested queue <code class="docutils literal notranslate"><span class="pre">napictl</span></code>:</p>
+<ol class="arabic simple">
+<li><p>Resolves the interface index from the interface name.</p></li>
+<li><p>Issues a <code class="docutils literal notranslate"><span class="pre">NETDEV_CMD_QUEUE_GET</span></code> dump and matches the queue index to obtain the NAPI ids of
+its receive and transmit NAPI instances.</p></li>
+<li><p>Applies <code class="docutils literal notranslate"><span class="pre">defer-hard-irqs</span></code> and <code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code> to both the Rx and Tx NAPI instances via
+<code class="docutils literal notranslate"><span class="pre">NETDEV_CMD_NAPI_SET</span></code>.</p></li>
+</ol>
+<p>Passing <code class="docutils literal notranslate"><span class="pre">-v</span></code> prints the resolved NAPI ids and the values that get applied, which is helpful for
+debugging the queue to NAPI mapping.</p>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h2>
+<p>Configure <code class="docutils literal notranslate"><span class="pre">defer-hard-irqs</span></code> and a <code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code> of 2 ms (2000000 ns) for queue 0 of
+<code class="docutils literal notranslate"><span class="pre">enp3s0</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>napictl<span class="w"> </span>-i<span class="w"> </span>enp3s0<span class="w"> </span>-q<span class="w"> </span><span class="m">0</span><span class="w"> </span>-d<span class="w"> </span><span class="m">10</span><span class="w"> </span>-g<span class="w"> </span><span class="m">2000000</span>
+</pre></div>
+</div>
+<p>Reset the parameters for queue 0 back to their defaults (interrupt driven processing):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>napictl<span class="w"> </span>-i<span class="w"> </span>enp3s0<span class="w"> </span>-q<span class="w"> </span><span class="m">0</span><span class="w"> </span>-d<span class="w"> </span><span class="m">0</span><span class="w"> </span>-g<span class="w"> </span><span class="m">0</span>
+</pre></div>
+</div>
+<p>The test scripts wrap <code class="docutils literal notranslate"><span class="pre">napictl</span></code> in the <code class="docutils literal notranslate"><span class="pre">napi_defer_hard_irqs_queue()</span></code> helper from
+<code class="docutils literal notranslate"><span class="pre">tests/lib/common.sh</span></code>, which derives <code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code> from the cycle time and applies the
+settings per queue:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># napi_defer_hard_irqs_queue($napictl, $interface, $cycle_time_ns, $queue)</span>
+napi_defer_hard_irqs_queue<span class="w"> </span><span class="s2">&quot;../../build/napictl&quot;</span><span class="w"> </span><span class="s2">&quot;enp3s0&quot;</span><span class="w"> </span><span class="s2">&quot;1000000&quot;</span><span class="w"> </span><span class="m">0</span>
+</pre></div>
+</div>
+<p>See <code class="docutils literal notranslate"><span class="pre">tests/busypolling_napiconf/</span></code> and <code class="docutils literal notranslate"><span class="pre">tests/er26/</span></code> for complete examples.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="configuration.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="statistics.html" class="btn btn-neutral float-right" title="Statistics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2026, Linutronix GmbH.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

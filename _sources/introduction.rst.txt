@@ -52,6 +52,7 @@ Version history:
 - v5.2: February 2025, Histogram and bugfixes
 - v5.3: May 2025, AF_XDP Tx Launch Time and bugfixes
 - v5.4: December 2025, Workload simulation and statistics
+- v5.5: July 2026, Workload enhancements, auxiliary clock support and napictl
 
 Motivation
 ^^^^^^^^^^
