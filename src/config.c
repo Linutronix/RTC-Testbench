@@ -669,8 +669,8 @@ void config_print_values(void)
 {
 	const struct traffic_class_config *conf;
 
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	printf("-------------------------------------------------------------------"
+	       "------------------------\n");
 	printf("ApplicationClockId=");
 	print_clockid(app_config.application_clock_id);
 	printf("ApplicationBaseCycleTimeNS=%" PRIu64 "\n",
@@ -682,8 +682,8 @@ void config_print_values(void)
 	printf("ApplicationTxBaseOffsetNS=%" PRIu64 "\n", app_config.application_tx_base_offset_ns);
 	printf("ApplicationRxBaseOffsetNS=%" PRIu64 "\n", app_config.application_rx_base_offset_ns);
 	printf("ApplicationXdpProgram=%s\n", app_config.application_xdp_program);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	printf("-------------------------------------------------------------------"
+	       "------------------------\n");
 
 	conf = &app_config.classes[TSN_HIGH_FRAME_TYPE];
 	if (config_is_traffic_class_active(TSN_HIGH_FRAME_TYPE)) {
@@ -734,8 +734,8 @@ void config_print_values(void)
 		printf("TsnHighRxWorkloadThreadCpu=");
 		print_cpu_list(conf->workload_thread_cpus, conf->workload_thread_cpus_num);
 		printf("TsnHighRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	conf = &app_config.classes[TSN_LOW_FRAME_TYPE];
@@ -773,8 +773,8 @@ void config_print_values(void)
 		printf("TsnLowInterface=%s\n", conf->interface);
 		printf("TsnLowDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	conf = &app_config.classes[RTC_FRAME_TYPE];
@@ -821,8 +821,8 @@ void config_print_values(void)
 		printf("RtcRxWorkloadThreadCpu=");
 		print_cpu_list(conf->workload_thread_cpus, conf->workload_thread_cpus_num);
 		printf("RtcRxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	conf = &app_config.classes[RTA_FRAME_TYPE];
@@ -858,8 +858,8 @@ void config_print_values(void)
 		printf("RtaInterface=%s\n", conf->interface);
 		printf("RtaDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	conf = &app_config.classes[DCP_FRAME_TYPE];
@@ -884,8 +884,8 @@ void config_print_values(void)
 		printf("DcpInterface=%s\n", conf->interface);
 		printf("DcpDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	conf = &app_config.classes[LLDP_FRAME_TYPE];
@@ -908,8 +908,8 @@ void config_print_values(void)
 		printf("LldpInterface=%s\n", conf->interface);
 		printf("LldpDestination=");
 		print_mac_address(conf->l2_destination);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	conf = &app_config.classes[UDP_HIGH_FRAME_TYPE];
@@ -933,8 +933,8 @@ void config_print_values(void)
 		printf("UdpHighPort=%s\n", conf->l3_port);
 		printf("UdpHighDestination=%s\n", conf->l3_destination);
 		printf("UdpHighSource=%s\n", conf->l3_source);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	conf = &app_config.classes[UDP_LOW_FRAME_TYPE];
@@ -958,8 +958,8 @@ void config_print_values(void)
 		printf("UdpLowPort=%s\n", conf->l3_port);
 		printf("UdpLowDestination=%s\n", conf->l3_destination);
 		printf("UdpLowSource=%s\n", conf->l3_source);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	conf = &app_config.classes[GENERICL2_FRAME_TYPE];
@@ -1010,16 +1010,16 @@ void config_print_values(void)
 		printf("GenericL2RxWorkloadThreadCpu=");
 		print_cpu_list(conf->workload_thread_cpus, conf->workload_thread_cpus_num);
 		printf("GenericL2RxWorkloadThreadPriority=%d\n", conf->workload_thread_priority);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	printf("LogThreadPriority=%d\n", app_config.log_thread_priority);
 	printf("LogThreadCpu=%d\n", app_config.log_thread_cpu);
 	printf("LogFile=%s\n", app_config.log_file);
 	printf("LogLevel=%s\n", app_config.log_level);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	printf("-------------------------------------------------------------------"
+	       "------------------------\n");
 
 	printf("DebugStopTraceOnOutlier=%s\n",
 	       app_config.debug_stop_trace_on_outlier ? "True" : "False");
@@ -1028,8 +1028,8 @@ void config_print_values(void)
 	printf("DebugMonitorMode=%s\n", app_config.debug_monitor_mode ? "True" : "False");
 	printf("DebugMonitorDestination=");
 	print_mac_address(app_config.debug_monitor_destination);
-	printf("--------------------------------------------------------------------------------"
-	       "\n");
+	printf("-------------------------------------------------------------------"
+	       "------------------------\n");
 
 	if (app_config.stats_histogram_enabled) {
 		printf("StatsHistogramEnabled=%s\n",
@@ -1041,8 +1041,8 @@ void config_print_values(void)
 		printf("StatsHistogramFile=%s\n", app_config.stats_histogram_file);
 		printf("StatsCollectionIntervalNS=%" PRIu64 "\n",
 		       app_config.stats_collection_interval_ns);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	if (app_config.log_mqtt) {
@@ -1053,8 +1053,8 @@ void config_print_values(void)
 		printf("LogMqttBrokerPort=%d\n", app_config.log_mqtt_broker_port);
 		printf("LogMqttKeepAliveSecs=%d\n", app_config.log_mqtt_keep_alive_secs);
 		printf("LogMqttMeasurementName=%s\n", app_config.log_mqtt_measurement_name);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 
 	if (app_config.log_json) {
@@ -1064,8 +1064,8 @@ void config_print_values(void)
 		printf("LogJsonHost=%s\n", app_config.log_json_host);
 		printf("LogJsonPort=%s\n", app_config.log_json_port);
 		printf("LogJsonMeasurementName=%s\n", app_config.log_json_measurement_name);
-		printf("---------------------------------------------------------------------------"
-		       "-----\n");
+		printf("-------------------------------------------------------------------"
+		       "------------------------\n");
 	}
 }
 
