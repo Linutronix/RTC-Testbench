@@ -85,6 +85,7 @@ static int config_parse_int(const char *value, long *ret)
 {
 	char *endptr;
 
+	errno = 0;
 	*ret = strtol(value, &endptr, 10);
 	if (errno != 0 || endptr == value || *endptr != '\0')
 		return -ERANGE;
@@ -96,6 +97,7 @@ static int config_parse_ulong(const char *value, unsigned long long *ret)
 {
 	char *endptr;
 
+	errno = 0;
 	*ret = strtoull(value, &endptr, 10);
 	if (errno != 0 || endptr == value || *endptr != '\0')
 		return -ERANGE;
@@ -108,6 +110,7 @@ static int config_parse_time(const char *value, uint64_t *ret)
 	unsigned long long tmp;
 	char *endptr;
 
+	errno = 0;
 	tmp = strtoull(value, &endptr, 10);
 	if (errno != 0 || endptr == value)
 		return -ERANGE;

@@ -364,6 +364,7 @@ void config_free(void);
 		if (!strcmp(key, #name)) {                                                         \
 			enum stat_frame_type type = config_opt_to_type(#name);                     \
                                                                                                    \
+			errno = 0;                                                                 \
 			app_config.classes[type].var = strtoul(value, &endptr, 16);                \
 			if (errno != 0 || endptr == value || *endptr != '\0') {                    \
 				ret = -ERANGE;                                                     \
