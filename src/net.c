@@ -204,9 +204,10 @@ int get_interface_mac_address(const char *if_name, unsigned char *mac, size_t le
 
 int get_interface_link_speed(const char *if_name, uint32_t *speed)
 {
-	struct ifreq ifreq = {0};
 	struct ethtool_cmd e_data;
+	struct ifreq ifreq = {0};
 	int socket_fd, ret;
+	__u32 tmp;
 
 	if (!speed)
 		return -EINVAL;
@@ -229,7 +230,15 @@ int get_interface_link_speed(const char *if_name, uint32_t *speed)
 		return -errno;
 	}
 
-	*speed = ethtool_cmd_speed(&e_data);
+	tmp = ethtool_cmd_speed(&e_data);
+
+	/* In case of link down or AutoNeg still in progress */
+	if (tmp == 0 || tmp == (__u32)SPEED_UNKNOWN) {
+		fprintf(stderr, "NET: Failed to get interface link speed. Using 1G as default.\n");
+		tmp = SPEED_1000;
+	}
+
+	*speed = tmp;
 
 	return 0;
 }
