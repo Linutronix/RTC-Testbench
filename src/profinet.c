@@ -208,7 +208,6 @@ int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len)
 		set_mirror_tx_timestamp_est(&rt->meta_data);
 
 	} else if (class_config->security_mode == SECURITY_MODE_AO) {
-
 		unsigned char *begin_of_security_checksum;
 		unsigned char *begin_of_aad_data;
 		size_t size_of_eth_header;
@@ -275,7 +274,7 @@ int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len)
 		size_of_aad_data = sizeof(*srt);
 		begin_of_security_checksum = frame_data + (len - sizeof(struct security_checksum));
 		begin_of_ciphertext = frame_data + size_of_eth_header + sizeof(*srt);
-		size_of_ciphertext = len - sizeof(struct vlan_ethernet_header) -
+		size_of_ciphertext = len - size_of_eth_header -
 				     sizeof(struct profinet_secure_header) -
 				     sizeof(struct security_checksum);
 
