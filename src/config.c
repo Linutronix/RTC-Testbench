@@ -1727,6 +1727,12 @@ void config_free(void)
 	free(app_config.classes[TSN_HIGH_FRAME_TYPE].payload_pattern);
 	free(app_config.classes[TSN_HIGH_FRAME_TYPE].security_key);
 	free(app_config.classes[TSN_HIGH_FRAME_TYPE].security_iv_prefix);
+	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_file);
+	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_function);
+	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_arguments);
+	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_setup_function);
+	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_setup_arguments);
+	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_teardown_function);
 
 	free(app_config.classes[TSN_LOW_FRAME_TYPE].payload_pattern);
 	free(app_config.classes[TSN_LOW_FRAME_TYPE].security_key);
@@ -1735,6 +1741,12 @@ void config_free(void)
 	free(app_config.classes[RTC_FRAME_TYPE].payload_pattern);
 	free(app_config.classes[RTC_FRAME_TYPE].security_key);
 	free(app_config.classes[RTC_FRAME_TYPE].security_iv_prefix);
+	free(app_config.classes[RTC_FRAME_TYPE].workload_file);
+	free(app_config.classes[RTC_FRAME_TYPE].workload_function);
+	free(app_config.classes[RTC_FRAME_TYPE].workload_arguments);
+	free(app_config.classes[RTC_FRAME_TYPE].workload_setup_function);
+	free(app_config.classes[RTC_FRAME_TYPE].workload_setup_arguments);
+	free(app_config.classes[RTC_FRAME_TYPE].workload_teardown_function);
 
 	free(app_config.classes[RTA_FRAME_TYPE].payload_pattern);
 	free(app_config.classes[RTA_FRAME_TYPE].security_key);
@@ -1756,6 +1768,12 @@ void config_free(void)
 
 	free(app_config.classes[GENERICL2_FRAME_TYPE].name);
 	free(app_config.classes[GENERICL2_FRAME_TYPE].payload_pattern);
+	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_file);
+	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_function);
+	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_arguments);
+	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_setup_function);
+	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_setup_arguments);
+	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_teardown_function);
 
 	free(app_config.stats_histogram_file);
 
