@@ -6,6 +6,7 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,34 +30,169 @@
 
 struct application_config app_config;
 
-static bool str_match_second(const char *opt, const char *s)
+static const struct config_app_option global_options[] = {
+	APP_OPTION("ApplicationClockId", application_clock_id, CONFIG_TYPE_CLOCKID),
+	APP_OPTION("ApplicationBaseCycleTimeNS", application_base_cycle_time_ns, CONFIG_TYPE_TIME),
+	APP_OPTION("ApplicationBaseStartTimeNS", application_base_start_time_ns, CONFIG_TYPE_TIME),
+	APP_OPTION("ApplicationBaseStartOffsetNS", application_base_start_offset_ns,
+		   CONFIG_TYPE_TIME),
+	APP_OPTION("ApplicationTxBaseOffsetNS", application_tx_base_offset_ns, CONFIG_TYPE_TIME),
+	APP_OPTION("ApplicationRxBaseOffsetNS", application_rx_base_offset_ns, CONFIG_TYPE_TIME),
+	APP_STRING_OPTION("ApplicationXdpProgram", application_xdp_program),
+
+	APP_OPTION("LogThreadPriority", log_thread_priority, CONFIG_TYPE_INT),
+	APP_OPTION("LogThreadCpu", log_thread_cpu, CONFIG_TYPE_INT),
+	APP_STRING_OPTION("LogFile", log_file),
+	APP_STRING_OPTION("LogLevel", log_level),
+
+	APP_OPTION("DebugStopTraceOnOutlier", debug_stop_trace_on_outlier, CONFIG_TYPE_BOOL),
+	APP_OPTION("DebugStopTraceOnError", debug_stop_trace_on_error, CONFIG_TYPE_BOOL),
+	APP_OPTION("DebugMonitorMode", debug_monitor_mode, CONFIG_TYPE_BOOL),
+	APP_OPTION("DebugMonitorDestination", debug_monitor_destination, CONFIG_TYPE_MAC),
+
+	APP_OPTION("StatsHistogramEnabled", stats_histogram_enabled, CONFIG_TYPE_BOOL),
+	APP_OPTION("StatsHistogramMinimumNS", stats_histogram_minimum_ns, CONFIG_TYPE_TIME),
+	APP_OPTION("StatsHistogramMaximumNS", stats_histogram_maximum_ns, CONFIG_TYPE_TIME),
+	APP_STRING_OPTION("StatsHistogramFile", stats_histogram_file),
+	APP_OPTION("StatsCollectionIntervalNS", stats_collection_interval_ns, CONFIG_TYPE_TIME),
+
+	APP_OPTION("LogMqtt", log_mqtt, CONFIG_TYPE_BOOL),
+	APP_OPTION("LogMqttThreadPriority", log_mqtt_thread_priority, CONFIG_TYPE_INT),
+	APP_OPTION("LogMqttThreadCpu", log_mqtt_thread_cpu, CONFIG_TYPE_INT),
+	APP_STRING_OPTION("LogMqttBrokerIP", log_mqtt_broker_ip),
+	APP_OPTION("LogMqttBrokerPort", log_mqtt_broker_port, CONFIG_TYPE_INT),
+	APP_OPTION("LogMqttKeepAliveSecs", log_mqtt_keep_alive_secs, CONFIG_TYPE_INT),
+	APP_STRING_OPTION("LogMqttMeasurementName", log_mqtt_measurement_name),
+
+	APP_OPTION("LogJson", log_json, CONFIG_TYPE_BOOL),
+	APP_OPTION("LogJsonThreadPriority", log_json_thread_priority, CONFIG_TYPE_INT),
+	APP_OPTION("LogJsonThreadCpu", log_json_thread_cpu, CONFIG_TYPE_INT),
+	APP_STRING_OPTION("LogJsonHost", log_json_host),
+	APP_STRING_OPTION("LogJsonPort", log_json_port),
+	APP_STRING_OPTION("LogJsonMeasurementName", log_json_measurement_name),
+};
+
+static const struct config_class_option class_options[] = {
+	CLASS_OPTION("Enabled", enabled, CONFIG_TYPE_BOOL, TC_ALL),
+
+	/* XDP options */
+	CLASS_OPTION("XdpEnabled", xdp_enabled, CONFIG_TYPE_BOOL, TC_XDP),
+	CLASS_OPTION("XdpSkbMode", xdp_skb_mode, CONFIG_TYPE_BOOL, TC_XDP),
+	CLASS_OPTION("XdpZcMode", xdp_zc_mode, CONFIG_TYPE_BOOL, TC_XDP),
+	CLASS_OPTION("XdpWakeupMode", xdp_wakeup_mode, CONFIG_TYPE_BOOL, TC_XDP),
+	CLASS_OPTION("XdpBusyPollMode", xdp_busy_poll_mode, CONFIG_TYPE_BOOL, TC_XDP),
+	CLASS_OPTION("TxTimeStampEnabled", tx_hwtstamp_enabled, CONFIG_TYPE_BOOL, TC_XDP),
+
+	/* TxTime options */
+	CLASS_OPTION("TxTimeEnabled", tx_time_enabled, CONFIG_TYPE_BOOL, TC_TXTIME),
+	CLASS_OPTION("TxTimeOffsetNS", tx_time_offset_ns, CONFIG_TYPE_TIME, TC_TXTIME),
+
+	/* Generic options */
+	CLASS_OPTION("IgnoreRxErrors", ignore_rx_errors, CONFIG_TYPE_BOOL, TC_ALL),
+	CLASS_OPTION("Vid", vid, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("Pcp", pcp, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("NumFramesPerCycle", num_frames_per_cycle, CONFIG_TYPE_SIZE, TC_ALL),
+	CLASS_STRING_OPTION("PayloadPattern", payload_pattern, TC_ALL),
+	CLASS_OPTION("FrameLength", frame_length, CONFIG_TYPE_SIZE, TC_ALL),
+	CLASS_OPTION("RxQueue", rx_queue, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("TxQueue", tx_queue, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("SocketPriority", socket_priority, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("TxThreadPriority", tx_thread_priority, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("RxThreadPriority", rx_thread_priority, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("TxThreadCpu", tx_thread_cpu, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("RxThreadCpu", rx_thread_cpu, CONFIG_TYPE_INT, TC_ALL),
+	CLASS_OPTION("Interface", interface, CONFIG_TYPE_INTERFACE, TC_ALL),
+
+	/* Burst options */
+	CLASS_OPTION("BurstPeriodNS", burst_period_ns, CONFIG_TYPE_TIME, TC_BURST),
+
+	/* L2 options */
+	CLASS_OPTION("Destination", l2_destination, CONFIG_TYPE_MAC, TC_L2),
+
+	/* L3 options */
+	CLASS_STRING_OPTION("Destination", l3_destination, TC_L3),
+	CLASS_STRING_OPTION("Source", l3_source, TC_L3),
+	CLASS_STRING_OPTION("Port", l3_port, TC_L3),
+
+	/* GenericL2 */
+	CLASS_STRING_OPTION("Name", name, BIT(GENERICL2_FRAME_TYPE)),
+	CLASS_OPTION("EtherType", ether_type, CONFIG_TYPE_ETHER_TYPE, BIT(GENERICL2_FRAME_TYPE)),
+
+	/* Security options */
+	CLASS_OPTION("SecurityMode", security_mode, CONFIG_TYPE_SECURITY_MODE, TC_SECURITY),
+	CLASS_OPTION("SecurityAlgorithm", security_algorithm, CONFIG_TYPE_SECURITY_ALGORITHM,
+		     TC_SECURITY),
+	CLASS_STRING_OPTION("SecurityKey", security_key, TC_SECURITY),
+	CLASS_STRING_OPTION("SecurityIvPrefix", security_iv_prefix, TC_SECURITY),
+
+	/* Workload options */
+	CLASS_OPTION("RxWorkloadEnabled", rx_workload_enabled, CONFIG_TYPE_BOOL, TC_WORKLOAD),
+	CLASS_OPTION("RxWorkloadPrewarm", rx_workload_prewarm, CONFIG_TYPE_BOOL, TC_WORKLOAD),
+	CLASS_OPTION("RxWorkloadSkipCount", rx_workload_skip_count, CONFIG_TYPE_ULONG, TC_WORKLOAD),
+	CLASS_STRING_OPTION("RxWorkloadFile", workload_file, TC_WORKLOAD),
+	CLASS_STRING_OPTION("RxWorkloadSetupFunction", workload_setup_function, TC_WORKLOAD),
+	CLASS_STRING_OPTION("RxWorkloadSetupArguments", workload_setup_arguments, TC_WORKLOAD),
+	CLASS_STRING_OPTION("RxWorkloadTeardownFunction", workload_teardown_function, TC_WORKLOAD),
+	CLASS_STRING_OPTION("RxWorkloadFunction", workload_function, TC_WORKLOAD),
+	CLASS_STRING_OPTION("RxWorkloadArguments", workload_arguments, TC_WORKLOAD),
+	CLASS_CPU_LIST_OPTION("RxWorkloadThreadCpu", workload_thread_cpus, TC_WORKLOAD),
+	CLASS_OPTION("RxWorkloadThreadPriority", workload_thread_priority, CONFIG_TYPE_INT,
+		     TC_WORKLOAD),
+};
+
+static bool str_match_class(const char *opt, const char *s)
 {
 	return !strncmp(opt, s, strlen(s));
 }
 
-static enum stat_frame_type config_opt_to_type(const char *opt)
+static enum stat_frame_type config_opt_to_type(const char *opt, const char **suffix)
 {
-	if (str_match_second(opt, "TsnHigh"))
+	if (str_match_class(opt, "TsnHigh")) {
+		*suffix = opt + strlen("TsnHigh");
 		return TSN_HIGH_FRAME_TYPE;
-	if (str_match_second(opt, "TsnLow"))
+	}
+
+	if (str_match_class(opt, "TsnLow")) {
+		*suffix = opt + strlen("TsnLow");
 		return TSN_LOW_FRAME_TYPE;
-	if (str_match_second(opt, "Rtc"))
+	}
+
+	if (str_match_class(opt, "Rtc")) {
+		*suffix = opt + strlen("Rtc");
 		return RTC_FRAME_TYPE;
-	if (str_match_second(opt, "Rta"))
+	}
+
+	if (str_match_class(opt, "Rta")) {
+		*suffix = opt + strlen("Rta");
 		return RTA_FRAME_TYPE;
-	if (str_match_second(opt, "Dcp"))
+	}
+
+	if (str_match_class(opt, "Dcp")) {
+		*suffix = opt + strlen("Dcp");
 		return DCP_FRAME_TYPE;
-	if (str_match_second(opt, "Lldp"))
+	}
+
+	if (str_match_class(opt, "Lldp")) {
+		*suffix = opt + strlen("Lldp");
 		return LLDP_FRAME_TYPE;
-	if (str_match_second(opt, "UdpHigh"))
+	}
+
+	if (str_match_class(opt, "UdpHigh")) {
+		*suffix = opt + strlen("UdpHigh");
 		return UDP_HIGH_FRAME_TYPE;
-	if (str_match_second(opt, "UdpLow"))
+	}
+
+	if (str_match_class(opt, "UdpLow")) {
+		*suffix = opt + strlen("UdpLow");
 		return UDP_LOW_FRAME_TYPE;
-	if (str_match_second(opt, "GenericL2"))
+	}
+
+	if (str_match_class(opt, "GenericL2")) {
+		*suffix = opt + strlen("GenericL2");
 		return GENERICL2_FRAME_TYPE;
+	}
 
 	/* Not a traffic class option */
-	fprintf(stderr, "BUG: Invalid option '%s' found!\n", opt);
 	return NUM_FRAME_TYPES;
 }
 
@@ -224,6 +360,222 @@ static int config_parse_clockid(const char *value, clockid_t *clock)
 	return -EINVAL;
 }
 
+static int config_store_value(const struct config_app_option *opt, void *base, const char *key,
+			      const char *value)
+{
+	switch (opt->type) {
+	case CONFIG_TYPE_BOOL: {
+		bool result;
+
+		if (config_parse_bool(value, &result)) {
+			fprintf(stderr, "The value for '%s' is invalid!\n", key);
+			return -EINVAL;
+		}
+
+		*(bool *)(base + opt->offset) = result;
+		break;
+	}
+	case CONFIG_TYPE_INT: {
+		long result;
+
+		if (config_parse_int(value, &result)) {
+			fprintf(stderr, "The value for '%s' is invalid!\n", key);
+			return -EINVAL;
+		}
+
+		*(int *)(base + opt->offset) = result;
+		break;
+	}
+	case CONFIG_TYPE_ULONG: {
+		unsigned long long result;
+
+		if (config_parse_ulong(value, &result)) {
+			fprintf(stderr, "The value for '%s' is invalid!\n", key);
+			return -EINVAL;
+		}
+
+		*(uint64_t *)(base + opt->offset) = result;
+		break;
+	}
+	case CONFIG_TYPE_SIZE: {
+		unsigned long long result;
+
+		if (config_parse_ulong(value, &result)) {
+			fprintf(stderr, "The value for '%s' is invalid!\n", key);
+			return -EINVAL;
+		}
+
+		*(size_t *)(base + opt->offset) = result;
+		break;
+	}
+	case CONFIG_TYPE_TIME: {
+		uint64_t result;
+
+		if (config_parse_time(value, &result)) {
+			fprintf(stderr, "The value for '%s' is invalid!\n", key);
+			return -EINVAL;
+		}
+
+		*(uint64_t *)(base + opt->offset) = result;
+		break;
+	}
+	case CONFIG_TYPE_STRING: {
+		char **str = (char **)(base + opt->offset);
+
+		/* config_set_defaults() may have set a default value. */
+		free(*str);
+		*str = strdup(value);
+
+		if (!*str) {
+			fprintf(stderr, "strdup() for '%s' failed!\n", key);
+			return -ENOMEM;
+		}
+
+		/* Set string length */
+		*(size_t *)(base + opt->length_offset) = strlen(*str);
+		break;
+	}
+	case CONFIG_TYPE_INTERFACE: {
+		char *ifname = (char *)(base + opt->offset);
+
+		strncpy(ifname, value, IF_NAMESIZE - 1);
+		break;
+	}
+	case CONFIG_TYPE_MAC: {
+		unsigned int tmp[ETH_ALEN];
+		unsigned char *mac = (unsigned char *)(base + opt->offset);
+		int ret;
+
+		ret = sscanf(value, "%x:%x:%x:%x:%x:%x", &tmp[0], &tmp[1], &tmp[2], &tmp[3],
+			     &tmp[4], &tmp[5]);
+
+		if (ret != ETH_ALEN) {
+			fprintf(stderr, "Failed to parse '%s' MAC Address!\n", key);
+			return -EINVAL;
+		}
+
+		for (int i = 0; i < ETH_ALEN; i++)
+			mac[i] = (unsigned char)tmp[i];
+		break;
+	}
+	case CONFIG_TYPE_ETHER_TYPE: {
+		unsigned long tmp;
+		char *endptr;
+
+		errno = 0;
+		tmp = strtoul(value, &endptr, 16);
+		if (errno != 0 || endptr == value || *endptr != '\0') {
+			fprintf(stderr, "The value for '%s' is invalid!\n", key);
+			return -EINVAL;
+		}
+
+		*(unsigned int *)(base + opt->offset) = tmp;
+		break;
+	}
+	case CONFIG_TYPE_SECURITY_MODE: {
+		enum security_mode *mode = (enum security_mode *)(base + opt->offset);
+
+		if (strcasecmp(value, "none") && strcasecmp(value, "ao") &&
+		    strcasecmp(value, "ae")) {
+			fprintf(stderr, "Invalid security mode specified!\n");
+			return -EINVAL;
+		}
+
+		if (!strcasecmp(value, "none"))
+			*mode = SECURITY_MODE_NONE;
+		if (!strcasecmp(value, "ao"))
+			*mode = SECURITY_MODE_AO;
+		if (!strcasecmp(value, "ae"))
+			*mode = SECURITY_MODE_AE;
+		break;
+	}
+	case CONFIG_TYPE_SECURITY_ALGORITHM: {
+		enum security_algorithm *algo = (enum security_algorithm *)(base + opt->offset);
+
+		if (strcasecmp(value, "aes256-gcm") && strcasecmp(value, "aes128-gcm") &&
+		    strcasecmp(value, "chacha20-poly1305")) {
+			fprintf(stderr, "Invalid security algorithm specified!\n");
+			return -EINVAL;
+		}
+
+		if (!strcasecmp(value, "aes256-gcm"))
+			*algo = SECURITY_ALGORITHM_AES256_GCM;
+		if (!strcasecmp(value, "aes128-gcm"))
+			*algo = SECURITY_ALGORITHM_AES128_GCM;
+		if (!strcasecmp(value, "chacha20-poly1305"))
+			*algo = SECURITY_ALGORITHM_CHACHA20_POLY1305;
+		break;
+	}
+	case CONFIG_TYPE_CPU_LIST: {
+		int *cpus = (int *)(base + opt->offset);
+		int *num = (int *)(base + opt->length_offset);
+
+		if (config_parse_cpu_list(value, cpus, WORKLOAD_MAX, num)) {
+			fprintf(stderr, "The value for '%s' is invalid!\n", key);
+			return -EINVAL;
+		}
+
+		break;
+	}
+	case CONFIG_TYPE_CLOCKID: {
+		clockid_t clock;
+
+		if (config_parse_clockid(value, &clock)) {
+			fprintf(stderr, "Invalid clockid specified!\n");
+			return -EINVAL;
+		}
+
+		*(clockid_t *)(base + opt->offset) = clock;
+		break;
+	}
+	default:
+		fprintf(stderr, "BUG: Unknown option detected!\n");
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int config_store_class_option(const char *key, const char *value)
+{
+	struct traffic_class_config *conf;
+	enum stat_frame_type type;
+	const char *suffix;
+
+	type = config_opt_to_type(key, &suffix);
+	if (type == NUM_FRAME_TYPES)
+		return -ENOENT;
+
+	conf = &app_config.classes[type];
+	for (size_t i = 0; i < ARRAY_SIZE(class_options); i++) {
+		const struct config_class_option *opt = &class_options[i];
+
+		if (!(opt->tcs & BIT(type)))
+			continue;
+
+		if (strcmp(suffix, opt->option.name))
+			continue;
+
+		return config_store_value(&opt->option, conf, key, value);
+	}
+
+	return -ENOENT;
+}
+
+static int config_store_app_option(const char *key, const char *value)
+{
+	for (size_t i = 0; i < ARRAY_SIZE(global_options); i++) {
+		const struct config_app_option *opt = &global_options[i];
+
+		if (strcmp(key, opt->name))
+			continue;
+
+		return config_store_value(opt, &app_config, key, value);
+	}
+
+	return -ENOENT;
+}
+
 /* The configuration file is YAML based. Use libyaml to parse it. */
 int config_read_from_file(const char *config_file)
 {
@@ -254,8 +606,6 @@ int config_read_from_file(const char *config_file)
 	yaml_parser_set_input_file(&parser, f);
 
 	do {
-		char *endptr;
-
 		ret = yaml_parser_scan(&parser, &token);
 		if (!ret) {
 			ret = -EINVAL;
@@ -287,338 +637,17 @@ int config_read_from_file(const char *config_file)
 			if (!key)
 				continue;
 
-			/* Switch value */
-			CONFIG_STORE_CLOCKID_PARAM(ApplicationClockId, application_clock_id);
-			CONFIG_STORE_TIME_PARAM(ApplicationBaseCycleTimeNS,
-						application_base_cycle_time_ns);
-			CONFIG_STORE_TIME_PARAM(ApplicationBaseStartTimeNS,
-						application_base_start_time_ns);
-			CONFIG_STORE_TIME_PARAM(ApplicationBaseStartOffsetNS,
-						application_base_start_offset_ns);
-			CONFIG_STORE_TIME_PARAM(ApplicationTxBaseOffsetNS,
-						application_tx_base_offset_ns);
-			CONFIG_STORE_TIME_PARAM(ApplicationRxBaseOffsetNS,
-						application_rx_base_offset_ns);
-			CONFIG_STORE_STRING_PARAM(ApplicationXdpProgram, application_xdp_program);
-
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighEnabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighXdpEnabled, xdp_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighXdpSkbMode, xdp_skb_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighXdpZcMode, xdp_zc_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighXdpWakeupMode, xdp_wakeup_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighXdpBusyPollMode, xdp_busy_poll_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighTxTimeEnabled, tx_time_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighIgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighTxTimeStampEnabled,
-						      tx_hwtstamp_enabled);
-			CONFIG_STORE_TIME_PARAM_CLASS(TsnHighTxTimeOffsetNS, tx_time_offset_ns);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighVid, vid);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighPcp, pcp);
-			CONFIG_STORE_ULONG_PARAM_CLASS(TsnHighNumFramesPerCycle,
-						       num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighPayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(TsnHighFrameLength, frame_length);
-			CONFIG_STORE_SECURITY_MODE_PARAM_CLASS(TsnHighSecurityMode, security_mode);
-			CONFIG_STORE_SECURITY_ALGORITHM_PARAM_CLASS(TsnHighSecurityAlgorithm,
-								    security_algorithm);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighSecurityKey, security_key);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighSecurityIvPrefix,
-							security_iv_prefix);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighTxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighSocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighTxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighTxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(TsnHighInterface, interface);
-			CONFIG_STORE_MAC_PARAM_CLASS(TsnHighDestination, l2_destination);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighRxWorkloadEnabled,
-						      rx_workload_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnHighRxWorkloadPrewarm,
-						      rx_workload_prewarm);
-			CONFIG_STORE_ULONG_PARAM_CLASS(TsnHighRxWorkloadSkipCount,
-						       rx_workload_skip_count);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadFile, workload_file);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadSetupFunction,
-							workload_setup_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadSetupArguments,
-							workload_setup_arguments);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadTeardownFunction,
-							workload_teardown_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadFunction,
-							workload_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnHighRxWorkloadArguments,
-							workload_arguments);
-			CONFIG_STORE_CPU_LIST_PARAM_CLASS(TsnHighRxWorkloadThreadCpu,
-							  workload_thread_cpus);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnHighRxWorkloadThreadPriority,
-						     workload_thread_priority);
-
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowEnabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpEnabled, xdp_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpSkbMode, xdp_skb_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpZcMode, xdp_zc_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpWakeupMode, xdp_wakeup_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowXdpBusyPollMode, xdp_busy_poll_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowTxTimeEnabled, tx_time_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowIgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_BOOL_PARAM_CLASS(TsnLowTxTimeStampEnabled,
-						      tx_hwtstamp_enabled);
-			CONFIG_STORE_TIME_PARAM_CLASS(TsnLowTxTimeOffsetNS, tx_time_offset_ns);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowVid, vid);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowPcp, pcp);
-			CONFIG_STORE_ULONG_PARAM_CLASS(TsnLowNumFramesPerCycle,
-						       num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnLowPayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(TsnLowFrameLength, frame_length);
-			CONFIG_STORE_SECURITY_MODE_PARAM_CLASS(TsnLowSecurityMode, security_mode);
-			CONFIG_STORE_SECURITY_ALGORITHM_PARAM_CLASS(TsnLowSecurityAlgorithm,
-								    security_algorithm);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnLowSecurityKey, security_key);
-			CONFIG_STORE_STRING_PARAM_CLASS(TsnLowSecurityIvPrefix, security_iv_prefix);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowRxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowTxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowSocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowTxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowRxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowTxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(TsnLowRxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(TsnLowInterface, interface);
-			CONFIG_STORE_MAC_PARAM_CLASS(TsnLowDestination, l2_destination);
-
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcEnabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpEnabled, xdp_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpSkbMode, xdp_skb_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpZcMode, xdp_zc_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpWakeupMode, xdp_wakeup_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcXdpBusyPollMode, xdp_busy_poll_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcIgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcTxTimeStampEnabled, tx_hwtstamp_enabled);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcVid, vid);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcPcp, pcp);
-			CONFIG_STORE_ULONG_PARAM_CLASS(RtcNumFramesPerCycle, num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcPayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(RtcFrameLength, frame_length);
-			CONFIG_STORE_SECURITY_MODE_PARAM_CLASS(RtcSecurityMode, security_mode);
-			CONFIG_STORE_SECURITY_ALGORITHM_PARAM_CLASS(RtcSecurityAlgorithm,
-								    security_algorithm);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcSecurityKey, security_key);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcSecurityIvPrefix, security_iv_prefix);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcRxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcTxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcSocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcTxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcRxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcTxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcRxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(RtcInterface, interface);
-			CONFIG_STORE_MAC_PARAM_CLASS(RtcDestination, l2_destination);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcRxWorkloadEnabled, rx_workload_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtcRxWorkloadPrewarm, rx_workload_prewarm);
-			CONFIG_STORE_ULONG_PARAM_CLASS(RtcRxWorkloadSkipCount,
-						       rx_workload_skip_count);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadFile, workload_file);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadSetupFunction,
-							workload_setup_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadSetupArguments,
-							workload_setup_arguments);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadTeardownFunction,
-							workload_teardown_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadFunction, workload_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtcRxWorkloadArguments, workload_arguments);
-			CONFIG_STORE_CPU_LIST_PARAM_CLASS(RtcRxWorkloadThreadCpu,
-							  workload_thread_cpus);
-			CONFIG_STORE_INT_PARAM_CLASS(RtcRxWorkloadThreadPriority,
-						     workload_thread_priority);
-
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtaEnabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtaXdpEnabled, xdp_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtaXdpSkbMode, xdp_skb_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtaXdpZcMode, xdp_zc_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtaXdpWakeupMode, xdp_wakeup_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtaXdpBusyPollMode, xdp_busy_poll_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtaIgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_BOOL_PARAM_CLASS(RtaTxTimeStampEnabled, tx_hwtstamp_enabled);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaVid, vid);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaPcp, pcp);
-			CONFIG_STORE_TIME_PARAM_CLASS(RtaBurstPeriodNS, burst_period_ns);
-			CONFIG_STORE_ULONG_PARAM_CLASS(RtaNumFramesPerCycle, num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtaPayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(RtaFrameLength, frame_length);
-			CONFIG_STORE_SECURITY_MODE_PARAM_CLASS(RtaSecurityMode, security_mode);
-			CONFIG_STORE_SECURITY_ALGORITHM_PARAM_CLASS(RtaSecurityAlgorithm,
-								    security_algorithm);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtaSecurityKey, security_key);
-			CONFIG_STORE_STRING_PARAM_CLASS(RtaSecurityIvPrefix, security_iv_prefix);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaRxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaTxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaSocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaTxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaRxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaTxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(RtaRxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(RtaInterface, interface);
-			CONFIG_STORE_MAC_PARAM_CLASS(RtaDestination, l2_destination);
-
-			CONFIG_STORE_BOOL_PARAM_CLASS(DcpEnabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(DcpIgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpVid, vid);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpPcp, pcp);
-			CONFIG_STORE_TIME_PARAM_CLASS(DcpBurstPeriodNS, burst_period_ns);
-			CONFIG_STORE_ULONG_PARAM_CLASS(DcpNumFramesPerCycle, num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(DcpPayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(DcpFrameLength, frame_length);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpRxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpTxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpSocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpTxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpRxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpTxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(DcpRxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(DcpInterface, interface);
-			CONFIG_STORE_MAC_PARAM_CLASS(DcpDestination, l2_destination);
-
-			CONFIG_STORE_BOOL_PARAM_CLASS(LldpEnabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(LldpIgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_TIME_PARAM_CLASS(LldpBurstPeriodNS, burst_period_ns);
-			CONFIG_STORE_ULONG_PARAM_CLASS(LldpNumFramesPerCycle, num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(LldpPayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(LldpFrameLength, frame_length);
-			CONFIG_STORE_INT_PARAM_CLASS(LldpRxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(LldpTxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(LldpSocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(LldpTxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(LldpRxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(LldpTxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(LldpRxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(LldpInterface, interface);
-			CONFIG_STORE_MAC_PARAM_CLASS(LldpDestination, l2_destination);
-
-			CONFIG_STORE_BOOL_PARAM_CLASS(UdpHighEnabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(UdpHighIgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_TIME_PARAM_CLASS(UdpHighBurstPeriodNS, burst_period_ns);
-			CONFIG_STORE_ULONG_PARAM_CLASS(UdpHighNumFramesPerCycle,
-						       num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(UdpHighPayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(UdpHighFrameLength, frame_length);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpHighRxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpHighTxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpHighSocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpHighTxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpHighRxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpHighTxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpHighRxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(UdpHighInterface, interface);
-			CONFIG_STORE_STRING_PARAM_CLASS(UdpHighPort, l3_port);
-			CONFIG_STORE_STRING_PARAM_CLASS(UdpHighDestination, l3_destination);
-			CONFIG_STORE_STRING_PARAM_CLASS(UdpHighSource, l3_source);
-
-			CONFIG_STORE_BOOL_PARAM_CLASS(UdpLowEnabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(UdpLowIgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_TIME_PARAM_CLASS(UdpLowBurstPeriodNS, burst_period_ns);
-			CONFIG_STORE_ULONG_PARAM_CLASS(UdpLowNumFramesPerCycle,
-						       num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(UdpLowPayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(UdpLowFrameLength, frame_length);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpLowRxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpLowTxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpLowSocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpLowTxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpLowRxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpLowTxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(UdpLowRxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(UdpLowInterface, interface);
-			CONFIG_STORE_STRING_PARAM_CLASS(UdpLowPort, l3_port);
-			CONFIG_STORE_STRING_PARAM_CLASS(UdpLowDestination, l3_destination);
-			CONFIG_STORE_STRING_PARAM_CLASS(UdpLowSource, l3_source);
-
-			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2Name, name);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2Enabled, enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2XdpEnabled, xdp_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2XdpSkbMode, xdp_skb_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2XdpZcMode, xdp_zc_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2XdpWakeupMode, xdp_wakeup_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2XdpBusyPollMode, xdp_busy_poll_mode);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2TxTimeEnabled, tx_time_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2IgnoreRxErrors, ignore_rx_errors);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2TxTimeStampEnabled,
-						      tx_hwtstamp_enabled);
-			CONFIG_STORE_TIME_PARAM_CLASS(GenericL2TxTimeOffsetNS, tx_time_offset_ns);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2Vid, vid);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2Pcp, pcp);
-			CONFIG_STORE_ETHER_TYPE_CLASS(GenericL2EtherType, ether_type);
-			CONFIG_STORE_ULONG_PARAM_CLASS(GenericL2NumFramesPerCycle,
-						       num_frames_per_cycle);
-			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2PayloadPattern, payload_pattern);
-			CONFIG_STORE_ULONG_PARAM_CLASS(GenericL2FrameLength, frame_length);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxQueue, rx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2TxQueue, tx_queue);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2SocketPriority, socket_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2TxThreadPriority, tx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxThreadPriority, rx_thread_priority);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2TxThreadCpu, tx_thread_cpu);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxThreadCpu, rx_thread_cpu);
-			CONFIG_STORE_INTERFACE_PARAM_CLASS(GenericL2Interface, interface);
-			CONFIG_STORE_MAC_PARAM_CLASS(GenericL2Destination, l2_destination);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2RxWorkloadEnabled,
-						      rx_workload_enabled);
-			CONFIG_STORE_BOOL_PARAM_CLASS(GenericL2RxWorkloadPrewarm,
-						      rx_workload_prewarm);
-			CONFIG_STORE_ULONG_PARAM_CLASS(GenericL2RxWorkloadSkipCount,
-						       rx_workload_skip_count);
-			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadFile, workload_file);
-			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadSetupFunction,
-							workload_setup_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadSetupArguments,
-							workload_setup_arguments);
-			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadTeardownFunction,
-							workload_teardown_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadFunction,
-							workload_function);
-			CONFIG_STORE_STRING_PARAM_CLASS(GenericL2RxWorkloadArguments,
-							workload_arguments);
-			CONFIG_STORE_CPU_LIST_PARAM_CLASS(GenericL2RxWorkloadThreadCpu,
-							  workload_thread_cpus);
-			CONFIG_STORE_INT_PARAM_CLASS(GenericL2RxWorkloadThreadPriority,
-						     workload_thread_priority);
-
-			CONFIG_STORE_INT_PARAM(LogThreadPriority, log_thread_priority);
-			CONFIG_STORE_INT_PARAM(LogThreadCpu, log_thread_cpu);
-			CONFIG_STORE_STRING_PARAM(LogFile, log_file);
-			CONFIG_STORE_STRING_PARAM(LogLevel, log_level);
-
-			CONFIG_STORE_BOOL_PARAM(DebugStopTraceOnOutlier,
-						debug_stop_trace_on_outlier);
-			CONFIG_STORE_BOOL_PARAM(DebugStopTraceOnError, debug_stop_trace_on_error);
-			CONFIG_STORE_BOOL_PARAM(DebugMonitorMode, debug_monitor_mode);
-			CONFIG_STORE_MAC_PARAM(DebugMonitorDestination, debug_monitor_destination);
-
-			CONFIG_STORE_BOOL_PARAM(StatsHistogramEnabled, stats_histogram_enabled);
-			CONFIG_STORE_TIME_PARAM(StatsHistogramMinimumNS,
-						stats_histogram_minimum_ns);
-			CONFIG_STORE_TIME_PARAM(StatsHistogramMaximumNS,
-						stats_histogram_maximum_ns);
-			CONFIG_STORE_STRING_PARAM(StatsHistogramFile, stats_histogram_file);
-			CONFIG_STORE_TIME_PARAM(StatsCollectionIntervalNS,
-						stats_collection_interval_ns);
-
-			CONFIG_STORE_BOOL_PARAM(LogMqtt, log_mqtt);
-			CONFIG_STORE_INT_PARAM(LogMqttThreadPriority, log_mqtt_thread_priority);
-			CONFIG_STORE_INT_PARAM(LogMqttThreadCpu, log_mqtt_thread_cpu);
-			CONFIG_STORE_STRING_PARAM(LogMqttBrokerIP, log_mqtt_broker_ip);
-			CONFIG_STORE_INT_PARAM(LogMqttBrokerPort, log_mqtt_broker_port);
-			CONFIG_STORE_INT_PARAM(LogMqttKeepAliveSecs, log_mqtt_keep_alive_secs);
-			CONFIG_STORE_STRING_PARAM(LogMqttMeasurementName,
-						  log_mqtt_measurement_name);
-
-			CONFIG_STORE_BOOL_PARAM(LogJson, log_json);
-			CONFIG_STORE_INT_PARAM(LogJsonThreadPriority, log_json_thread_priority);
-			CONFIG_STORE_INT_PARAM(LogJsonThreadCpu, log_json_thread_cpu);
-			CONFIG_STORE_STRING_PARAM(LogJsonHost, log_json_host);
-			CONFIG_STORE_STRING_PARAM(LogJsonPort, log_json_port);
-			CONFIG_STORE_STRING_PARAM(LogJsonMeasurementName,
-						  log_json_measurement_name);
+			/* Check for class option first, otherwise it must be a global one. */
+			ret = config_store_class_option(key, value);
+			if (ret == -ENOENT) {
+				ret = config_store_app_option(key, value);
+				if (ret == -ENOENT) {
+					fprintf(stderr, "Unknown option '%s' found!\n", key);
+					goto err_parse;
+				}
+			}
+			if (ret)
+				goto err_parse;
 
 			if (!strcmp(key, "ApplicationBaseStartTimeNS"))
 				base_time_seen = true;

@@ -23,6 +23,92 @@
 #include "security.h"
 #include "stat.h"
 
+enum config_value_type {
+	CONFIG_TYPE_BOOL,
+	CONFIG_TYPE_INT,
+	CONFIG_TYPE_ULONG,
+	CONFIG_TYPE_SIZE,
+	CONFIG_TYPE_TIME,
+	CONFIG_TYPE_STRING,
+	CONFIG_TYPE_INTERFACE,
+	CONFIG_TYPE_MAC,
+	CONFIG_TYPE_ETHER_TYPE,
+	CONFIG_TYPE_SECURITY_MODE,
+	CONFIG_TYPE_SECURITY_ALGORITHM,
+	CONFIG_TYPE_CPU_LIST,
+	CONFIG_TYPE_CLOCKID,
+};
+
+#ifndef BIT
+#define BIT(x) (1ULL << (x))
+#endif
+#define TC_ALL (BIT(NUM_FRAME_TYPES) - 1)
+#define TC_TSN (BIT(TSN_HIGH_FRAME_TYPE) | BIT(TSN_LOW_FRAME_TYPE))
+#define TC_UDP (BIT(UDP_HIGH_FRAME_TYPE) | BIT(UDP_LOW_FRAME_TYPE))
+#define TC_PROFINET (TC_TSN | BIT(RTC_FRAME_TYPE) | BIT(RTA_FRAME_TYPE))
+
+/* Traffic classes with XDP */
+#define TC_XDP (TC_PROFINET | BIT(GENERICL2_FRAME_TYPE))
+
+/* Traffic classes with Workload execution */
+#define TC_WORKLOAD (BIT(TSN_HIGH_FRAME_TYPE) | BIT(RTC_FRAME_TYPE) | BIT(GENERICL2_FRAME_TYPE))
+
+/* Layer 2 Traffic classes */
+#define TC_L2 (TC_PROFINET | BIT(DCP_FRAME_TYPE) | BIT(LLDP_FRAME_TYPE) | BIT(GENERICL2_FRAME_TYPE))
+
+/* Layer 3 Traffic classes */
+#define TC_L3 (TC_UDP)
+
+/* Burst Traffic classes */
+#define TC_BURST (BIT(RTA_FRAME_TYPE) | BIT(DCP_FRAME_TYPE) | BIT(LLDP_FRAME_TYPE) | TC_UDP)
+
+/* Security Traffic classes */
+#define TC_SECURITY (TC_PROFINET)
+
+/* Traffic classes with TxTime */
+#define TC_TXTIME (TC_TSN | BIT(GENERICL2_FRAME_TYPE))
+
+struct config_app_option {
+	const char *name;
+	enum config_value_type type;
+	size_t offset;
+	size_t length_offset;
+};
+
+struct config_class_option {
+	struct config_app_option option;
+	unsigned int tcs;
+};
+
+#define APP_OPTION(key, member, vtype)                                                             \
+	{.name = key, .type = vtype, .offset = offsetof(struct application_config, member)}
+
+#define APP_STRING_OPTION(key, member)                                                             \
+	{.name = key,                                                                              \
+	 .type = CONFIG_TYPE_STRING,                                                               \
+	 .offset = offsetof(struct application_config, member),                                    \
+	 .length_offset = offsetof(struct application_config, member##_length)}
+
+#define CLASS_OPTION(key, member, vtype, mask)                                                     \
+	{.option = {.name = key,                                                                   \
+		    .type = vtype,                                                                 \
+		    .offset = offsetof(struct traffic_class_config, member)},                      \
+	 .tcs = mask}
+
+#define CLASS_STRING_OPTION(key, member, mask)                                                     \
+	{.option = {.name = key,                                                                   \
+		    .type = CONFIG_TYPE_STRING,                                                    \
+		    .offset = offsetof(struct traffic_class_config, member),                       \
+		    .length_offset = offsetof(struct traffic_class_config, member##_length)},      \
+	 .tcs = mask}
+
+#define CLASS_CPU_LIST_OPTION(key, member, mask)                                                   \
+	{.option = {.name = key,                                                                   \
+		    .type = CONFIG_TYPE_CPU_LIST,                                                  \
+		    .offset = offsetof(struct traffic_class_config, member),                       \
+		    .length_offset = offsetof(struct traffic_class_config, member##_num)},         \
+	 .tcs = mask}
+
 struct traffic_class_config {
 	/* General */
 	bool enabled;
@@ -159,278 +245,6 @@ int config_set_defaults(bool mirror_enabled);
 void config_print_values(void);
 bool config_sanity_check(void);
 void config_free(void);
-
-#define CONFIG_STORE_BOOL_PARAM_CLASS(name, var)                                                   \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-			bool result;                                                               \
-                                                                                                   \
-			if (config_parse_bool(value, &result)) {                                   \
-				ret = -EINVAL;                                                     \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			} else {                                                                   \
-				app_config.classes[type].var = result;                             \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_BOOL_PARAM(name, var)                                                         \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			bool result;                                                               \
-                                                                                                   \
-			if (config_parse_bool(value, &result)) {                                   \
-				ret = -EINVAL;                                                     \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			} else {                                                                   \
-				app_config.var = result;                                           \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_INT_PARAM_CLASS(name, var)                                                    \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-			long result;                                                               \
-                                                                                                   \
-			if (config_parse_int(value, &result)) {                                    \
-				ret = -ERANGE;                                                     \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			} else {                                                                   \
-				app_config.classes[type].var = result;                             \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_INT_PARAM(name, var)                                                          \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			long result;                                                               \
-                                                                                                   \
-			if (config_parse_int(value, &result)) {                                    \
-				ret = -ERANGE;                                                     \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			} else {                                                                   \
-				app_config.var = result;                                           \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_ULONG_PARAM_CLASS(name, var)                                                  \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-			unsigned long long result;                                                 \
-                                                                                                   \
-			if (config_parse_ulong(value, &result)) {                                  \
-				ret = -ERANGE;                                                     \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			} else {                                                                   \
-				app_config.classes[type].var = result;                             \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_TIME_PARAM_CLASS(name, var)                                                   \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-                                                                                                   \
-			if (config_parse_time(value, &app_config.classes[type].var)) {             \
-				ret = -ERANGE;                                                     \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_TIME_PARAM(name, var)                                                         \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			if (config_parse_time(value, &app_config.var)) {                           \
-				ret = -ERANGE;                                                     \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_STRING_PARAM_CLASS(name, var)                                                 \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-                                                                                                   \
-			/* config_set_defaults() may have set a default value. */                  \
-			free(app_config.classes[type].var);                                        \
-			app_config.classes[type].var = strdup(value);                              \
-			if (!app_config.classes[type].var) {                                       \
-				ret = -ENOMEM;                                                     \
-				fprintf(stderr, "strdup() for " #name " failed!\n");               \
-				goto err_parse;                                                    \
-			}                                                                          \
-			app_config.classes[type].var##_length = strlen(value);                     \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_STRING_PARAM(name, var)                                                       \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			/* config_set_defaults() may have set a default value. */                  \
-			free(app_config.var);                                                      \
-			app_config.var = strdup(value);                                            \
-			if (!app_config.var) {                                                     \
-				ret = -ENOMEM;                                                     \
-				fprintf(stderr, "strdup() for " #name " failed!\n");               \
-				goto err_parse;                                                    \
-			}                                                                          \
-			app_config.var##_length = strlen(value);                                   \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_INTERFACE_PARAM_CLASS(name, var)                                              \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-                                                                                                   \
-			strncpy(app_config.classes[type].var, value,                               \
-				sizeof(app_config.classes[type].var) - 1);                         \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_MAC_PARAM_CLASS(name, var)                                                    \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-			unsigned int tmp[ETH_ALEN];                                                \
-			int i;                                                                     \
-                                                                                                   \
-			ret = sscanf(value, "%x:%x:%x:%x:%x:%x", &tmp[0], &tmp[1], &tmp[2],        \
-				     &tmp[3], &tmp[4], &tmp[5]);                                   \
-                                                                                                   \
-			if (ret != ETH_ALEN) {                                                     \
-				fprintf(stderr, "Failed to parse MAC Address!\n");                 \
-				ret = -EINVAL;                                                     \
-				goto err_parse;                                                    \
-			}                                                                          \
-                                                                                                   \
-			for (i = 0; i < ETH_ALEN; ++i)                                             \
-				app_config.classes[type].var[i] = (unsigned char)tmp[i];           \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_MAC_PARAM(name, var)                                                          \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			unsigned int tmp[ETH_ALEN];                                                \
-			int i;                                                                     \
-                                                                                                   \
-			ret = sscanf(value, "%x:%x:%x:%x:%x:%x", &tmp[0], &tmp[1], &tmp[2],        \
-				     &tmp[3], &tmp[4], &tmp[5]);                                   \
-                                                                                                   \
-			if (ret != ETH_ALEN) {                                                     \
-				fprintf(stderr, "Failed to parse MAC Address!\n");                 \
-				ret = -EINVAL;                                                     \
-				goto err_parse;                                                    \
-			}                                                                          \
-                                                                                                   \
-			for (i = 0; i < ETH_ALEN; ++i)                                             \
-				app_config.var[i] = (unsigned char)tmp[i];                         \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_CLOCKID_PARAM(name, var)                                                      \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			clockid_t clock;                                                           \
-                                                                                                   \
-			ret = config_parse_clockid(value, &clock);                                 \
-			if (ret) {                                                                 \
-				fprintf(stderr, "Invalid clockid specified!\n");                   \
-				goto err_parse;                                                    \
-			}                                                                          \
-			app_config.var = clock;                                                    \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_ETHER_TYPE_CLASS(name, var)                                                   \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-                                                                                                   \
-			errno = 0;                                                                 \
-			app_config.classes[type].var = strtoul(value, &endptr, 16);                \
-			if (errno != 0 || endptr == value || *endptr != '\0') {                    \
-				ret = -ERANGE;                                                     \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_SECURITY_MODE_PARAM_CLASS(name, var)                                          \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-                                                                                                   \
-			if (strcasecmp(value, "none") && strcasecmp(value, "ao") &&                \
-			    strcasecmp(value, "ae")) {                                             \
-				fprintf(stderr, "Invalid security mode specified!\n");             \
-				ret = -EINVAL;                                                     \
-				goto err_parse;                                                    \
-			}                                                                          \
-                                                                                                   \
-			if (!strcasecmp(value, "none"))                                            \
-				app_config.classes[type].var = SECURITY_MODE_NONE;                 \
-			if (!strcasecmp(value, "ao"))                                              \
-				app_config.classes[type].var = SECURITY_MODE_AO;                   \
-			if (!strcasecmp(value, "ae"))                                              \
-				app_config.classes[type].var = SECURITY_MODE_AE;                   \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_SECURITY_ALGORITHM_PARAM_CLASS(name, var)                                     \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-                                                                                                   \
-			if (strcasecmp(value, "aes256-gcm") && strcasecmp(value, "aes128-gcm") &&  \
-			    strcasecmp(value, "chacha20-poly1305")) {                              \
-				fprintf(stderr, "Invalid security algorithm specified!\n");        \
-				ret = -EINVAL;                                                     \
-				goto err_parse;                                                    \
-			}                                                                          \
-			if (!strcasecmp(value, "aes256-gcm"))                                      \
-				app_config.classes[type].var = SECURITY_ALGORITHM_AES256_GCM;      \
-			if (!strcasecmp(value, "aes128-gcm"))                                      \
-				app_config.classes[type].var = SECURITY_ALGORITHM_AES128_GCM;      \
-			if (!strcasecmp(value, "chacha20-poly1305"))                               \
-				app_config.classes[type].var =                                     \
-					SECURITY_ALGORITHM_CHACHA20_POLY1305;                      \
-		}                                                                                  \
-	} while (0)
-
-#define CONFIG_STORE_CPU_LIST_PARAM_CLASS(name, var)                                               \
-	do {                                                                                       \
-		if (!strcmp(key, #name)) {                                                         \
-			enum stat_frame_type type = config_opt_to_type(#name);                     \
-                                                                                                   \
-			ret = config_parse_cpu_list(value, app_config.classes[type].var,           \
-						    WORKLOAD_MAX,                                  \
-						    &app_config.classes[type].var##_num);          \
-			if (ret) {                                                                 \
-				fprintf(stderr, "The value for " #name " is invalid!\n");          \
-				goto err_parse;                                                    \
-			}                                                                          \
-		}                                                                                  \
-	} while (0)
-
 bool config_is_traffic_class_active(enum stat_frame_type type);
 
 static inline bool config_have_busy_poll(void)
