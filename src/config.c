@@ -1393,70 +1393,37 @@ bool config_sanity_check(void)
 	return true;
 }
 
+/* Free all strings allocated with strdup(). */
 void config_free(void)
 {
-	free(app_config.application_xdp_program);
+	for (size_t i = 0; i < ARRAY_SIZE(global_options); i++) {
+		const struct config_app_option *opt = &global_options[i];
+		void *base = &app_config;
+		char **str;
 
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].payload_pattern);
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].security_key);
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].security_iv_prefix);
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_file);
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_function);
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_arguments);
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_setup_function);
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_setup_arguments);
-	free(app_config.classes[TSN_HIGH_FRAME_TYPE].workload_teardown_function);
+		if (!(opt->type == CONFIG_TYPE_STRING || opt->type == CONFIG_TYPE_PAYLOAD))
+			continue;
 
-	free(app_config.classes[TSN_LOW_FRAME_TYPE].payload_pattern);
-	free(app_config.classes[TSN_LOW_FRAME_TYPE].security_key);
-	free(app_config.classes[TSN_LOW_FRAME_TYPE].security_iv_prefix);
+		str = (char **)(base + opt->offset);
+		free(*str);
+	}
 
-	free(app_config.classes[RTC_FRAME_TYPE].payload_pattern);
-	free(app_config.classes[RTC_FRAME_TYPE].security_key);
-	free(app_config.classes[RTC_FRAME_TYPE].security_iv_prefix);
-	free(app_config.classes[RTC_FRAME_TYPE].workload_file);
-	free(app_config.classes[RTC_FRAME_TYPE].workload_function);
-	free(app_config.classes[RTC_FRAME_TYPE].workload_arguments);
-	free(app_config.classes[RTC_FRAME_TYPE].workload_setup_function);
-	free(app_config.classes[RTC_FRAME_TYPE].workload_setup_arguments);
-	free(app_config.classes[RTC_FRAME_TYPE].workload_teardown_function);
+	for (int i = 0; i < NUM_FRAME_TYPES; i++) {
+		void *base = &app_config.classes[i];
 
-	free(app_config.classes[RTA_FRAME_TYPE].payload_pattern);
-	free(app_config.classes[RTA_FRAME_TYPE].security_key);
-	free(app_config.classes[RTA_FRAME_TYPE].security_iv_prefix);
+		for (size_t j = 0; j < ARRAY_SIZE(class_options); j++) {
+			const struct config_class_option *opt = &class_options[j];
+			char **str;
 
-	free(app_config.classes[DCP_FRAME_TYPE].payload_pattern);
+			if (!(opt->tcs & BIT(i)))
+				continue;
 
-	free(app_config.classes[LLDP_FRAME_TYPE].payload_pattern);
+			if (!(opt->option.type == CONFIG_TYPE_STRING ||
+			      opt->option.type == CONFIG_TYPE_PAYLOAD))
+				continue;
 
-	free(app_config.classes[UDP_HIGH_FRAME_TYPE].payload_pattern);
-	free(app_config.classes[UDP_HIGH_FRAME_TYPE].l3_port);
-	free(app_config.classes[UDP_HIGH_FRAME_TYPE].l3_destination);
-	free(app_config.classes[UDP_HIGH_FRAME_TYPE].l3_source);
-
-	free(app_config.classes[UDP_LOW_FRAME_TYPE].payload_pattern);
-	free(app_config.classes[UDP_LOW_FRAME_TYPE].l3_port);
-	free(app_config.classes[UDP_LOW_FRAME_TYPE].l3_destination);
-	free(app_config.classes[UDP_LOW_FRAME_TYPE].l3_source);
-
-	free(app_config.classes[GENERICL2_FRAME_TYPE].name);
-	free(app_config.classes[GENERICL2_FRAME_TYPE].payload_pattern);
-	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_file);
-	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_function);
-	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_arguments);
-	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_setup_function);
-	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_setup_arguments);
-	free(app_config.classes[GENERICL2_FRAME_TYPE].workload_teardown_function);
-
-	free(app_config.stats_histogram_file);
-
-	free(app_config.log_file);
-	free(app_config.log_level);
-
-	free(app_config.log_mqtt_broker_ip);
-	free(app_config.log_mqtt_measurement_name);
-
-	free(app_config.log_json_host);
-	free(app_config.log_json_port);
-	free(app_config.log_json_measurement_name);
+			str = (char **)(base + opt->option.offset);
+			free(*str);
+		}
+	}
 }
