@@ -92,7 +92,6 @@ The following list contains ideas for further development:
 - Add libpcap support
 - Cleanup Grafana configuration
 - Cleanup traffic class code
-- Cleanup configuration code
 
 ## Documentation
 
