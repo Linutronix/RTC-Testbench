@@ -30,6 +30,7 @@ enum config_value_type {
 	CONFIG_TYPE_SIZE,
 	CONFIG_TYPE_TIME,
 	CONFIG_TYPE_STRING,
+	CONFIG_TYPE_PAYLOAD,
 	CONFIG_TYPE_INTERFACE,
 	CONFIG_TYPE_MAC,
 	CONFIG_TYPE_ETHER_TYPE,
@@ -98,6 +99,13 @@ struct config_class_option {
 #define CLASS_STRING_OPTION(key, member, mask)                                                     \
 	{.option = {.name = key,                                                                   \
 		    .type = CONFIG_TYPE_STRING,                                                    \
+		    .offset = offsetof(struct traffic_class_config, member),                       \
+		    .length_offset = offsetof(struct traffic_class_config, member##_length)},      \
+	 .tcs = mask}
+
+#define CLASS_PAYLOAD_OPTION(key, member, mask)                                                    \
+	{.option = {.name = key,                                                                   \
+		    .type = CONFIG_TYPE_PAYLOAD,                                                   \
 		    .offset = offsetof(struct traffic_class_config, member),                       \
 		    .length_offset = offsetof(struct traffic_class_config, member##_length)},      \
 	 .tcs = mask}
