@@ -839,23 +839,25 @@ void config_print_values(void)
 	config_print_tcs();
 }
 
+/* Similar to test/profinet. */
 int config_set_defaults(bool mirror_enabled)
 {
 	static unsigned char default_debug_montitor_destination[] = {0x44, 0x44, 0x44,
 								     0x44, 0x44, 0x44};
 	static unsigned char default_lldp_destination[] = {0x01, 0x80, 0xc2, 0x00, 0x00, 0x0e};
-	static unsigned char default_destination[] = {0xa8, 0xa1, 0x59, 0x2c, 0xa8, 0xdb};
+	static unsigned char default_destination[] = {0xa8, 0x74, 0x1d, 0x9d, 0x98, 0xd8};
 	static unsigned char default_dcp_identify[] = {0x01, 0x0e, 0xcf, 0x00, 0x00, 0x00};
+	static const char *default_xdp_program = "xdp_kern_profinet_vid100.o";
 	static const char *default_log_mqtt_measurement_name = "reference";
-	static const char *default_udp_low_destination = "192.168.2.120";
+	static const char *default_udp_low_destination = "192.168.1.2";
+	static const char *default_payload_pattern = "Payload! :-)";
 	static const char *default_log_mqtt_broker_ip = "127.0.0.1";
-	static const char *default_udp_low_source = "192.168.2.119";
-	static const char *default_payload_pattern = "Payload";
+	static const char *default_udp_low_source = "192.168.1.1";
 	static const char *default_hist_file = "histogram.txt";
 	static const char *default_json_host = "localhost";
 	static const char *default_udp_low_port = "6666";
 	static const char *default_json_port = "58415";
-	static const char *default_log_level = "Debug";
+	static const char *default_log_level = "Info";
 	struct traffic_class_config *conf;
 	struct timespec current;
 	int ret = -ENOMEM;
@@ -864,153 +866,103 @@ int config_set_defaults(bool mirror_enabled)
 
 	/* Application scheduling configuration */
 	app_config.application_clock_id = CLOCK_TAI;
-	app_config.application_base_cycle_time_ns = 500000;
+	app_config.application_base_cycle_time_ns = 1000000;
 	app_config.application_base_start_time_ns = (current.tv_sec + 30) * NSEC_PER_SEC;
-	app_config.application_base_start_offset_ns = 0;
-	app_config.application_tx_base_offset_ns = 400000;
-	app_config.application_rx_base_offset_ns = 200000;
-	app_config.application_xdp_program = NULL;
+	app_config.application_tx_base_offset_ns = 800000;
+	app_config.application_rx_base_offset_ns = 300000;
+	app_config.application_xdp_program = strdup(default_xdp_program);
+	if (!app_config.application_xdp_program)
+		goto out;
 
 	/* TSN High */
 	conf = &app_config.classes[TSN_HIGH_FRAME_TYPE];
-	conf->enabled = false;
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = false;
-	conf->xdp_skb_mode = false;
-	conf->xdp_zc_mode = false;
+	conf->xdp_enabled = true;
+	conf->xdp_zc_mode = true;
 	conf->xdp_wakeup_mode = true;
-	conf->xdp_busy_poll_mode = false;
-	conf->tx_time_enabled = false;
-	conf->ignore_rx_errors = false;
-	conf->tx_time_offset_ns = 0;
-	conf->tx_hwtstamp_enabled = false;
 	conf->vid = TSN_HIGH_VID_VALUE;
 	conf->pcp = TSN_HIGH_PCP_VALUE;
-	conf->num_frames_per_cycle = 0;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
 	conf->payload_pattern_length = strlen(conf->payload_pattern);
-	conf->frame_length = 200;
+	conf->frame_length = 128;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
-	conf->rx_queue = 1;
-	conf->tx_queue = 1;
-	conf->socket_priority = 1;
+	conf->rx_queue = 0;
+	conf->tx_queue = 0;
+	conf->socket_priority = 7;
 	conf->tx_thread_priority = 98;
 	conf->rx_thread_priority = 98;
 	conf->tx_thread_cpu = 0;
 	conf->rx_thread_cpu = 0;
-	conf->rx_workload_enabled = false;
-	conf->rx_workload_prewarm = false;
-	conf->rx_workload_skip_count = 0;
-	conf->workload_file = NULL;
-	conf->workload_function = NULL;
-	conf->workload_arguments = NULL;
-	conf->workload_setup_function = NULL;
-	conf->workload_setup_arguments = NULL;
-	conf->workload_teardown_function = NULL;
-	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
-	conf->workload_thread_priority = 98;
+	conf->workload_thread_priority = 80;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
 
 	/* TSN Low */
 	conf = &app_config.classes[TSN_LOW_FRAME_TYPE];
-	conf->enabled = false;
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = false;
-	conf->xdp_skb_mode = false;
-	conf->xdp_zc_mode = false;
+	conf->xdp_enabled = true;
+	conf->xdp_zc_mode = true;
 	conf->xdp_wakeup_mode = true;
-	conf->xdp_busy_poll_mode = false;
-	conf->tx_time_enabled = false;
-	conf->ignore_rx_errors = false;
-	conf->tx_time_offset_ns = 0;
-	conf->tx_hwtstamp_enabled = false;
 	conf->vid = TSN_LOW_VID_VALUE;
 	conf->pcp = TSN_LOW_PCP_VALUE;
-	conf->num_frames_per_cycle = 0;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
 	conf->payload_pattern_length = strlen(conf->payload_pattern);
-	conf->frame_length = 200;
+	conf->frame_length = 128;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
 	conf->rx_queue = 1;
 	conf->tx_queue = 1;
-	conf->socket_priority = 1;
-	conf->tx_thread_priority = 98;
-	conf->rx_thread_priority = 98;
-	conf->tx_thread_cpu = 0;
-	conf->rx_thread_cpu = 0;
+	conf->socket_priority = 6;
+	conf->tx_thread_priority = 97;
+	conf->rx_thread_priority = 97;
+	conf->tx_thread_cpu = 1;
+	conf->rx_thread_cpu = 1;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
 
 	/* Real Time Cyclic (RTC) */
 	conf = &app_config.classes[RTC_FRAME_TYPE];
-	conf->enabled = false;
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = false;
-	conf->xdp_skb_mode = false;
-	conf->xdp_zc_mode = false;
+	conf->xdp_enabled = true;
+	conf->xdp_zc_mode = true;
 	conf->xdp_wakeup_mode = true;
-	conf->xdp_busy_poll_mode = false;
-	conf->ignore_rx_errors = false;
-	conf->tx_hwtstamp_enabled = false;
 	conf->vid = PROFINET_RT_VID_VALUE;
 	conf->pcp = RTC_PCP_VALUE;
-	conf->num_frames_per_cycle = 0;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
 	conf->payload_pattern_length = strlen(conf->payload_pattern);
-	conf->frame_length = 200;
+	conf->frame_length = 128;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
-	conf->rx_queue = 1;
-	conf->tx_queue = 1;
-	conf->socket_priority = 1;
-	conf->tx_thread_priority = 98;
-	conf->rx_thread_priority = 98;
-	conf->tx_thread_cpu = 0;
-	conf->rx_thread_cpu = 0;
-	conf->rx_workload_enabled = false;
-	conf->rx_workload_prewarm = false;
-	conf->rx_workload_skip_count = 0;
-	conf->workload_file = NULL;
-	conf->workload_function = NULL;
-	conf->workload_arguments = NULL;
-	conf->workload_setup_function = NULL;
-	conf->workload_setup_arguments = NULL;
-	conf->workload_teardown_function = NULL;
-	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
-	conf->workload_thread_priority = 98;
+	conf->rx_queue = 2;
+	conf->tx_queue = 2;
+	conf->socket_priority = 5;
+	conf->tx_thread_priority = 96;
+	conf->rx_thread_priority = 96;
+	conf->tx_thread_cpu = 2;
+	conf->rx_thread_cpu = 2;
+	conf->workload_thread_priority = 80;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
 
 	/* Real Time Acyclic (RTA) */
 	conf = &app_config.classes[RTA_FRAME_TYPE];
-	conf->enabled = false;
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = false;
-	conf->xdp_skb_mode = false;
-	conf->xdp_zc_mode = false;
+	conf->xdp_enabled = true;
 	conf->xdp_wakeup_mode = true;
-	conf->xdp_busy_poll_mode = false;
-	conf->ignore_rx_errors = false;
-	conf->tx_hwtstamp_enabled = false;
 	conf->vid = PROFINET_RT_VID_VALUE;
 	conf->pcp = RTA_PCP_VALUE;
 	conf->burst_period_ns = 200000000;
-	conf->num_frames_per_cycle = 0;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
@@ -1018,27 +970,23 @@ int config_set_defaults(bool mirror_enabled)
 	conf->frame_length = 200;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
-	conf->rx_queue = 1;
-	conf->tx_queue = 1;
-	conf->socket_priority = 1;
-	conf->tx_thread_priority = 98;
-	conf->rx_thread_priority = 98;
-	conf->tx_thread_cpu = 0;
-	conf->rx_thread_cpu = 0;
+	conf->rx_queue = 3;
+	conf->tx_queue = 3;
+	conf->socket_priority = 4;
+	conf->tx_thread_priority = 95;
+	conf->rx_thread_priority = 95;
+	conf->tx_thread_cpu = 3;
+	conf->rx_thread_cpu = 3;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
 
 	/* Discovery and Configuration Protocol (DCP) */
 	conf = &app_config.classes[DCP_FRAME_TYPE];
-	conf->enabled = false;
-	conf->ignore_rx_errors = false;
 	conf->rx_mirror_enabled = mirror_enabled;
 	conf->vid = PROFINET_RT_VID_VALUE;
 	conf->pcp = DCP_PCP_VALUE;
 	conf->burst_period_ns = 2000000000;
-	conf->num_frames_per_cycle = 0;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
@@ -1046,25 +994,21 @@ int config_set_defaults(bool mirror_enabled)
 	conf->frame_length = 200;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
-	conf->rx_queue = 1;
-	conf->tx_queue = 1;
-	conf->socket_priority = 1;
-	conf->tx_thread_priority = 98;
-	conf->rx_thread_priority = 98;
-	conf->tx_thread_cpu = 3;
-	conf->rx_thread_cpu = 3;
+	conf->rx_queue = 3;
+	conf->tx_queue = 3;
+	conf->socket_priority = 3;
+	conf->tx_thread_priority = 94;
+	conf->rx_thread_priority = 94;
+	conf->tx_thread_cpu = 4;
+	conf->rx_thread_cpu = 4;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_dcp_identify, ETH_ALEN);
 
 	/* Link Layer Discovery Protocol (LLDP) */
 	conf = &app_config.classes[LLDP_FRAME_TYPE];
-	conf->enabled = false;
-	conf->ignore_rx_errors = false;
 	conf->rx_mirror_enabled = mirror_enabled;
 	conf->burst_period_ns = 5000000000;
-	conf->num_frames_per_cycle = 0;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
@@ -1072,25 +1016,21 @@ int config_set_defaults(bool mirror_enabled)
 	conf->frame_length = 200;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
-	conf->rx_queue = 1;
-	conf->tx_queue = 1;
-	conf->socket_priority = 1;
-	conf->tx_thread_priority = 98;
-	conf->rx_thread_priority = 98;
-	conf->tx_thread_cpu = 4;
-	conf->rx_thread_cpu = 4;
+	conf->rx_queue = 3;
+	conf->tx_queue = 3;
+	conf->socket_priority = 3;
+	conf->tx_thread_priority = 93;
+	conf->rx_thread_priority = 93;
+	conf->tx_thread_cpu = 5;
+	conf->rx_thread_cpu = 5;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_lldp_destination, ETH_ALEN);
 
 	/* User Datagram Protocol (UDP) High */
 	conf = &app_config.classes[UDP_HIGH_FRAME_TYPE];
-	conf->enabled = false;
-	conf->ignore_rx_errors = false;
 	conf->rx_mirror_enabled = mirror_enabled;
 	conf->burst_period_ns = 1000000000;
-	conf->num_frames_per_cycle = 0;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
@@ -1098,15 +1038,13 @@ int config_set_defaults(bool mirror_enabled)
 	conf->frame_length = 1400;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
-	conf->rx_queue = 0;
-	conf->tx_queue = 0;
-	conf->socket_priority = 0;
-	conf->tx_thread_priority = 98;
-	conf->rx_thread_priority = 98;
-	conf->tx_thread_cpu = 5;
-	conf->rx_thread_cpu = 5;
+	conf->rx_queue = 3;
+	conf->tx_queue = 3;
+	conf->socket_priority = 3;
+	conf->tx_thread_priority = 92;
+	conf->rx_thread_priority = 92;
+	conf->tx_thread_cpu = 6;
+	conf->rx_thread_cpu = 6;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	conf->l3_port = strdup(default_udp_low_port);
 	if (!conf->l3_port)
@@ -1120,11 +1058,9 @@ int config_set_defaults(bool mirror_enabled)
 
 	/* User Datagram Protocol (UDP) Low */
 	conf = &app_config.classes[UDP_LOW_FRAME_TYPE];
-	conf->enabled = false;
-	conf->ignore_rx_errors = false;
 	conf->rx_mirror_enabled = mirror_enabled;
 	conf->burst_period_ns = 1000000000;
-	conf->num_frames_per_cycle = 0;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
@@ -1132,13 +1068,11 @@ int config_set_defaults(bool mirror_enabled)
 	conf->frame_length = 1400;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
-	conf->rx_queue = 0;
-	conf->tx_queue = 0;
-	conf->socket_priority = 0;
-	conf->tx_thread_priority = 98;
-	conf->rx_thread_priority = 98;
+	conf->rx_queue = 3;
+	conf->tx_queue = 3;
+	conf->socket_priority = 3;
+	conf->tx_thread_priority = 91;
+	conf->rx_thread_priority = 91;
 	conf->tx_thread_cpu = 5;
 	conf->rx_thread_cpu = 5;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
@@ -1157,54 +1091,32 @@ int config_set_defaults(bool mirror_enabled)
 	conf->name = strdup("GenericL2");
 	if (!conf->name)
 		goto out;
-	conf->enabled = false;
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = false;
-	conf->xdp_skb_mode = false;
-	conf->xdp_zc_mode = false;
 	conf->xdp_wakeup_mode = true;
-	conf->xdp_busy_poll_mode = false;
-	conf->tx_time_enabled = false;
-	conf->ignore_rx_errors = false;
-	conf->tx_time_offset_ns = 0;
-	conf->tx_hwtstamp_enabled = false;
 	conf->vid = 100;
 	conf->pcp = 6;
 	conf->ether_type = 0xb62c;
-	conf->num_frames_per_cycle = 0;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
 	conf->payload_pattern_length = strlen(conf->payload_pattern);
-	conf->frame_length = 200;
+	conf->frame_length = 128;
 	conf->security_mode = SECURITY_MODE_NONE;
 	conf->security_algorithm = SECURITY_ALGORITHM_AES256_GCM;
-	conf->security_key = NULL;
-	conf->security_iv_prefix = NULL;
-	conf->rx_queue = 1;
-	conf->tx_queue = 1;
+	conf->rx_queue = 0;
+	conf->tx_queue = 0;
 	conf->socket_priority = 1;
 	conf->tx_thread_priority = 90;
 	conf->rx_thread_priority = 90;
 	conf->tx_thread_cpu = 0;
 	conf->rx_thread_cpu = 0;
-	conf->rx_workload_enabled = false;
-	conf->rx_workload_prewarm = false;
-	conf->rx_workload_skip_count = 0;
-	conf->workload_file = NULL;
-	conf->workload_function = NULL;
-	conf->workload_arguments = NULL;
-	conf->workload_setup_function = NULL;
-	conf->workload_setup_arguments = NULL;
-	conf->workload_teardown_function = NULL;
-	memset(conf->workload_thread_cpus, '\0', sizeof(conf->workload_thread_cpus));
-	conf->workload_thread_priority = 98;
+	conf->workload_thread_priority = 80;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
 
 	/* Logging */
 	app_config.log_thread_priority = 1;
-	app_config.log_thread_cpu = 7;
+	app_config.log_thread_cpu = 0;
 	app_config.log_file = strdup("reference.log");
 	if (!app_config.log_file)
 		goto out;
@@ -1213,14 +1125,10 @@ int config_set_defaults(bool mirror_enabled)
 		goto out;
 
 	/* Debug */
-	app_config.debug_stop_trace_on_outlier = false;
-	app_config.debug_stop_trace_on_error = false;
-	app_config.debug_monitor_mode = false;
 	memcpy((void *)app_config.debug_monitor_destination, default_debug_montitor_destination,
 	       ETH_ALEN);
 
 	/* Stats */
-	app_config.stats_histogram_enabled = false;
 	app_config.stats_histogram_minimum_ns = 1 * 1e6;
 	app_config.stats_histogram_maximum_ns = 10 * 1e6;
 	app_config.stats_histogram_file = strdup(default_hist_file);
@@ -1230,10 +1138,9 @@ int config_set_defaults(bool mirror_enabled)
 	app_config.stats_collection_interval_ns = 1e9;
 
 	/* LogMqtt */
-	app_config.log_mqtt = false;
 	app_config.log_mqtt_broker_port = 1883;
 	app_config.log_mqtt_thread_priority = 1;
-	app_config.log_mqtt_thread_cpu = 7;
+	app_config.log_mqtt_thread_cpu = 0;
 	app_config.log_mqtt_keep_alive_secs = 60;
 	app_config.log_mqtt_broker_ip = strdup(default_log_mqtt_broker_ip);
 	if (!app_config.log_mqtt_broker_ip)
@@ -1242,7 +1149,6 @@ int config_set_defaults(bool mirror_enabled)
 	if (!app_config.log_mqtt_measurement_name)
 		goto out;
 
-	app_config.log_json = false;
 	app_config.log_json_thread_cpu = 0;
 	app_config.log_json_thread_priority = 1;
 	app_config.log_json_host = strdup(default_json_host);
