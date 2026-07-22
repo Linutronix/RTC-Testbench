@@ -430,7 +430,7 @@ int dcp_threads_create(struct thread_context *thread_context)
 	thread_context->conf = dcp_config = &app_config.classes[DCP_FRAME_TYPE];
 	thread_context->frame_type = DCP_FRAME_TYPE;
 	thread_context->traffic_class = stat_frame_type_to_string(DCP_FRAME_TYPE);
-	thread_context->frame_id = DCP_FRAME_TYPE;
+	thread_context->frame_id = DCP_FRAMEID;
 
 	thread_context->socket_fd = create_dcp_socket();
 	if (thread_context->socket_fd < 0) {
