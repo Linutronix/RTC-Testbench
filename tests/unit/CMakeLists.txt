@@ -20,3 +20,26 @@ target_include_directories(ring_buffer_test PRIVATE
 target_link_libraries(ring_buffer_test ${CMOCKA_LIBRARIES} Threads::Threads)
 
 add_test(NAME ring_buffer_test COMMAND ring_buffer_test)
+
+add_executable(config_test
+  config_test.c
+  ${CMAKE_SOURCE_DIR}/src/config.c)
+
+target_compile_options(config_test PRIVATE -Wall -Wextra -Wno-sign-compare -Wshadow -std=gnu99 -Wvla)
+target_compile_definitions(config_test PRIVATE -D_GNU_SOURCE)
+
+target_include_directories(config_test PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${PROJECT_BINARY_DIR}
+  ${CMOCKA_INCLUDE_DIRS}
+  ${YAML_INCLUDE_DIRS}
+  ${LIBBPF_INCLUDE_DIRS}
+  ${LIBXDP_INCLUDE_DIRS}
+  ${LIBCRYPTO_INCLUDE_DIRS})
+
+target_link_libraries(config_test
+  ${CMOCKA_LIBRARIES}
+  ${YAML_LIBRARIES}
+  Threads::Threads)
+
+add_test(NAME config_test COMMAND config_test)
