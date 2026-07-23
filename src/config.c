@@ -198,7 +198,7 @@ static enum stat_frame_type config_opt_to_type(const char *opt, const char **suf
 	return NUM_FRAME_TYPES;
 }
 
-bool config_is_traffic_class_active(enum stat_frame_type type)
+bool config_is_tc_active(enum stat_frame_type type)
 {
 	if (type >= NUM_FRAME_TYPES)
 		return false;
@@ -825,7 +825,7 @@ static void config_print_tcs(void)
 	for (int i = 0; i < NUM_FRAME_TYPES; i++) {
 		const struct traffic_class_config *conf = &app_config.classes[i];
 
-		if (!config_is_traffic_class_active(i))
+		if (!config_is_tc_active(i))
 			continue;
 
 		for (size_t j = 0; j < ARRAY_SIZE(class_options); j++) {
@@ -1236,15 +1236,11 @@ bool config_sanity_check(void)
 	size_t min_frame_size;
 
 	/* Either GenericL2 or PROFINET should be active. */
-	if (config_is_traffic_class_active(GENERICL2_FRAME_TYPE) &&
-	    (config_is_traffic_class_active(TSN_HIGH_FRAME_TYPE) ||
-	     config_is_traffic_class_active(TSN_LOW_FRAME_TYPE) ||
-	     config_is_traffic_class_active(RTC_FRAME_TYPE) ||
-	     config_is_traffic_class_active(RTA_FRAME_TYPE) ||
-	     config_is_traffic_class_active(DCP_FRAME_TYPE) ||
-	     config_is_traffic_class_active(LLDP_FRAME_TYPE) ||
-	     config_is_traffic_class_active(UDP_HIGH_FRAME_TYPE) ||
-	     config_is_traffic_class_active(UDP_LOW_FRAME_TYPE))) {
+	if (config_is_tc_active(GENERICL2_FRAME_TYPE) &&
+	    (config_is_tc_active(TSN_HIGH_FRAME_TYPE) || config_is_tc_active(TSN_LOW_FRAME_TYPE) ||
+	     config_is_tc_active(RTC_FRAME_TYPE) || config_is_tc_active(RTA_FRAME_TYPE) ||
+	     config_is_tc_active(DCP_FRAME_TYPE) || config_is_tc_active(LLDP_FRAME_TYPE) ||
+	     config_is_tc_active(UDP_HIGH_FRAME_TYPE) || config_is_tc_active(UDP_LOW_FRAME_TYPE))) {
 		fprintf(stderr, "Either use PROFINET or GenericL2!\n");
 		fprintf(stderr, "For simulation of PROFINET and other middlewares in parallel "
 				"start multiple instances of ref&mirror application(s) with "
@@ -1419,7 +1415,7 @@ bool config_sanity_check(void)
 	}
 
 	/* EtherCAT */
-	if (config_is_traffic_class_active(GENERICL2_FRAME_TYPE) &&
+	if (config_is_tc_active(GENERICL2_FRAME_TYPE) &&
 	    app_config.classes[GENERICL2_FRAME_TYPE].protocol_type == ETHERCAT_PROTOCOL_TYPE &&
 	    app_config.classes[GENERICL2_FRAME_TYPE].frame_length <
 		    sizeof(struct ethhdr) + sizeof(struct ethercat_header) + 20) {

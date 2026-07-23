@@ -125,7 +125,7 @@ static void *log_mqtt_thread_routine(void *data)
 
 		/* Publish via MQTT */
 		for (i = 0; i < NUM_FRAME_TYPES; i++) {
-			if (config_is_traffic_class_active(i))
+			if (config_is_tc_active(i))
 				log_mqtt_add_traffic_class(mqtt_context->mosq,
 							   app_config.log_mqtt_measurement_name, i,
 							   &statistics_per_period[i]);

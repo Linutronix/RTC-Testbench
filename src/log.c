@@ -357,7 +357,7 @@ static void *log_thread_routine(void *data)
 		stat_message_length = sizeof(stat_message);
 
 		for (i = 0; i < NUM_FRAME_TYPES; i++) {
-			if (config_is_traffic_class_active(i)) {
+			if (config_is_tc_active(i)) {
 				const char *name = stat_frame_type_to_string(i);
 
 				ret = log_add_traffic_class(name, i, &p, &stat_message_length);

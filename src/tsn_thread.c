@@ -595,7 +595,7 @@ int tsn_threads_create(struct thread_context *thread_context)
 	const struct traffic_class_config *tsn_config = thread_context->conf;
 	int ret;
 
-	if (!config_is_traffic_class_active(thread_context->frame_type)) {
+	if (!config_is_tc_active(thread_context->frame_type)) {
 		ret = 0;
 		goto out;
 	}

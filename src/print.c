@@ -29,7 +29,7 @@ void print_stats(void)
 			const char *name = stat_frame_type_to_string(i);
 			uint64_t errors;
 
-			if (!config_is_traffic_class_active(i))
+			if (!config_is_tc_active(i))
 				continue;
 
 			errors = stat->frame_id_errors + stat->out_of_order_errors +

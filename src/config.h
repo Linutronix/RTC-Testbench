@@ -261,7 +261,7 @@ int config_set_defaults(bool mirror_enabled);
 void config_print_values(void);
 bool config_sanity_check(void);
 void config_free(void);
-bool config_is_traffic_class_active(enum stat_frame_type type);
+bool config_is_tc_active(enum stat_frame_type type);
 
 static inline bool config_have_busy_poll(void)
 {

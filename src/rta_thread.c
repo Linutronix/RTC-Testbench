@@ -542,7 +542,7 @@ int rta_threads_create(struct thread_context *thread_context)
 	struct traffic_class_config *rta_config;
 	int ret;
 
-	if (!config_is_traffic_class_active(RTA_FRAME_TYPE))
+	if (!config_is_tc_active(RTA_FRAME_TYPE))
 		goto out;
 
 	init_mutex(&thread_context->data_mutex);

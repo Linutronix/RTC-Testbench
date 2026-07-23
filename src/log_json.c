@@ -90,7 +90,7 @@ void *log_json_publisher(void *data)
 
 		/* Publish via UDP */
 		for (int i = 0; i < NUM_FRAME_TYPES; i++) {
-			if (config_is_traffic_class_active(i))
+			if (config_is_tc_active(i))
 				log_json_add_traffic_class(ctx, i, &stats[i]);
 		}
 	}
