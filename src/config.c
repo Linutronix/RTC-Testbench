@@ -640,7 +640,11 @@ int config_read_from_file(const char *config_file)
 		case YAML_SCALAR_TOKEN:
 			value = (const char *)token.data.scalar.value;
 			if (state_key) {
-				/* Save key */
+				/*
+				 * Save key. Free any previously saved key first, e.g. a block
+				 * mapping header such as 'Application'.
+				 */
+				free(key);
 				key = strdup(value);
 				if (!key) {
 					ret = -ENOMEM;
@@ -648,11 +652,11 @@ int config_read_from_file(const char *config_file)
 					goto err_parse;
 				}
 
-				continue;
+				break;
 			}
 
 			if (!key)
-				continue;
+				break;
 
 			/* Check for class option first, otherwise it must be a global one. */
 			ret = config_store_class_option(key, value);
@@ -705,6 +709,7 @@ int config_read_from_file(const char *config_file)
 	ret = 0;
 
 err_parse:
+	free(key);
 	yaml_token_delete(&token);
 	yaml_parser_delete(&parser);
 
