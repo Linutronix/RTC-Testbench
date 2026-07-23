@@ -352,18 +352,9 @@ static void *dcp_rx_thread_routine(void *data)
 		};
 
 		/* Wait until next period. */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "DcpRx: clock_nanosleep() failed: %s\n",
-				    strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Receive Dcp frames. */
 		packet_receive_messages(thread_context->packet_context, &recv_req);
@@ -397,18 +388,9 @@ static void *dcp_tx_generation_thread_routine(void *data)
 
 	while (!thread_context->stop) {
 		/* Wait until next period */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "DcpTxGen: clock_nanosleep() failed: %s\n",
-				    strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Generate frames */
 		pthread_mutex_lock(mutex);

@@ -238,18 +238,9 @@ static void *udp_rx_thread_routine(void *data)
 
 	while (!thread_context->stop) {
 		/* Wait until next period. */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "%sRx: clock_nanosleep() failed: %s\n",
-				    thread_context->traffic_class, strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Receive Udp packets. */
 		while (true) {
@@ -357,18 +348,9 @@ static void *udp_tx_generation_thread_routine(void *data)
 
 	while (!thread_context->stop) {
 		/* Wait until next period */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "%sTxGen: clock_nanosleep() failed: %s\n",
-				    thread_context->traffic_class, strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Generate frames */
 		pthread_mutex_lock(mutex);

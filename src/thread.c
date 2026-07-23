@@ -10,9 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "config.h"
+#include "log.h"
 #include "thread.h"
 #include "utils.h"
 
@@ -189,4 +191,23 @@ int link_pn_threads(struct thread_context *pn_threads)
 	p->is_last = true;
 
 	return 0;
+}
+
+/* Common traffic class functions */
+int tc_sleep_until(const struct thread_context *ctx, struct timespec *wakeup, uint64_t cycle_time)
+{
+	int ret;
+
+	increment_period(wakeup, cycle_time);
+
+	do {
+		ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME, wakeup, NULL);
+	} while (ret == EINTR);
+
+	if (ret)
+		/* Called from RT context -> log_message(). */
+		log_message(LOG_LEVEL_ERROR, "%s: clock_nanosleep() failed: %s\n",
+			    ctx->traffic_class, strerror(ret));
+
+	return ret;
 }

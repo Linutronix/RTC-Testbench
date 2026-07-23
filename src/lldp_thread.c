@@ -372,18 +372,9 @@ static void *lldp_rx_thread_routine(void *data)
 		};
 
 		/* Wait until next period. */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "LldpRx: clock_nanosleep() failed: %s\n",
-				    strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Receive Lldp frames. */
 		packet_receive_messages(thread_context->packet_context, &recv_req);
@@ -417,18 +408,9 @@ static void *lldp_tx_generation_thread_routine(void *data)
 
 	while (!thread_context->stop) {
 		/* Wait until next period */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "LldpTxGen: clock_nanosleep() failed: %s\n",
-				    strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Generate frames */
 		pthread_mutex_lock(mutex);

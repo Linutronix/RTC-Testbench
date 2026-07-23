@@ -101,4 +101,7 @@ void init_mutex(pthread_mutex_t *mutex);
 void init_condition_variable(pthread_cond_t *cond_var);
 int link_pn_threads(struct thread_context *pn_threads);
 
+/* Common traffic class functions */
+int tc_sleep_until(const struct thread_context *ctx, struct timespec *wakeup, uint64_t cycle_time);
+
 #endif /* _THREAD_H_ */

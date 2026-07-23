@@ -423,18 +423,9 @@ static void *rta_rx_thread_routine(void *data)
 		};
 
 		/* Wait until next period. */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "RtaRx: clock_nanosleep() failed: %s\n",
-				    strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Receive Rta frames. */
 		packet_receive_messages(thread_context->packet_context, &recv_req);
@@ -468,18 +459,9 @@ static void *rta_tx_generation_thread_routine(void *data)
 
 	while (!thread_context->stop) {
 		/* Wait until next period */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "RtaTxGen: clock_nanosleep() failed: %s\n",
-				    strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Generate frames */
 		pthread_mutex_lock(mutex);
@@ -493,7 +475,7 @@ static void *rta_tx_generation_thread_routine(void *data)
 static void *rta_xdp_rx_thread_routine(void *data)
 {
 	struct thread_context *thread_context = data;
-	const long long cycle_time_ns = app_config.application_base_cycle_time_ns;
+	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	const struct traffic_class_config *rta_config = thread_context->conf;
 	const bool mirror_enabled = rta_config->rx_mirror_enabled;
 	const size_t frame_length = rta_config->frame_length;
@@ -514,18 +496,9 @@ static void *rta_xdp_rx_thread_routine(void *data)
 		unsigned int received;
 
 		/* Wait until next period */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "RtaRx: clock_nanosleep() failed: %s\n",
-				    strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		pthread_mutex_lock(&thread_context->xdp_data_mutex);
 		received = xdp_receive_frames(xsk, frame_length, mirror_enabled,

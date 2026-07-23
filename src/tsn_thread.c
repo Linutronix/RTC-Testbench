@@ -201,7 +201,7 @@ static void *tsn_tx_thread_routine(void *data)
 	const struct traffic_class_config *tsn_config = thread_context->conf;
 	size_t received_frames_length = MAX_FRAME_SIZE * tsn_config->num_frames_per_cycle;
 	struct security_context *security_context = thread_context->tx_security_context;
-	const long long cycle_time_ns = app_config.application_base_cycle_time_ns;
+	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	unsigned char *received_frames = thread_context->rx_frame_data;
 	const bool mirror_enabled = tsn_config->rx_mirror_enabled;
 	struct sockaddr_ll destination;
@@ -275,18 +275,9 @@ static void *tsn_tx_thread_routine(void *data)
 				continue;
 		} else {
 			/* Wait until next period */
-			increment_period(&wakeup_time, cycle_time_ns);
-
-			do {
-				ret = clock_nanosleep(app_config.application_clock_id,
-						      TIMER_ABSTIME, &wakeup_time, NULL);
-			} while (ret == EINTR);
-
-			if (ret) {
-				log_message(LOG_LEVEL_ERROR, "%sTx: clock_nanosleep() failed: %s\n",
-					    thread_context->traffic_class, strerror(ret));
+			ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+			if (ret)
 				return NULL;
-			}
 		}
 
 		workload_check_finished(thread_context);
@@ -335,7 +326,7 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 {
 	struct thread_context *thread_context = data;
 	struct security_context *security_context = thread_context->tx_security_context;
-	const long long cycle_time_ns = app_config.application_base_cycle_time_ns;
+	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	const struct traffic_class_config *tsn_config = thread_context->conf;
 	const bool mirror_enabled = tsn_config->rx_mirror_enabled;
 	uint32_t frame_number = XSK_RING_PROD__DEFAULT_NUM_DESCS;
@@ -406,18 +397,9 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 				continue;
 		} else {
 			/* Wait until next period */
-			increment_period(&wakeup_time, cycle_time_ns);
-
-			do {
-				ret = clock_nanosleep(app_config.application_clock_id,
-						      TIMER_ABSTIME, &wakeup_time, NULL);
-			} while (ret == EINTR);
-
-			if (ret) {
-				log_message(LOG_LEVEL_ERROR, "%sTx: clock_nanosleep() failed: %s\n",
-					    thread_context->traffic_class, strerror(ret));
+			ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+			if (ret)
 				return NULL;
-			}
 		}
 
 		workload_check_finished(thread_context);
@@ -501,18 +483,9 @@ static void *tsn_rx_thread_routine(void *data)
 		};
 
 		/* Wait until next period. */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "%sRx: clock_nanosleep() failed: %s\n",
-				    thread_context->traffic_class, strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		/* Receive Tsn frames. */
 		received = packet_receive_messages(thread_context->packet_context, &recv_req);
@@ -526,7 +499,7 @@ static void *tsn_rx_thread_routine(void *data)
 static void *tsn_xdp_rx_thread_routine(void *data)
 {
 	struct thread_context *thread_context = data;
-	const long long cycle_time_ns = app_config.application_base_cycle_time_ns;
+	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	const struct traffic_class_config *tsn_config = thread_context->conf;
 	const bool mirror_enabled = tsn_config->rx_mirror_enabled;
 	const size_t frame_length = tsn_config->frame_length;
@@ -565,18 +538,9 @@ static void *tsn_xdp_rx_thread_routine(void *data)
 		unsigned int received;
 
 		/* Wait until next period */
-		increment_period(&wakeup_time, cycle_time_ns);
-
-		do {
-			ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME,
-					      &wakeup_time, NULL);
-		} while (ret == EINTR);
-
-		if (ret) {
-			log_message(LOG_LEVEL_ERROR, "%sRx: clock_nanosleep() failed: %s\n",
-				    thread_context->traffic_class, strerror(ret));
+		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
+		if (ret)
 			return NULL;
-		}
 
 		pthread_mutex_lock(&thread_context->xdp_data_mutex);
 		received = xdp_receive_frames(xsk, frame_length, mirror_enabled,
