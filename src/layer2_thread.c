@@ -779,29 +779,7 @@ err_packet:
 
 void generic_l2_threads_free(struct thread_context *thread_context)
 {
-	struct traffic_class_config *l2_config;
-
-	if (!thread_context)
-		return;
-
-	l2_config = thread_context->conf;
-
-	ring_buffer_free(thread_context->mirror_buffer);
-
-	packet_free(thread_context->packet_context);
-	free(thread_context->tx_frame_data);
-	free(thread_context->rx_frame_data);
-
-	if (thread_context->socket_fd > 0)
-		close(thread_context->socket_fd);
-
-	if (thread_context->xsk)
-		xdp_close_socket(thread_context->xsk, l2_config->interface,
-				 l2_config->xdp_skb_mode);
-
-	workload_thread_free(thread_context);
-
-	free(thread_context);
+	tc_threads_free(thread_context);
 }
 
 void generic_l2_threads_wait_for_finish(struct thread_context *thread_context)

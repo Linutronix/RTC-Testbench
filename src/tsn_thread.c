@@ -702,36 +702,6 @@ out:
 	return ret;
 }
 
-static void tsn_threads_free(struct thread_context *thread_context)
-{
-	const struct traffic_class_config *tsn_config;
-
-	if (!thread_context)
-		return;
-
-	tsn_config = thread_context->conf;
-
-	free(thread_context->frame_copy);
-
-	security_exit(thread_context->tx_security_context);
-	security_exit(thread_context->rx_security_context);
-
-	ring_buffer_free(thread_context->mirror_buffer);
-
-	packet_free(thread_context->packet_context);
-	free(thread_context->tx_frame_data);
-	free(thread_context->rx_frame_data);
-
-	if (thread_context->socket_fd > 0)
-		close(thread_context->socket_fd);
-
-	if (thread_context->xsk)
-		xdp_close_socket(thread_context->xsk, tsn_config->interface,
-				 tsn_config->xdp_skb_mode);
-
-	workload_thread_free(thread_context);
-}
-
 int tsn_low_threads_create(struct thread_context *tsn_thread_context)
 {
 	tsn_thread_context->conf = &app_config.classes[TSN_LOW_FRAME_TYPE];
@@ -748,7 +718,7 @@ int tsn_low_threads_create(struct thread_context *tsn_thread_context)
 
 void tsn_low_threads_free(struct thread_context *thread_context)
 {
-	tsn_threads_free(thread_context);
+	tc_threads_free(thread_context);
 }
 
 void tsn_low_threads_wait_for_finish(struct thread_context *thread_context)
@@ -772,7 +742,7 @@ int tsn_high_threads_create(struct thread_context *tsn_thread_context)
 
 void tsn_high_threads_free(struct thread_context *thread_context)
 {
-	tsn_threads_free(thread_context);
+	tc_threads_free(thread_context);
 }
 
 void tsn_high_threads_wait_for_finish(struct thread_context *thread_context)

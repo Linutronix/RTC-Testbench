@@ -617,30 +617,7 @@ err_packet:
 
 void rta_threads_free(struct thread_context *thread_context)
 {
-	struct traffic_class_config *rta_config;
-
-	if (!thread_context)
-		return;
-
-	rta_config = thread_context->conf;
-
-	free(thread_context->frame_copy);
-
-	security_exit(thread_context->tx_security_context);
-	security_exit(thread_context->rx_security_context);
-
-	ring_buffer_free(thread_context->mirror_buffer);
-
-	packet_free(thread_context->packet_context);
-	free(thread_context->tx_frame_data);
-	free(thread_context->rx_frame_data);
-
-	if (thread_context->socket_fd > 0)
-		close(thread_context->socket_fd);
-
-	if (thread_context->xsk)
-		xdp_close_socket(thread_context->xsk, rta_config->interface,
-				 rta_config->xdp_skb_mode);
+	tc_threads_free(thread_context);
 }
 
 void rta_threads_wait_for_finish(struct thread_context *thread_context)

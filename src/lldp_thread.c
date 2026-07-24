@@ -475,17 +475,7 @@ err:
 
 void lldp_threads_free(struct thread_context *thread_context)
 {
-	if (!thread_context)
-		return;
-
-	ring_buffer_free(thread_context->mirror_buffer);
-
-	packet_free(thread_context->packet_context);
-	free(thread_context->tx_frame_data);
-	free(thread_context->rx_frame_data);
-
-	if (thread_context->socket_fd > 0)
-		close(thread_context->socket_fd);
+	tc_threads_free(thread_context);
 }
 
 void lldp_threads_wait_for_finish(struct thread_context *thread_context)

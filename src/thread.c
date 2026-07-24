@@ -15,6 +15,8 @@
 
 #include "config.h"
 #include "log.h"
+#include "packet.h"
+#include "stat.h"
 #include "thread.h"
 #include "utils.h"
 #include "workload.h"
@@ -301,4 +303,40 @@ void tc_threads_wait_for_finish(struct thread_context *ctx)
 		pthread_join(ctx->tx_task_id, NULL);
 	if (ctx->tx_gen_task_id)
 		pthread_join(ctx->tx_gen_task_id, NULL);
+}
+
+void tc_threads_free(struct thread_context *ctx)
+{
+	struct traffic_class_config *conf;
+
+	if (!ctx)
+		return;
+
+	conf = ctx->conf;
+
+	free(ctx->frame_copy);
+
+	security_exit(ctx->tx_security_context);
+	security_exit(ctx->rx_security_context);
+
+	ring_buffer_free(ctx->mirror_buffer);
+
+	packet_free(ctx->packet_context);
+	free(ctx->tx_frame_data);
+	free(ctx->rx_frame_data);
+
+	if (ctx->socket_fd > 0)
+		close(ctx->socket_fd);
+
+	if (ctx->xsk)
+		xdp_close_socket(ctx->xsk, conf->interface, conf->xdp_skb_mode);
+
+	workload_thread_free(ctx);
+
+	/*
+	 * FIXME: For some reason, l2 has a different allocation scheme than all other traffic
+	 * traffic classes. Kein Kommentar.
+	 */
+	if (ctx->frame_type == GENERICL2_FRAME_TYPE)
+		free(ctx);
 }

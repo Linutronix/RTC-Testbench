@@ -400,20 +400,6 @@ out:
 	return ret;
 }
 
-static void udp_threads_free(struct thread_context *thread_context)
-{
-	if (!thread_context)
-		return;
-
-	ring_buffer_free(thread_context->mirror_buffer);
-
-	free(thread_context->tx_frame_data);
-	free(thread_context->rx_frame_data);
-
-	if (thread_context->socket_fd > 0)
-		close(thread_context->socket_fd);
-}
-
 int udp_low_threads_create(struct thread_context *udp_thread_context)
 {
 	udp_thread_context->conf = &app_config.classes[UDP_LOW_FRAME_TYPE];
@@ -425,7 +411,7 @@ int udp_low_threads_create(struct thread_context *udp_thread_context)
 
 void udp_low_threads_free(struct thread_context *thread_context)
 {
-	udp_threads_free(thread_context);
+	tc_threads_free(thread_context);
 }
 
 void udp_low_threads_wait_for_finish(struct thread_context *thread_context)
@@ -444,7 +430,7 @@ int udp_high_threads_create(struct thread_context *udp_thread_context)
 
 void udp_high_threads_free(struct thread_context *thread_context)
 {
-	udp_threads_free(thread_context);
+	tc_threads_free(thread_context);
 }
 
 void udp_high_threads_wait_for_finish(struct thread_context *thread_context)
