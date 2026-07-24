@@ -106,5 +106,6 @@ int tc_sleep_until(const struct thread_context *ctx, struct timespec *wakeup, ui
 int tc_wait_for_tx(struct thread_context *ctx);
 int tc_wait_for_tx_burst(struct thread_context *ctx, size_t *num_frames);
 void tc_signal_next(struct thread_context *ctx);
+void *tc_tx_gen_thread(void *data);
 
 #endif /* _THREAD_H_ */

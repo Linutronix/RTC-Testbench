@@ -253,3 +253,36 @@ void tc_signal_next(struct thread_context *ctx)
 	pthread_cond_signal(&ctx->next->data_cond_var);
 	pthread_mutex_unlock(&ctx->next->data_mutex);
 }
+
+void *tc_tx_gen_thread(void *data)
+{
+	struct thread_context *ctx = data;
+	const struct traffic_class_config *conf = ctx->conf;
+	uint64_t num_frames = conf->num_frames_per_cycle;
+	uint64_t cycle_time_ns = conf->burst_period_ns;
+	pthread_mutex_t *mutex = &ctx->data_mutex;
+	struct timespec wakeup_time;
+	int ret;
+
+	ret = get_thread_start_time(0, &wakeup_time);
+	if (ret) {
+		log_message(LOG_LEVEL_ERROR,
+			    "%sTxGen: Failed to calculate thread start time: %s!\n",
+			    ctx->traffic_class, strerror(errno));
+		return NULL;
+	}
+
+	while (!ctx->stop) {
+		/* Wait until next period */
+		ret = tc_sleep_until(ctx, &wakeup_time, cycle_time_ns);
+		if (ret)
+			return NULL;
+
+		/* Generate frames */
+		pthread_mutex_lock(mutex);
+		ctx->num_frames_available = num_frames;
+		pthread_mutex_unlock(mutex);
+	}
+
+	return NULL;
+}
