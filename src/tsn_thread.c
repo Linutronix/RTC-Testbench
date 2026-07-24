@@ -260,15 +260,7 @@ static void *tsn_tx_thread_routine(void *data)
 
 	while (!thread_context->stop) {
 		if (!thread_context->is_first) {
-			struct timespec timeout;
-
-			clock_gettime(CLOCK_MONOTONIC, &timeout);
-			timeout.tv_sec++;
-
-			pthread_mutex_lock(&thread_context->data_mutex);
-			ret = pthread_cond_timedwait(&thread_context->data_cond_var,
-						     &thread_context->data_mutex, &timeout);
-			pthread_mutex_unlock(&thread_context->data_mutex);
+			ret = tc_wait_for_tx(thread_context);
 
 			/* In case of shutdown a signal may be missing. */
 			if (ret == ETIMEDOUT)
@@ -382,15 +374,7 @@ static void *tsn_xdp_tx_thread_routine(void *data)
 
 	while (!thread_context->stop) {
 		if (!thread_context->is_first) {
-			struct timespec timeout;
-
-			clock_gettime(CLOCK_MONOTONIC, &timeout);
-			timeout.tv_sec++;
-
-			pthread_mutex_lock(&thread_context->data_mutex);
-			ret = pthread_cond_timedwait(&thread_context->data_cond_var,
-						     &thread_context->data_mutex, &timeout);
-			pthread_mutex_unlock(&thread_context->data_mutex);
+			ret = tc_wait_for_tx(thread_context);
 
 			/* In case of shutdown a signal may be missing. */
 			if (ret == ETIMEDOUT)

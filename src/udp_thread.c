@@ -132,8 +132,6 @@ static void *udp_tx_thread_routine(void *data)
 	size_t received_frames_length = MAX_FRAME_SIZE * udp_config->num_frames_per_cycle;
 	unsigned char *received_frames = thread_context->rx_frame_data;
 	const bool mirror_enabled = udp_config->rx_mirror_enabled;
-	pthread_mutex_t *mutex = &thread_context->data_mutex;
-	pthread_cond_t *cond = &thread_context->data_cond_var;
 	uint64_t sequence_counter = 0;
 	unsigned char *frame;
 	int socket_fd;
@@ -144,22 +142,10 @@ static void *udp_tx_thread_routine(void *data)
 	udp_initialize_frame(thread_context, frame);
 
 	while (!thread_context->stop) {
-		struct timespec timeout;
 		size_t num_frames, i;
 		int ret;
 
-		/*
-		 * Wait until signalled. These UDP frames have to be sent after the LLDP
-		 * frames. Therefore, the LLDP or UDP High TxThread signals this one here.
-		 */
-		clock_gettime(CLOCK_MONOTONIC, &timeout);
-		timeout.tv_sec++;
-
-		pthread_mutex_lock(mutex);
-		ret = pthread_cond_timedwait(cond, mutex, &timeout);
-		num_frames = thread_context->num_frames_available;
-		thread_context->num_frames_available = 0;
-		pthread_mutex_unlock(mutex);
+		ret = tc_wait_for_tx_burst(thread_context, &num_frames);
 
 		/* In case of shutdown a signal may be missing. */
 		if (ret == ETIMEDOUT)

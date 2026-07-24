@@ -167,8 +167,6 @@ static void *dcp_tx_thread_routine(void *data)
 	size_t received_frames_length = MAX_FRAME_SIZE * dcp_config->num_frames_per_cycle;
 	unsigned char *received_frames = thread_context->rx_frame_data;
 	const bool mirror_enabled = dcp_config->rx_mirror_enabled;
-	pthread_cond_t *cond = &thread_context->data_cond_var;
-	pthread_mutex_t *mutex = &thread_context->data_mutex;
 	struct sockaddr_ll destination;
 	uint64_t sequence_counter = 0;
 	unsigned int if_index;
@@ -192,22 +190,10 @@ static void *dcp_tx_thread_routine(void *data)
 			      dcp_config->num_frames_per_cycle, thread_context->source);
 
 	while (!thread_context->stop) {
-		struct timespec timeout;
 		size_t num_frames;
 		int ret;
 
-		/*
-		 * Wait until signalled. These DCP frames have to be sent after the RTA
-		 * frames. Therefore, the RTA TxThread signals this one here.
-		 */
-		clock_gettime(CLOCK_MONOTONIC, &timeout);
-		timeout.tv_sec++;
-
-		pthread_mutex_lock(mutex);
-		ret = pthread_cond_timedwait(cond, mutex, &timeout);
-		num_frames = thread_context->num_frames_available;
-		thread_context->num_frames_available = 0;
-		pthread_mutex_unlock(mutex);
+		ret = tc_wait_for_tx_burst(thread_context, &num_frames);
 
 		/* In case of shutdown a signal may be missing. */
 		if (ret == ETIMEDOUT)

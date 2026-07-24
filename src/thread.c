@@ -211,3 +211,35 @@ int tc_sleep_until(const struct thread_context *ctx, struct timespec *wakeup, ui
 
 	return ret;
 }
+
+int tc_wait_for_tx(struct thread_context *ctx)
+{
+	struct timespec timeout;
+	int ret;
+
+	clock_gettime(CLOCK_MONOTONIC, &timeout);
+	timeout.tv_sec++;
+
+	pthread_mutex_lock(&ctx->data_mutex);
+	ret = pthread_cond_timedwait(&ctx->data_cond_var, &ctx->data_mutex, &timeout);
+	pthread_mutex_unlock(&ctx->data_mutex);
+
+	return ret;
+}
+
+int tc_wait_for_tx_burst(struct thread_context *ctx, size_t *num_frames)
+{
+	struct timespec timeout;
+	int ret;
+
+	clock_gettime(CLOCK_MONOTONIC, &timeout);
+	timeout.tv_sec++;
+
+	pthread_mutex_lock(&ctx->data_mutex);
+	ret = pthread_cond_timedwait(&ctx->data_cond_var, &ctx->data_mutex, &timeout);
+	*num_frames = ctx->num_frames_available;
+	ctx->num_frames_available = 0;
+	pthread_mutex_unlock(&ctx->data_mutex);
+
+	return ret;
+}

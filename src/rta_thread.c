@@ -183,8 +183,6 @@ static void *rta_tx_thread_routine(void *data)
 	struct security_context *security_context = thread_context->tx_security_context;
 	unsigned char *received_frames = thread_context->rx_frame_data;
 	const bool mirror_enabled = rta_config->rx_mirror_enabled;
-	pthread_mutex_t *mutex = &thread_context->data_mutex;
-	pthread_cond_t *cond = &thread_context->data_cond_var;
 	struct sockaddr_ll destination;
 	unsigned char source[ETH_ALEN];
 	uint64_t sequence_counter = 0;
@@ -219,21 +217,9 @@ static void *rta_tx_thread_routine(void *data)
 			      rta_config->l2_destination);
 
 	while (!thread_context->stop) {
-		struct timespec timeout;
 		size_t num_frames;
 
-		/*
-		 * Wait until signalled. These RTA frames have to be sent after the RTC
-		 * frames. Therefore, the RTC TxThread signals this one here.
-		 */
-		clock_gettime(CLOCK_MONOTONIC, &timeout);
-		timeout.tv_sec++;
-
-		pthread_mutex_lock(mutex);
-		ret = pthread_cond_timedwait(cond, mutex, &timeout);
-		num_frames = thread_context->num_frames_available;
-		thread_context->num_frames_available = 0;
-		pthread_mutex_unlock(mutex);
+		ret = tc_wait_for_tx_burst(thread_context, &num_frames);
 
 		/* In case of shutdown a signal may be missing. */
 		if (ret == ETIMEDOUT)
@@ -292,8 +278,6 @@ static void *rta_xdp_tx_thread_routine(void *data)
 	struct security_context *security_context = thread_context->tx_security_context;
 	const bool mirror_enabled = rta_config->rx_mirror_enabled;
 	uint32_t frame_number = XSK_RING_PROD__DEFAULT_NUM_DESCS;
-	pthread_mutex_t *mutex = &thread_context->data_mutex;
-	pthread_cond_t *cond = &thread_context->data_cond_var;
 	unsigned char source[ETH_ALEN];
 	uint64_t sequence_counter = 0;
 	unsigned char *frame_data;
@@ -325,20 +309,7 @@ static void *rta_xdp_tx_thread_routine(void *data)
 			      rta_config->l2_destination);
 
 	while (!thread_context->stop) {
-		struct timespec timeout;
-
-		/*
-		 * Wait until signalled. These RTA frames have to be sent after the RTC
-		 * frames. Therefore, the RTC TxThread signals this one here.
-		 */
-		clock_gettime(CLOCK_MONOTONIC, &timeout);
-		timeout.tv_sec++;
-
-		pthread_mutex_lock(mutex);
-		ret = pthread_cond_timedwait(cond, mutex, &timeout);
-		num_frames = thread_context->num_frames_available;
-		thread_context->num_frames_available = 0;
-		pthread_mutex_unlock(mutex);
+		ret = tc_wait_for_tx_burst(thread_context, &num_frames);
 
 		/* In case of shutdown a signal may be missing. */
 		if (ret == ETIMEDOUT)
