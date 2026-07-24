@@ -265,12 +265,7 @@ static void *rtc_tx_thread_routine(void *data)
 					&destination);
 		}
 
-		/* Signal next Tx thread */
-		if (thread_context->next) {
-			pthread_mutex_lock(&thread_context->next->data_mutex);
-			pthread_cond_signal(&thread_context->next->data_cond_var);
-			pthread_mutex_unlock(&thread_context->next->data_mutex);
-		}
+		tc_signal_next(thread_context);
 
 		if (thread_context->is_last)
 			stat_update();
@@ -381,12 +376,7 @@ static void *rtc_xdp_tx_thread_routine(void *data)
 			pthread_mutex_unlock(&thread_context->xdp_data_mutex);
 		}
 
-		/* Signal next Tx thread */
-		if (thread_context->next) {
-			pthread_mutex_lock(&thread_context->next->data_mutex);
-			pthread_cond_signal(&thread_context->next->data_cond_var);
-			pthread_mutex_unlock(&thread_context->next->data_mutex);
-		}
+		tc_signal_next(thread_context);
 
 		if (thread_context->is_last)
 			stat_update();

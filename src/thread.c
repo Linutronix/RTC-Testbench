@@ -243,3 +243,13 @@ int tc_wait_for_tx_burst(struct thread_context *ctx, size_t *num_frames)
 
 	return ret;
 }
+
+void tc_signal_next(struct thread_context *ctx)
+{
+	if (!ctx->next)
+		return;
+
+	pthread_mutex_lock(&ctx->next->data_mutex);
+	pthread_cond_signal(&ctx->next->data_cond_var);
+	pthread_mutex_unlock(&ctx->next->data_mutex);
+}

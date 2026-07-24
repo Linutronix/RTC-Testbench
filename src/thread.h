@@ -105,5 +105,6 @@ int link_pn_threads(struct thread_context *pn_threads);
 int tc_sleep_until(const struct thread_context *ctx, struct timespec *wakeup, uint64_t cycle_time);
 int tc_wait_for_tx(struct thread_context *ctx);
 int tc_wait_for_tx_burst(struct thread_context *ctx, size_t *num_frames);
+void tc_signal_next(struct thread_context *ctx);
 
 #endif /* _THREAD_H_ */
