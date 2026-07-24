@@ -17,6 +17,7 @@
 #include "log.h"
 #include "thread.h"
 #include "utils.h"
+#include "workload.h"
 
 int create_rt_thread(pthread_t *task_id, int thread_priority, int cpu_core,
 		     void *(*thread_routine)(void *), void *data, const char *format, ...)
@@ -285,4 +286,19 @@ void *tc_tx_gen_thread(void *data)
 	}
 
 	return NULL;
+}
+
+void tc_threads_wait_for_finish(struct thread_context *ctx)
+{
+	if (!ctx)
+		return;
+
+	workload_thread_wait_for_finish(ctx);
+
+	if (ctx->rx_task_id)
+		pthread_join(ctx->rx_task_id, NULL);
+	if (ctx->tx_task_id)
+		pthread_join(ctx->tx_task_id, NULL);
+	if (ctx->tx_gen_task_id)
+		pthread_join(ctx->tx_gen_task_id, NULL);
 }

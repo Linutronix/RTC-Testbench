@@ -107,5 +107,6 @@ int tc_wait_for_tx(struct thread_context *ctx);
 int tc_wait_for_tx_burst(struct thread_context *ctx, size_t *num_frames);
 void tc_signal_next(struct thread_context *ctx);
 void *tc_tx_gen_thread(void *data);
+void tc_threads_wait_for_finish(struct thread_context *ctx);
 
 #endif /* _THREAD_H_ */

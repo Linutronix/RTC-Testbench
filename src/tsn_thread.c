@@ -732,19 +732,6 @@ static void tsn_threads_free(struct thread_context *thread_context)
 	workload_thread_free(thread_context);
 }
 
-static void tsn_threads_wait_for_finish(struct thread_context *thread_context)
-{
-	if (!thread_context)
-		return;
-
-	workload_thread_wait_for_finish(thread_context);
-
-	if (thread_context->rx_task_id)
-		pthread_join(thread_context->rx_task_id, NULL);
-	if (thread_context->tx_task_id)
-		pthread_join(thread_context->tx_task_id, NULL);
-}
-
 int tsn_low_threads_create(struct thread_context *tsn_thread_context)
 {
 	tsn_thread_context->conf = &app_config.classes[TSN_LOW_FRAME_TYPE];
@@ -766,7 +753,7 @@ void tsn_low_threads_free(struct thread_context *thread_context)
 
 void tsn_low_threads_wait_for_finish(struct thread_context *thread_context)
 {
-	tsn_threads_wait_for_finish(thread_context);
+	tc_threads_wait_for_finish(thread_context);
 }
 
 int tsn_high_threads_create(struct thread_context *tsn_thread_context)
@@ -790,5 +777,5 @@ void tsn_high_threads_free(struct thread_context *thread_context)
 
 void tsn_high_threads_wait_for_finish(struct thread_context *thread_context)
 {
-	tsn_threads_wait_for_finish(thread_context);
+	tc_threads_wait_for_finish(thread_context);
 }

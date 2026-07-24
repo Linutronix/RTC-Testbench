@@ -414,19 +414,6 @@ static void udp_threads_free(struct thread_context *thread_context)
 		close(thread_context->socket_fd);
 }
 
-static void udp_threads_wait_for_finish(struct thread_context *thread_context)
-{
-	if (!thread_context)
-		return;
-
-	if (thread_context->rx_task_id)
-		pthread_join(thread_context->rx_task_id, NULL);
-	if (thread_context->tx_task_id)
-		pthread_join(thread_context->tx_task_id, NULL);
-	if (thread_context->tx_gen_task_id)
-		pthread_join(thread_context->tx_gen_task_id, NULL);
-}
-
 int udp_low_threads_create(struct thread_context *udp_thread_context)
 {
 	udp_thread_context->conf = &app_config.classes[UDP_LOW_FRAME_TYPE];
@@ -443,7 +430,7 @@ void udp_low_threads_free(struct thread_context *thread_context)
 
 void udp_low_threads_wait_for_finish(struct thread_context *thread_context)
 {
-	udp_threads_wait_for_finish(thread_context);
+	tc_threads_wait_for_finish(thread_context);
 }
 
 int udp_high_threads_create(struct thread_context *udp_thread_context)
@@ -462,5 +449,5 @@ void udp_high_threads_free(struct thread_context *thread_context)
 
 void udp_high_threads_wait_for_finish(struct thread_context *thread_context)
 {
-	udp_threads_wait_for_finish(thread_context);
+	tc_threads_wait_for_finish(thread_context);
 }
