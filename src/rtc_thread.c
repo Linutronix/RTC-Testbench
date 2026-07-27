@@ -4,651 +4,79 @@
  * Author Kurt Kanzenbach <kurt@linutronix.de>
  */
 
-#include <errno.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include <arpa/inet.h>
-
-#include <linux/if_ether.h>
-#include <linux/if_link.h>
-#include <linux/if_packet.h>
-#include <linux/if_vlan.h>
-
 #include "config.h"
-#include "log.h"
 #include "net.h"
-#include "packet.h"
 #include "profinet.h"
 #include "rtc_thread.h"
 #include "security.h"
 #include "stat.h"
+#include "tc.h"
 #include "thread.h"
-#include "utils.h"
 #include "workload.h"
-#include "xdp.h"
 
-static void rtc_initialize_frames(struct thread_context *thread_context, unsigned char *frame_data,
-				  size_t num_frames, const unsigned char *source,
-				  const unsigned char *destination)
+static void rtc_initialize_frame(struct thread_context *ctx, unsigned char *frame_data,
+				 size_t frame_length, const unsigned char *source,
+				 const unsigned char *destination)
 {
-	const struct traffic_class_config *rtc_config = thread_context->conf;
-	size_t i;
+	const struct traffic_class_config *conf = ctx->conf;
 
-	for (i = 0; i < num_frames; ++i) {
-		unsigned char *frame = frame_idx(frame_data, i);
-		size_t frame_length = MAX_FRAME_SIZE;
-
-		/*
-		 * In case both AF_XDP and Tx HW Timestamp are enabled the payload starts at:
-		 *   frame_data + sizeof(struct xsk_tx_metadata)
-		 */
-#ifdef TX_TIMESTAMP
-		if (rtc_config->xdp_enabled && rtc_config->tx_hwtstamp_enabled) {
-			frame += sizeof(struct xsk_tx_metadata);
-			frame_length -= sizeof(struct xsk_tx_metadata);
-		}
-#endif
-
-		initialize_profinet_frame(rtc_config->security_mode, frame, frame_length, source,
-					  destination, rtc_config->payload_pattern,
-					  rtc_config->payload_pattern_length,
-					  rtc_config->vid | rtc_config->pcp << VLAN_PCP_SHIFT,
-					  thread_context->frame_id);
-	}
+	initialize_profinet_frame(conf->security_mode, frame_data, frame_length, source,
+				  destination, conf->payload_pattern, conf->payload_pattern_length,
+				  conf->vid | conf->pcp << VLAN_PCP_SHIFT, ctx->frame_id);
 }
 
-static int rtc_send_messages(struct thread_context *thread_context, int socket_fd,
-			     struct sockaddr_ll *destination, unsigned char *frame_data,
-			     size_t num_frames)
+int rtc_threads_create(struct thread_context *ctx)
 {
-	const struct traffic_class_config *rtc_config = thread_context->conf;
-	struct packet_send_request send_req = {
-		.traffic_class = stat_frame_type_to_string(RTC_FRAME_TYPE),
-		.socket_fd = socket_fd,
-		.destination = destination,
-		.frame_data = frame_data,
-		.num_frames = num_frames,
-		.frame_length = rtc_config->frame_length,
-		.duration = 0,
-		.tx_time_offset = 0,
-		.meta_data_offset = thread_context->meta_data_offset,
-		.mirror_enabled = rtc_config->rx_mirror_enabled,
-		.tx_time_enabled = false,
-	};
-
-	return packet_send_messages(thread_context->packet_context, &send_req);
-}
-
-static int rtc_send_frames(struct thread_context *thread_context, unsigned char *frame_data,
-			   size_t num_frames, int socket_fd, struct sockaddr_ll *destination)
-{
-	const struct traffic_class_config *rtc_config = thread_context->conf;
-	int len, i;
-
-	/* Adjust meta data */
-	set_mirror_tx_timestamp(rtc_config, frame_data, rtc_config->frame_length, num_frames,
-				thread_context->meta_data_offset);
-
-	/* Send it */
-	len = rtc_send_messages(thread_context, socket_fd, destination, frame_data, num_frames);
-
-	for (i = 0; i < len; i++) {
-		uint64_t sequence_counter;
-
-		sequence_counter = get_sequence_counter(frame_data + i * rtc_config->frame_length,
-							thread_context->meta_data_offset,
-							rtc_config->num_frames_per_cycle);
-
-		stat_frame_sent(RTC_FRAME_TYPE, sequence_counter);
-	}
-
-	return len;
-}
-
-static int rtc_gen_and_send_frames(struct thread_context *thread_context, int socket_fd,
-				   struct sockaddr_ll *destination, uint64_t sequence_counter_begin)
-{
-	const struct traffic_class_config *rtc_config = thread_context->conf;
-	struct timespec tx_time = {};
-	int len, i;
-
-	app_clock_get(&tx_time);
-
-	for (i = 0; i < rtc_config->num_frames_per_cycle; i++) {
-		struct prepare_frame_config frame_config;
-		int err;
-
-		frame_config.mode = rtc_config->security_mode;
-		frame_config.security_context = thread_context->tx_security_context;
-		frame_config.iv_prefix = (const unsigned char *)rtc_config->security_iv_prefix;
-		frame_config.payload_pattern = thread_context->payload_pattern;
-		frame_config.payload_pattern_length = thread_context->payload_pattern_length;
-		frame_config.frame_data = frame_idx(thread_context->tx_frame_data, i);
-		frame_config.frame_length = rtc_config->frame_length;
-		frame_config.num_frames_per_cycle = rtc_config->num_frames_per_cycle;
-		frame_config.sequence_counter = sequence_counter_begin + i;
-		frame_config.tx_timestamp = ts_to_ns(&tx_time);
-		frame_config.meta_data_offset = thread_context->meta_data_offset;
-		frame_config.frame_type = RTC_FRAME_TYPE;
-		frame_config.protocol_type = GENERICL2_PROTOCOL_TYPE;
-
-		err = prepare_frame_for_tx(&frame_config);
-		if (err)
-			log_message(LOG_LEVEL_ERROR, "RtcTx: Failed to prepare frame for Tx!\n");
-	}
-
-	/* Send it */
-	len = rtc_send_messages(thread_context, socket_fd, destination,
-				thread_context->tx_frame_data, rtc_config->num_frames_per_cycle);
-
-	if (len > 0)
-		stat_frames_sent_batch(RTC_FRAME_TYPE, sequence_counter_begin, len);
-
-	return len;
-}
-
-static void rtc_gen_and_send_xdp_frames(struct thread_context *thread_context,
-					struct xdp_socket *xsk, uint64_t sequence_counter,
-					uint32_t *frame_number)
-{
-	const struct traffic_class_config *rtc_config = thread_context->conf;
-	struct xdp_gen_config xdp;
-
-	xdp.mode = rtc_config->security_mode;
-	xdp.security_context = thread_context->tx_security_context;
-	xdp.iv_prefix = (const unsigned char *)rtc_config->security_iv_prefix;
-	xdp.payload_pattern = thread_context->payload_pattern;
-	xdp.payload_pattern_length = thread_context->payload_pattern_length;
-	xdp.frame_length = rtc_config->frame_length;
-	xdp.num_frames_per_cycle = rtc_config->num_frames_per_cycle;
-	xdp.frame_number = frame_number;
-	xdp.sequence_counter_begin = sequence_counter;
-	xdp.meta_data_offset = thread_context->meta_data_offset;
-	xdp.frame_type = RTC_FRAME_TYPE;
-	xdp.tx_time = NULL;
-	xdp.protocol_type = GENERICL2_PROTOCOL_TYPE;
-
-	xdp_gen_and_send_frames(xsk, &xdp);
-}
-
-static void *rtc_tx_thread_routine(void *data)
-{
-	struct thread_context *thread_context = data;
-	const struct traffic_class_config *rtc_config = thread_context->conf;
-	size_t received_frames_length = MAX_FRAME_SIZE * rtc_config->num_frames_per_cycle;
-	struct security_context *security_context = thread_context->tx_security_context;
-	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
-	unsigned char *received_frames = thread_context->rx_frame_data;
-	const bool mirror_enabled = rtc_config->rx_mirror_enabled;
-	struct sockaddr_ll destination;
-	unsigned char source[ETH_ALEN];
-	uint64_t sequence_counter = 0;
-	struct timespec wakeup_time;
-	unsigned int if_index;
-	int ret, socket_fd;
-
-	socket_fd = thread_context->socket_fd;
-
-	ret = get_interface_mac_address(rtc_config->interface, source, ETH_ALEN);
-	if (ret < 0) {
-		log_message(LOG_LEVEL_ERROR, "RtcTx: Failed to get Source MAC address!\n");
-		return NULL;
-	}
-
-	if_index = if_nametoindex(rtc_config->interface);
-	if (!if_index) {
-		log_message(LOG_LEVEL_ERROR, "RtcTx: if_nametoindex() failed!\n");
-		return NULL;
-	}
-
-	memset(&destination, '\0', sizeof(destination));
-	destination.sll_family = PF_PACKET;
-	destination.sll_ifindex = if_index;
-	destination.sll_halen = ETH_ALEN;
-	memcpy(destination.sll_addr, rtc_config->l2_destination, ETH_ALEN);
-
-	rtc_initialize_frames(thread_context, thread_context->tx_frame_data,
-			      rtc_config->num_frames_per_cycle, source, rtc_config->l2_destination);
-
-	prepare_openssl(security_context);
-	rtc_initialize_frames(thread_context, thread_context->frame_copy, 1, source,
-			      rtc_config->l2_destination);
-
-	ret = get_thread_start_time(app_config.application_tx_base_offset_ns, &wakeup_time);
-	if (ret) {
-		log_message(LOG_LEVEL_ERROR, "RtcTx: Failed to calculate thread start time: %s!\n",
-			    strerror(errno));
-		return NULL;
-	}
-
-	while (!thread_context->stop) {
-		if (!thread_context->is_first) {
-			ret = tc_wait_for_tx(thread_context);
-
-			/* In case of shutdown a signal may be missing. */
-			if (ret == ETIMEDOUT)
-				continue;
-		} else {
-			/* Wait until next period */
-			ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
-			if (ret)
-				return NULL;
-		}
-
-		workload_check_finished(thread_context);
-
-		/*
-		 * Send RtcFrames, two possibilites:
-		 *  a) Generate it, or
-		 *  b) Use received ones if mirror enabled
-		 */
-		if (!mirror_enabled) {
-			rtc_gen_and_send_frames(thread_context, socket_fd, &destination,
-						sequence_counter);
-
-			sequence_counter += rtc_config->num_frames_per_cycle;
-		} else {
-			size_t len, num_frames;
-
-			ring_buffer_fetch(thread_context->mirror_buffer, received_frames,
-					  received_frames_length, &len);
-
-			/* Len should be a multiple of frame size */
-			num_frames = len / rtc_config->frame_length;
-			rtc_send_frames(thread_context, received_frames, num_frames, socket_fd,
-					&destination);
-		}
-
-		tc_signal_next(thread_context);
-
-		if (thread_context->is_last)
-			stat_update();
-	}
-
-	return NULL;
-}
-
-/*
- * This Tx thread routine differs to the standard one in terms of the sending interface. This one
- * uses the AF_XDP user space interface.
- */
-static void *rtc_xdp_tx_thread_routine(void *data)
-{
-	struct thread_context *thread_context = data;
-	const struct traffic_class_config *rtc_config = thread_context->conf;
-	struct security_context *security_context = thread_context->tx_security_context;
-	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
-	const size_t num_frames = rtc_config->num_frames_per_cycle;
-	const bool mirror_enabled = rtc_config->rx_mirror_enabled;
-	uint32_t frame_number = XSK_RING_PROD__DEFAULT_NUM_DESCS;
-	unsigned char source[ETH_ALEN];
-	uint64_t sequence_counter = 0;
-	struct timespec wakeup_time;
-	unsigned char *frame_data;
-	struct xdp_socket *xsk;
-	int ret;
-
-	xsk = thread_context->xsk;
-	xsk->tx_hwts.rtt = &round_trip_contexts[RTC_FRAME_TYPE];
-	xsk->tx_hwts.frames_per_cycle = rtc_config->num_frames_per_cycle;
-	xsk->tx_hwts.meta_data_offset = thread_context->meta_data_offset;
-
-	ret = get_interface_mac_address(rtc_config->interface, source, ETH_ALEN);
-	if (ret < 0) {
-		log_message(LOG_LEVEL_ERROR, "RtcTx: Failed to get Source MAC address!\n");
-		return NULL;
-	}
-
-	/* First half of umem area is for Rx, the second half is for Tx. */
-	frame_data = xsk_umem__get_data(xsk->umem.buffer,
-					XDP_FRAME_SIZE * XSK_RING_PROD__DEFAULT_NUM_DESCS);
-
-	/* Initialize all Tx frames */
-	rtc_initialize_frames(thread_context, frame_data, XSK_RING_CONS__DEFAULT_NUM_DESCS, source,
-			      rtc_config->l2_destination);
-
-	prepare_openssl(security_context);
-	rtc_initialize_frames(thread_context, thread_context->frame_copy, 1, source,
-			      rtc_config->l2_destination);
-
-	ret = get_thread_start_time(app_config.application_tx_base_offset_ns, &wakeup_time);
-	if (ret) {
-		log_message(LOG_LEVEL_ERROR, "RtcTx: Failed to calculate thread start time: %s!\n",
-			    strerror(errno));
-		return NULL;
-	}
-
-	while (!thread_context->stop) {
-		if (!thread_context->is_first) {
-			ret = tc_wait_for_tx(thread_context);
-
-			/* In case of shutdown a signal may be missing. */
-			if (ret == ETIMEDOUT)
-				continue;
-		} else {
-			/* Wait until next period */
-			ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
-			if (ret)
-				return NULL;
-		}
-
-		workload_check_finished(thread_context);
-
-		/*
-		 * Send RtcFrames, two possibilites:
-		 *  a) Generate it, or
-		 *  b) Use received ones if mirror enabled
-		 */
-		if (!mirror_enabled) {
-			rtc_gen_and_send_xdp_frames(thread_context, xsk, sequence_counter,
-						    &frame_number);
-			sequence_counter += num_frames;
-		} else {
-			unsigned int received;
-
-			pthread_mutex_lock(&thread_context->xdp_data_mutex);
-
-			received = thread_context->received_frames;
-
-			sequence_counter = thread_context->rx_sequence_counter - received;
-
-			/*
-			 * The XDP receiver stored the frames within the umem area and populated the
-			 * Tx ring. Now, the Tx ring can be committed to the kernel. Furthermore,
-			 * already transmitted frames from last cycle can be recycled for Rx.
-			 */
-
-			xsk_ring_prod__submit(&xsk->tx, received);
-
-			if (received > 0)
-				stat_frames_sent_batch(RTC_FRAME_TYPE, sequence_counter, received);
-
-			xsk->outstanding_tx += received;
-			thread_context->received_frames = 0;
-			xdp_complete_tx(xsk);
-
-			pthread_mutex_unlock(&thread_context->xdp_data_mutex);
-		}
-
-		tc_signal_next(thread_context);
-
-		if (thread_context->is_last)
-			stat_update();
-	}
-
-	return NULL;
-}
-
-static void *rtc_rx_thread_routine(void *data)
-{
-	struct thread_context *thread_context = data;
-	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
-	int socket_fd, ret, received;
-	struct timespec wakeup_time;
-
-	socket_fd = thread_context->socket_fd;
-
-	prepare_openssl(thread_context->rx_security_context);
-
-	ret = get_thread_start_time(app_config.application_rx_base_offset_ns, &wakeup_time);
-	if (ret) {
-		log_message(LOG_LEVEL_ERROR, "RtcRx: Failed to calculate thread start time: %s!\n",
-			    strerror(errno));
-		return NULL;
-	}
-
-	while (!thread_context->stop) {
-		struct packet_receive_request recv_req = {
-			.traffic_class = thread_context->traffic_class,
-			.socket_fd = socket_fd,
-			.receive_function = receive_profinet_frame,
-			.data = thread_context,
-		};
-
-		/* Wait until next period. */
-		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
-		if (ret)
-			return NULL;
-
-		/* Receive Rtc frames. */
-		received = packet_receive_messages(thread_context->packet_context, &recv_req);
-
-		workload_signal(thread_context, received);
-	}
-
-	return NULL;
-}
-
-static void *rtc_xdp_rx_thread_routine(void *data)
-{
-	struct thread_context *thread_context = data;
-	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
-	const struct traffic_class_config *rtc_config = thread_context->conf;
-	const bool mirror_enabled = rtc_config->rx_mirror_enabled;
-	const size_t frame_length = rtc_config->frame_length;
-	struct xdp_socket *xsk = thread_context->xsk;
-	struct timespec wakeup_time;
-	int ret;
-
-	prepare_openssl(thread_context->rx_security_context);
-
-	ret = get_thread_start_time(app_config.application_rx_base_offset_ns, &wakeup_time);
-	if (ret) {
-		log_message(LOG_LEVEL_ERROR, "RtcRx: Failed to calculate thread start time: %s!\n",
-			    strerror(errno));
-		return NULL;
-	}
-
-	while (!thread_context->stop) {
-		unsigned int received;
-
-		/* Wait until next period */
-		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
-		if (ret)
-			return NULL;
-
-		pthread_mutex_lock(&thread_context->xdp_data_mutex);
-		received = xdp_receive_frames(xsk, frame_length, mirror_enabled,
-					      receive_profinet_frame, thread_context, NULL);
-		thread_context->received_frames = received;
-		pthread_mutex_unlock(&thread_context->xdp_data_mutex);
-
-		workload_signal(thread_context, received);
-	}
-
-	return NULL;
-}
-
-int rtc_threads_create(struct thread_context *thread_context)
-{
-	struct traffic_class_config *rtc_config;
+	struct traffic_class_config *conf;
 	int ret;
 
 	if (!config_is_tc_active(RTC_FRAME_TYPE))
-		goto out;
+		return 0;
 
-	init_mutex(&thread_context->data_mutex);
-	init_mutex(&thread_context->xdp_data_mutex);
-	init_condition_variable(&thread_context->data_cond_var);
+	ctx->conf = conf = &app_config.classes[RTC_FRAME_TYPE];
+	ctx->frame_type = RTC_FRAME_TYPE;
+	ctx->traffic_class = stat_frame_type_to_string(RTC_FRAME_TYPE);
+	ctx->frame_id = conf->security_mode == SECURITY_MODE_NONE ? RTC_FRAMEID : RTC_SEC_FRAMEID;
 
-	thread_context->conf = rtc_config = &app_config.classes[RTC_FRAME_TYPE];
-	thread_context->frame_type = RTC_FRAME_TYPE;
-	thread_context->traffic_class = stat_frame_type_to_string(RTC_FRAME_TYPE);
-	thread_context->frame_id =
-		rtc_config->security_mode == SECURITY_MODE_NONE ? RTC_FRAMEID : RTC_SEC_FRAMEID;
-
-	/* For XDP the frames are stored in a umem area. That memory is part of the socket. */
-	if (!rtc_config->xdp_enabled) {
-		thread_context->packet_context = packet_init(rtc_config->num_frames_per_cycle);
-		if (!thread_context->packet_context) {
-			fprintf(stderr, "Failed to allocate Rtc packet context!\n");
-			ret = -ENOMEM;
-			goto err_packet;
-		}
-
-		thread_context->tx_frame_data =
-			calloc(rtc_config->num_frames_per_cycle, MAX_FRAME_SIZE);
-		if (!thread_context->tx_frame_data) {
-			fprintf(stderr, "Failed to allocate RtcTxFrameData!\n");
-			ret = -ENOMEM;
-			goto err_tx;
-		}
-
-		thread_context->rx_frame_data =
-			calloc(rtc_config->num_frames_per_cycle, MAX_FRAME_SIZE);
-		if (!thread_context->rx_frame_data) {
-			fprintf(stderr, "Failed to allocate RtcRxFrameData!\n");
-			ret = -ENOMEM;
-			goto err_rx;
-		}
+	ctx->desc = calloc(1, sizeof(*ctx->desc));
+	if (!ctx->desc) {
+		fprintf(stderr, "Failed to allocate %s TC description!\n", ctx->traffic_class);
+		return -ENOMEM;
 	}
 
-	/* Initialize data structures for AE */
-	thread_context->frame_copy = calloc(1, MAX_FRAME_SIZE);
-	if (!thread_context->frame_copy) {
-		fprintf(stderr, "Failed to allocate RtcPayloadPattern for AE!\n");
-		ret = -ENOMEM;
-		goto err_payload;
-	}
+	ctx->desc->tx_model = TC_TX_CYCLIC;
+	ctx->desc->ops.initialize_frame = rtc_initialize_frame;
+	ctx->desc->ops.receive_frame = receive_profinet_frame;
+	ctx->desc->ops.create_socket = create_rtc_socket;
 
-	thread_context->payload_pattern = thread_context->frame_copy +
-					  sizeof(struct vlan_ethernet_header) +
-					  sizeof(struct profinet_secure_header);
-	thread_context->payload_pattern_length =
-		rtc_config->frame_length - sizeof(struct vlan_ethernet_header) -
-		sizeof(struct profinet_secure_header) - sizeof(struct security_checksum);
-
-	/* For XDP a AF_XDP socket is allocated. Otherwise a Linux raw socket is used. */
-	if (rtc_config->xdp_enabled) {
-		thread_context->socket_fd = 0;
-		thread_context->xsk = xdp_open_socket(
-			rtc_config->interface, app_config.application_xdp_program,
-			rtc_config->rx_queue, rtc_config->xdp_skb_mode, rtc_config->xdp_zc_mode,
-			rtc_config->xdp_wakeup_mode, rtc_config->xdp_busy_poll_mode, false,
-			rtc_config->tx_hwtstamp_enabled);
-		if (!thread_context->xsk) {
-			fprintf(stderr, "Failed to create Rtc Xdp socket!\n");
-			ret = -ENOMEM;
-			goto err_socket;
-		}
+	if (conf->xdp_enabled) {
+		ctx->desc->ops.tx_thread = tc_xdp_tx_thread;
+		ctx->desc->ops.rx_thread = tc_xdp_rx_thread;
 	} else {
-		thread_context->xsk = NULL;
-		thread_context->socket_fd = create_rtc_socket();
-		if (thread_context->socket_fd < 0) {
-			fprintf(stderr, "Failed to create RtcSocket!\n");
-			ret = -errno;
-			goto err_socket;
-		}
+		ctx->desc->ops.tx_thread = tc_tx_thread;
+		ctx->desc->ops.rx_thread = tc_rx_thread;
 	}
 
-	/* Same as above. For XDP the umem area is used. */
-	if (rtc_config->rx_mirror_enabled && !rtc_config->xdp_enabled) {
-		/* Per period the expectation is: RtcNumFramesPerCycle * MAX_FRAME */
-		thread_context->mirror_buffer =
-			ring_buffer_allocate(MAX_FRAME_SIZE * rtc_config->num_frames_per_cycle);
-		if (!thread_context->mirror_buffer) {
-			fprintf(stderr, "Failed to allocate Rtc Mirror RingBuffer!\n");
-			ret = -ENOMEM;
-			goto err_thread;
-		}
-	}
+	ret = tc_threads_create(ctx);
+	if (ret)
+		free(ctx->desc);
 
-	if (rtc_config->security_mode != SECURITY_MODE_NONE) {
-		thread_context->tx_security_context = security_init(
-			rtc_config->security_algorithm, (unsigned char *)rtc_config->security_key);
-		if (!thread_context->tx_security_context) {
-			fprintf(stderr, "Failed to initialize Tx security context!\n");
-			ret = -ENOMEM;
-			goto err_tx_sec;
-		}
-
-		thread_context->rx_security_context = security_init(
-			rtc_config->security_algorithm, (unsigned char *)rtc_config->security_key);
-		if (!thread_context->rx_security_context) {
-			fprintf(stderr, "Failed to initialize Rx security context!\n");
-			ret = -ENOMEM;
-			goto err_rx_sec;
-		}
-	} else {
-		thread_context->tx_security_context = NULL;
-		thread_context->rx_security_context = NULL;
-	}
-
-	thread_context->meta_data_offset =
-		get_meta_data_offset(RTC_FRAME_TYPE, rtc_config->security_mode);
-
-	ret = create_rt_thread(&thread_context->tx_task_id, rtc_config->tx_thread_priority,
-			       rtc_config->tx_thread_cpu,
-			       rtc_config->xdp_enabled ? rtc_xdp_tx_thread_routine
-						       : rtc_tx_thread_routine,
-			       thread_context, "RtcTxThread");
-	if (ret) {
-		fprintf(stderr, "Failed to create Rtc Tx thread!\n");
-		goto err_thread_create1;
-	}
-
-	ret = create_rt_thread(&thread_context->rx_task_id, rtc_config->rx_thread_priority,
-			       rtc_config->rx_thread_cpu,
-			       rtc_config->xdp_enabled ? rtc_xdp_rx_thread_routine
-						       : rtc_rx_thread_routine,
-			       thread_context, "RtcRxThread");
-	if (ret) {
-		fprintf(stderr, "Failed to create Rtc Rx thread!\n");
-		goto err_thread_create2;
-	}
-
-	/* Create workload thread for execution after network RX */
-	ret = workload_context_init(thread_context);
-	if (ret) {
-		fprintf(stderr, "Failed to create Rtc Workload context!\n");
-		goto err_thread_wl;
-	}
-
-out:
-	return 0;
-
-err_thread_wl:
-	thread_context->stop = 1;
-	pthread_join(thread_context->rx_task_id, NULL);
-err_thread_create2:
-	thread_context->stop = 1;
-	pthread_join(thread_context->tx_task_id, NULL);
-err_thread_create1:
-	security_exit(thread_context->rx_security_context);
-err_rx_sec:
-	security_exit(thread_context->tx_security_context);
-err_tx_sec:
-	ring_buffer_free(thread_context->mirror_buffer);
-err_thread:
-	if (thread_context->socket_fd)
-		close(thread_context->socket_fd);
-	if (thread_context->xsk)
-		xdp_close_socket(thread_context->xsk, rtc_config->interface,
-				 rtc_config->xdp_skb_mode);
-err_socket:
-	free(thread_context->frame_copy);
-err_payload:
-	free(thread_context->rx_frame_data);
-err_rx:
-	free(thread_context->tx_frame_data);
-err_tx:
-	packet_free(thread_context->packet_context);
-err_packet:
 	return ret;
 }
 
-void rtc_threads_free(struct thread_context *thread_context)
+void rtc_threads_free(struct thread_context *ctx)
 {
-	tc_threads_free(thread_context);
+	tc_threads_free(ctx);
 }
 
-void rtc_threads_wait_for_finish(struct thread_context *thread_context)
+void rtc_threads_wait_for_finish(struct thread_context *ctx)
 {
-	tc_threads_wait_for_finish(thread_context);
+	tc_threads_wait_for_finish(ctx);
 }

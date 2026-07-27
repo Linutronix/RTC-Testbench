@@ -82,7 +82,8 @@ add_executable(reference
   src/print.c
   src/profinet.c
   src/tb.c
-  src/ethercat.c)
+  src/ethercat.c
+  src/tc.c)
 add_executable(mirror
   src/mirror.c
   src/config.c
@@ -110,7 +111,8 @@ add_executable(mirror
   src/print.c
   src/profinet.c
   src/tb.c
-  src/ethercat.c)
+  src/ethercat.c
+  src/tc.c)
 
 option(WITH_MQTT "Enable/Disable logging via MQTT" OFF)
 if (WITH_MQTT)

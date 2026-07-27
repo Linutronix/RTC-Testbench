@@ -33,6 +33,7 @@ struct xdp_socket;
 struct security_context;
 struct packet_context;
 struct workload_config;
+struct traffic_class_desc;
 
 struct thread_context {
 	/* Task related */
@@ -73,6 +74,7 @@ struct thread_context {
 
 	/* Traffic class related */
 	struct traffic_class_config *conf; /* Pointer to traffic class configuration */
+	struct traffic_class_desc *desc;   /* Traffic class description */
 	enum stat_frame_type frame_type;   /* Frame type */
 	const char *traffic_class;         /* Traffic class string */
 	uint32_t meta_data_offset;         /* Where is the MetaData in the frame? */
