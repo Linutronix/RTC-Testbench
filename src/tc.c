@@ -33,6 +33,99 @@
 #include "workload.h"
 #include "xdp.h"
 
+int tc_sleep_until(const struct thread_context *ctx, struct timespec *wakeup, uint64_t cycle_time)
+{
+	int ret;
+
+	increment_period(wakeup, cycle_time);
+
+	do {
+		ret = clock_nanosleep(app_config.application_clock_id, TIMER_ABSTIME, wakeup, NULL);
+	} while (ret == EINTR);
+
+	if (ret)
+		/* Called from RT context -> log_message(). */
+		log_message(LOG_LEVEL_ERROR, "%s: clock_nanosleep() failed: %s\n",
+			    ctx->traffic_class, strerror(ret));
+
+	return ret;
+}
+
+int tc_wait_for_tx(struct thread_context *ctx)
+{
+	struct timespec timeout;
+	int ret;
+
+	clock_gettime(CLOCK_MONOTONIC, &timeout);
+	timeout.tv_sec++;
+
+	pthread_mutex_lock(&ctx->data_mutex);
+	ret = pthread_cond_timedwait(&ctx->data_cond_var, &ctx->data_mutex, &timeout);
+	pthread_mutex_unlock(&ctx->data_mutex);
+
+	return ret;
+}
+
+int tc_wait_for_tx_burst(struct thread_context *ctx, size_t *num_frames)
+{
+	struct timespec timeout;
+	int ret;
+
+	clock_gettime(CLOCK_MONOTONIC, &timeout);
+	timeout.tv_sec++;
+
+	pthread_mutex_lock(&ctx->data_mutex);
+	ret = pthread_cond_timedwait(&ctx->data_cond_var, &ctx->data_mutex, &timeout);
+	*num_frames = ctx->num_frames_available;
+	ctx->num_frames_available = 0;
+	pthread_mutex_unlock(&ctx->data_mutex);
+
+	return ret;
+}
+
+void tc_signal_next(struct thread_context *ctx)
+{
+	if (!ctx->next)
+		return;
+
+	pthread_mutex_lock(&ctx->next->data_mutex);
+	pthread_cond_signal(&ctx->next->data_cond_var);
+	pthread_mutex_unlock(&ctx->next->data_mutex);
+}
+
+void *tc_tx_gen_thread(void *data)
+{
+	struct thread_context *ctx = data;
+	const struct traffic_class_config *conf = ctx->conf;
+	uint64_t num_frames = conf->num_frames_per_cycle;
+	uint64_t cycle_time_ns = conf->burst_period_ns;
+	pthread_mutex_t *mutex = &ctx->data_mutex;
+	struct timespec wakeup_time;
+	int ret;
+
+	ret = get_thread_start_time(0, &wakeup_time);
+	if (ret) {
+		log_message(LOG_LEVEL_ERROR,
+			    "%sTxGen: Failed to calculate thread start time: %s!\n",
+			    ctx->traffic_class, strerror(errno));
+		return NULL;
+	}
+
+	while (!ctx->stop) {
+		/* Wait until next period */
+		ret = tc_sleep_until(ctx, &wakeup_time, cycle_time_ns);
+		if (ret)
+			return NULL;
+
+		/* Generate frames */
+		pthread_mutex_lock(mutex);
+		ctx->num_frames_available = num_frames;
+		pthread_mutex_unlock(mutex);
+	}
+
+	return NULL;
+}
+
 static void tc_initialize_frames(struct thread_context *ctx, unsigned char *frame_data,
 				 size_t num_frames, const unsigned char *source,
 				 const unsigned char *destination)
@@ -614,4 +707,57 @@ err_tx:
 	packet_free(ctx->packet_context);
 err_packet:
 	return ret;
+}
+
+void tc_threads_wait_for_finish(struct thread_context *ctx)
+{
+	if (!ctx)
+		return;
+
+	workload_thread_wait_for_finish(ctx);
+
+	if (ctx->rx_task_id)
+		pthread_join(ctx->rx_task_id, NULL);
+	if (ctx->tx_task_id)
+		pthread_join(ctx->tx_task_id, NULL);
+	if (ctx->tx_gen_task_id)
+		pthread_join(ctx->tx_gen_task_id, NULL);
+}
+
+void tc_threads_free(struct thread_context *ctx)
+{
+	struct traffic_class_config *conf;
+
+	if (!ctx)
+		return;
+
+	conf = ctx->conf;
+
+	free(ctx->frame_copy);
+
+	security_exit(ctx->tx_security_context);
+	security_exit(ctx->rx_security_context);
+
+	ring_buffer_free(ctx->mirror_buffer);
+
+	packet_free(ctx->packet_context);
+	free(ctx->tx_frame_data);
+	free(ctx->rx_frame_data);
+
+	if (ctx->socket_fd > 0)
+		close(ctx->socket_fd);
+
+	if (ctx->xsk)
+		xdp_close_socket(ctx->xsk, conf->interface, conf->xdp_skb_mode);
+
+	workload_thread_free(ctx);
+
+	free(ctx->desc);
+
+	/*
+	 * FIXME: For some reason, l2 has a different allocation scheme than all other traffic
+	 * traffic classes. Kein Kommentar.
+	 */
+	if (ctx->frame_type == GENERICL2_FRAME_TYPE)
+		free(ctx);
 }

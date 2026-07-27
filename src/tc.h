@@ -44,5 +44,12 @@ void *tc_tx_thread(void *data);
 void *tc_rx_thread(void *data);
 void *tc_xdp_tx_thread(void *data);
 void *tc_xdp_rx_thread(void *data);
+int tc_sleep_until(const struct thread_context *ctx, struct timespec *wakeup, uint64_t cycle_time);
+int tc_wait_for_tx(struct thread_context *ctx);
+int tc_wait_for_tx_burst(struct thread_context *ctx, size_t *num_frames);
+void tc_signal_next(struct thread_context *ctx);
+void *tc_tx_gen_thread(void *data);
+void tc_threads_wait_for_finish(struct thread_context *ctx);
+void tc_threads_free(struct thread_context *ctx);
 
 #endif /* TC_H */

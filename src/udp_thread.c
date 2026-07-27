@@ -22,6 +22,7 @@
 #include "net.h"
 #include "net_def.h"
 #include "stat.h"
+#include "tc.h"
 #include "thread.h"
 #include "udp_thread.h"
 #include "utils.h"

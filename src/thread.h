@@ -103,13 +103,4 @@ void init_mutex(pthread_mutex_t *mutex);
 void init_condition_variable(pthread_cond_t *cond_var);
 int link_pn_threads(struct thread_context *pn_threads);
 
-/* Common traffic class functions */
-int tc_sleep_until(const struct thread_context *ctx, struct timespec *wakeup, uint64_t cycle_time);
-int tc_wait_for_tx(struct thread_context *ctx);
-int tc_wait_for_tx_burst(struct thread_context *ctx, size_t *num_frames);
-void tc_signal_next(struct thread_context *ctx);
-void *tc_tx_gen_thread(void *data);
-void tc_threads_wait_for_finish(struct thread_context *ctx);
-void tc_threads_free(struct thread_context *ctx);
-
 #endif /* _THREAD_H_ */

@@ -26,6 +26,7 @@
 #include "packet.h"
 #include "security.h"
 #include "stat.h"
+#include "tc.h"
 #include "thread.h"
 #include "utils.h"
 

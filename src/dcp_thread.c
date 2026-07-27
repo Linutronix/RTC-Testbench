@@ -27,6 +27,7 @@
 #include "profinet.h"
 #include "security.h"
 #include "stat.h"
+#include "tc.h"
 #include "utils.h"
 
 static void dcp_initialize_frames(struct thread_context *thread_context, unsigned char *frame_data,

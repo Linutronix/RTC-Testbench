@@ -28,6 +28,7 @@
 #include "rta_thread.h"
 #include "security.h"
 #include "stat.h"
+#include "tc.h"
 #include "utils.h"
 #include "xdp.h"
 

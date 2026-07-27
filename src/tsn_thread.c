@@ -31,6 +31,7 @@
 #include "profinet.h"
 #include "security.h"
 #include "stat.h"
+#include "tc.h"
 #include "thread.h"
 #include "tsn_thread.h"
 #include "tx_time.h"

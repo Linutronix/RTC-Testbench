@@ -31,6 +31,7 @@
 #include "packet.h"
 #include "security.h"
 #include "stat.h"
+#include "tc.h"
 #include "thread.h"
 #include "tx_time.h"
 #include "utils.h"
