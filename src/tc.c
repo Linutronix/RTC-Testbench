@@ -29,6 +29,7 @@
 #include "stat.h"
 #include "tc.h"
 #include "thread.h"
+#include "tx_time.h"
 #include "utils.h"
 #include "workload.h"
 #include "xdp.h"
@@ -138,13 +139,13 @@ static void tc_initialize_frames(struct thread_context *ctx, unsigned char *fram
 		size_t frame_length = MAX_FRAME_SIZE;
 
 		/*
-		 * In case both AF_XDP and Tx HW Timestamp are enabled the payload starts at:
-		 *   frame_data + sizeof(struct xsk_tx_metadata)
+		 * In case both AF_XDP and Tx Launch Time or Tx HW Timestamp are enabled the payload
+		 * starts at: frame_data + sizeof(struct xsk_tx_metadata)
 		 */
-#ifdef TX_TIMESTAMP
+#if defined(HAVE_XDP_TX_TIME) || defined(TX_TIMESTAMP)
 		const struct traffic_class_config *conf = ctx->conf;
 
-		if (conf->xdp_enabled && conf->tx_hwtstamp_enabled) {
+		if (conf->xdp_enabled && (conf->tx_time_enabled || conf->tx_hwtstamp_enabled)) {
 			frame += sizeof(struct xsk_tx_metadata);
 			frame_length -= sizeof(struct xsk_tx_metadata);
 		}
@@ -156,7 +157,7 @@ static void tc_initialize_frames(struct thread_context *ctx, unsigned char *fram
 
 static int tc_send_messages(struct thread_context *ctx, int socket_fd,
 			    struct sockaddr_ll *destination, unsigned char *frame_data,
-			    size_t num_frames)
+			    size_t num_frames, uint64_t duration)
 {
 	const struct traffic_class_config *conf = ctx->conf;
 	struct packet_send_request send_req = {
@@ -166,18 +167,18 @@ static int tc_send_messages(struct thread_context *ctx, int socket_fd,
 		.frame_data = frame_data,
 		.num_frames = num_frames,
 		.frame_length = conf->frame_length,
-		.duration = 0,
-		.tx_time_offset = 0,
+		.duration = duration,
+		.tx_time_offset = conf->tx_time_offset_ns,
 		.meta_data_offset = ctx->meta_data_offset,
 		.mirror_enabled = conf->rx_mirror_enabled,
-		.tx_time_enabled = false,
+		.tx_time_enabled = conf->tx_time_enabled,
 	};
 
 	return packet_send_messages(ctx->packet_context, &send_req);
 }
 
 static int tc_send_frames(struct thread_context *ctx, unsigned char *frame_data, size_t num_frames,
-			  int socket_fd, struct sockaddr_ll *destination)
+			  int socket_fd, struct sockaddr_ll *destination, uint64_t duration)
 {
 	const struct traffic_class_config *conf = ctx->conf;
 	int len, i;
@@ -187,7 +188,7 @@ static int tc_send_frames(struct thread_context *ctx, unsigned char *frame_data,
 				ctx->meta_data_offset);
 
 	/* Send it */
-	len = tc_send_messages(ctx, socket_fd, destination, frame_data, num_frames);
+	len = tc_send_messages(ctx, socket_fd, destination, frame_data, num_frames, duration);
 
 	for (i = 0; i < len; i++) {
 		uint64_t sequence_counter;
@@ -203,7 +204,8 @@ static int tc_send_frames(struct thread_context *ctx, unsigned char *frame_data,
 }
 
 static int tc_gen_and_send_frames(struct thread_context *ctx, int socket_fd,
-				  struct sockaddr_ll *destination, uint64_t sequence_counter_begin)
+				  struct sockaddr_ll *destination, uint64_t sequence_counter_begin,
+				  uint64_t duration)
 {
 	const struct traffic_class_config *conf = ctx->conf;
 	struct timespec tx_time = {};
@@ -237,7 +239,7 @@ static int tc_gen_and_send_frames(struct thread_context *ctx, int socket_fd,
 
 	/* Send it */
 	len = tc_send_messages(ctx, socket_fd, destination, ctx->tx_frame_data,
-			       conf->num_frames_per_cycle);
+			       conf->num_frames_per_cycle, duration);
 
 	if (len > 0)
 		stat_frames_sent_batch(ctx->frame_type, sequence_counter_begin, len);
@@ -246,9 +248,17 @@ static int tc_gen_and_send_frames(struct thread_context *ctx, int socket_fd,
 }
 
 static void tc_gen_and_send_xdp_frames(struct thread_context *ctx, struct xdp_socket *xsk,
-				       uint64_t sequence_counter, uint32_t *frame_number)
+				       uint64_t sequence_counter, uint64_t duration,
+				       uint32_t *frame_number)
 {
 	const struct traffic_class_config *conf = ctx->conf;
+	struct xdp_tx_time tx_time = {
+		.traffic_class = ctx->traffic_class,
+		.tx_time_offset = conf->tx_time_offset_ns,
+		.num_frames_per_cycle = conf->num_frames_per_cycle,
+		.sequence_counter_begin = sequence_counter,
+		.duration = duration,
+	};
 	struct xdp_gen_config xdp = {
 		.mode = conf->security_mode,
 		.security_context = ctx->tx_security_context,
@@ -261,7 +271,7 @@ static void tc_gen_and_send_xdp_frames(struct thread_context *ctx, struct xdp_so
 		.sequence_counter_begin = sequence_counter,
 		.meta_data_offset = ctx->meta_data_offset,
 		.frame_type = ctx->frame_type,
-		.tx_time = NULL,
+		.tx_time = conf->tx_time_enabled ? &tx_time : NULL,
 		.protocol_type = GENERICL2_PROTOCOL_TYPE,
 	};
 
@@ -282,13 +292,22 @@ void *tc_tx_thread(void *data)
 	uint64_t sequence_counter = 0;
 	struct timespec wakeup_time;
 	unsigned int if_index;
+	uint32_t link_speed;
 	int ret, socket_fd;
+	uint64_t duration;
 
 	socket_fd = ctx->socket_fd;
 
 	ret = get_interface_mac_address(conf->interface, source, ETH_ALEN);
 	if (ret < 0) {
 		log_message(LOG_LEVEL_ERROR, "%sTx: Failed to get Source MAC address!\n",
+			    ctx->traffic_class);
+		return NULL;
+	}
+
+	ret = get_interface_link_speed(conf->interface, &link_speed);
+	if (ret) {
+		log_message(LOG_LEVEL_ERROR, "%sTx: Failed to get link speed!\n",
 			    ctx->traffic_class);
 		return NULL;
 	}
@@ -305,6 +324,8 @@ void *tc_tx_thread(void *data)
 	destination.sll_ifindex = if_index;
 	destination.sll_halen = ETH_ALEN;
 	memcpy(destination.sll_addr, conf->l2_destination, ETH_ALEN);
+
+	duration = tx_time_get_frame_duration(link_speed, conf->frame_length);
 
 	tc_initialize_frames(ctx, ctx->tx_frame_data, conf->num_frames_per_cycle, source,
 			     conf->l2_destination);
@@ -341,7 +362,8 @@ void *tc_tx_thread(void *data)
 		 *  b) Use received ones if mirror enabled
 		 */
 		if (!mirror_enabled) {
-			tc_gen_and_send_frames(ctx, socket_fd, &destination, sequence_counter);
+			tc_gen_and_send_frames(ctx, socket_fd, &destination, sequence_counter,
+					       duration);
 
 			sequence_counter += conf->num_frames_per_cycle;
 		} else {
@@ -352,7 +374,8 @@ void *tc_tx_thread(void *data)
 
 			/* Len should be a multiple of frame size */
 			num_frames = len / conf->frame_length;
-			tc_send_frames(ctx, received_frames, num_frames, socket_fd, &destination);
+			tc_send_frames(ctx, received_frames, num_frames, socket_fd, &destination,
+				       duration);
 		}
 
 		tc_signal_next(ctx);
@@ -378,6 +401,8 @@ void *tc_xdp_tx_thread(void *data)
 	struct timespec wakeup_time;
 	unsigned char *frame_data;
 	struct xdp_socket *xsk;
+	uint32_t link_speed;
+	uint64_t duration;
 	int ret;
 
 	xsk = ctx->xsk;
@@ -391,6 +416,15 @@ void *tc_xdp_tx_thread(void *data)
 			    ctx->traffic_class);
 		return NULL;
 	}
+
+	ret = get_interface_link_speed(conf->interface, &link_speed);
+	if (ret) {
+		log_message(LOG_LEVEL_ERROR, "%sTx: Failed to get link speed!\n",
+			    ctx->traffic_class);
+		return NULL;
+	}
+
+	duration = tx_time_get_frame_duration(link_speed, conf->frame_length);
 
 	/* First half of umem area is for Rx, the second half is for Tx. */
 	frame_data = xsk_umem__get_data(xsk->umem.buffer,
@@ -432,7 +466,8 @@ void *tc_xdp_tx_thread(void *data)
 		 *  b) Use received ones if mirror enabled
 		 */
 		if (!mirror_enabled) {
-			tc_gen_and_send_xdp_frames(ctx, xsk, sequence_counter, &frame_number);
+			tc_gen_and_send_xdp_frames(ctx, xsk, sequence_counter, duration,
+						   &frame_number);
 			sequence_counter += num_frames;
 		} else {
 			unsigned int received;
@@ -519,6 +554,8 @@ void *tc_xdp_rx_thread(void *data)
 	const size_t frame_length = conf->frame_length;
 	struct xdp_socket *xsk = ctx->xsk;
 	struct timespec wakeup_time;
+	uint32_t link_speed;
+	uint64_t duration;
 	int ret;
 
 	prepare_openssl(ctx->rx_security_context);
@@ -530,7 +567,23 @@ void *tc_xdp_rx_thread(void *data)
 		return NULL;
 	}
 
+	ret = get_interface_link_speed(conf->interface, &link_speed);
+	if (ret) {
+		log_message(LOG_LEVEL_ERROR, "%sRx: Failed to get link speed!\n",
+			    ctx->traffic_class);
+		return NULL;
+	}
+
+	duration = tx_time_get_frame_duration(link_speed, conf->frame_length);
+
 	while (!ctx->stop) {
+		struct xdp_tx_time tx_time = {
+			.tx_time_offset = conf->tx_time_offset_ns,
+			.duration = duration,
+			.num_frames_per_cycle = conf->num_frames_per_cycle,
+			.sequence_counter_begin = 0,
+			.traffic_class = ctx->traffic_class,
+		};
 		unsigned int received;
 
 		/* Wait until next period */
@@ -540,7 +593,7 @@ void *tc_xdp_rx_thread(void *data)
 
 		pthread_mutex_lock(&ctx->xdp_data_mutex);
 		received = xdp_receive_frames(xsk, frame_length, mirror_enabled,
-					      ctx->desc->ops.receive_frame, ctx, NULL);
+					      ctx->desc->ops.receive_frame, ctx, &tx_time);
 		ctx->received_frames = received;
 		pthread_mutex_unlock(&ctx->xdp_data_mutex);
 
@@ -604,8 +657,8 @@ int tc_threads_create(struct thread_context *ctx)
 		ctx->socket_fd = 0;
 		ctx->xsk = xdp_open_socket(conf->interface, app_config.application_xdp_program,
 					   conf->rx_queue, conf->xdp_skb_mode, conf->xdp_zc_mode,
-					   conf->xdp_wakeup_mode, conf->xdp_busy_poll_mode, false,
-					   conf->tx_hwtstamp_enabled);
+					   conf->xdp_wakeup_mode, conf->xdp_busy_poll_mode,
+					   conf->tx_time_enabled, conf->tx_hwtstamp_enabled);
 		if (!ctx->xsk) {
 			fprintf(stderr, "Failed to create %s Xdp socket!\n", ctx->traffic_class);
 			ret = -ENOMEM;
