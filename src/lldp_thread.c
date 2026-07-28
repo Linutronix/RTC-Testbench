@@ -44,12 +44,16 @@ static void lldp_build_frame_from_rx(unsigned char *frame_data, const unsigned c
 }
 
 static void lldp_initialize_frame(struct thread_context *thread_context, unsigned char *frame_data,
-				  const unsigned char *source, const unsigned char *destination)
+				  size_t frame_length, const unsigned char *source,
+				  const unsigned char *destination)
 {
 	const struct traffic_class_config *lldp_config = thread_context->conf;
 	struct reference_meta_data *meta;
 	size_t payload_offset;
 	struct ethhdr *eth;
+
+	/* Initialize to zero */
+	memset(frame_data, '\0', frame_length);
 
 	/*
 	 * LldpFrame:
@@ -76,179 +80,6 @@ static void lldp_initialize_frame(struct thread_context *thread_context, unsigne
 	       lldp_config->payload_pattern_length);
 
 	/* Padding: '\0' */
-}
-
-static void lldp_initialize_frames(struct thread_context *thread_context, unsigned char *frame_data,
-				   size_t num_frames, const unsigned char *source,
-				   const unsigned char *destination)
-{
-	size_t i;
-
-	for (i = 0; i < num_frames; i++)
-		lldp_initialize_frame(thread_context, frame_idx(frame_data, i), source,
-				      destination);
-}
-
-static int lldp_send_messages(struct thread_context *thread_context, int socket_fd,
-			      struct sockaddr_ll *destination, unsigned char *frame_data,
-			      size_t num_frames)
-{
-	const struct traffic_class_config *lldp_config = thread_context->conf;
-	struct packet_send_request send_req = {
-		.traffic_class = thread_context->traffic_class,
-		.socket_fd = socket_fd,
-		.destination = destination,
-		.frame_data = frame_data,
-		.num_frames = num_frames,
-		.frame_length = lldp_config->frame_length,
-		.duration = 0,
-		.tx_time_offset = 0,
-		.meta_data_offset = thread_context->meta_data_offset,
-		.mirror_enabled = lldp_config->rx_mirror_enabled,
-		.tx_time_enabled = false,
-	};
-
-	return packet_send_messages(thread_context->packet_context, &send_req);
-}
-
-static int lldp_send_frames(struct thread_context *thread_context, unsigned char *frame_data,
-			    size_t num_frames, int socket_fd, struct sockaddr_ll *destination)
-{
-	const struct traffic_class_config *lldp_config = thread_context->conf;
-	int len, i;
-
-	/* Adjust meta data */
-	set_mirror_tx_timestamp(lldp_config, frame_data, lldp_config->frame_length, num_frames,
-				thread_context->meta_data_offset);
-
-	/* Send them */
-	len = lldp_send_messages(thread_context, socket_fd, destination, frame_data, num_frames);
-
-	for (i = 0; i < len; i++) {
-		uint64_t sequence_counter;
-
-		sequence_counter = get_sequence_counter(frame_data + i * lldp_config->frame_length,
-							thread_context->meta_data_offset,
-							lldp_config->num_frames_per_cycle);
-
-		stat_frame_sent(LLDP_FRAME_TYPE, sequence_counter);
-	}
-
-	return len;
-}
-
-static int lldp_gen_and_send_frames(struct thread_context *thread_context, int socket_fd,
-				    struct sockaddr_ll *destination,
-				    uint64_t sequence_counter_begin)
-{
-	const struct traffic_class_config *lldp_config = thread_context->conf;
-	struct reference_meta_data *meta;
-	struct timespec tx_time = {};
-	struct ethhdr *eth;
-	int len, i;
-
-	app_clock_get(&tx_time);
-
-	/* Adjust meta data */
-	for (i = 0; i < lldp_config->num_frames_per_cycle; i++) {
-		meta = (struct reference_meta_data *)(frame_idx(thread_context->tx_frame_data, i) +
-						      sizeof(*eth));
-		sequence_counter_to_meta_data(meta, sequence_counter_begin + i,
-					      lldp_config->num_frames_per_cycle);
-
-		tx_timestamp_to_meta_data(meta, ts_to_ns(&tx_time));
-	}
-
-	/* Send them */
-	len = lldp_send_messages(thread_context, socket_fd, destination,
-				 thread_context->tx_frame_data, lldp_config->num_frames_per_cycle);
-
-	if (len > 0)
-		stat_frames_sent_batch(LLDP_FRAME_TYPE, sequence_counter_begin, len);
-
-	return len;
-}
-
-static void *lldp_tx_thread_routine(void *data)
-{
-	struct thread_context *thread_context = data;
-	const struct traffic_class_config *lldp_config = thread_context->conf;
-	size_t received_frames_length = MAX_FRAME_SIZE * lldp_config->num_frames_per_cycle;
-	unsigned char *received_frames = thread_context->rx_frame_data;
-	const bool mirror_enabled = lldp_config->rx_mirror_enabled;
-	struct sockaddr_ll destination;
-	unsigned char source[ETH_ALEN];
-	uint64_t sequence_counter = 0;
-	unsigned int if_index;
-	int ret, socket_fd;
-
-	socket_fd = thread_context->socket_fd;
-
-	ret = get_interface_mac_address(lldp_config->interface, source, ETH_ALEN);
-	if (ret < 0) {
-		log_message(LOG_LEVEL_ERROR, "LldpTx: Failed to get Source MAC address!\n");
-		return NULL;
-	}
-
-	if_index = if_nametoindex(lldp_config->interface);
-	if (!if_index) {
-		log_message(LOG_LEVEL_ERROR, "LldpTx: if_nametoindex() failed!\n");
-		return NULL;
-	}
-
-	memset(&destination, '\0', sizeof(destination));
-	destination.sll_family = PF_PACKET;
-	destination.sll_ifindex = if_index;
-	destination.sll_halen = ETH_ALEN;
-	memcpy(destination.sll_addr, lldp_config->l2_destination, ETH_ALEN);
-
-	lldp_initialize_frames(thread_context, thread_context->tx_frame_data,
-			       lldp_config->num_frames_per_cycle, source,
-			       lldp_config->l2_destination);
-
-	while (!thread_context->stop) {
-		size_t num_frames;
-
-		ret = tc_wait_for_tx_burst(thread_context, &num_frames);
-
-		/* In case of shutdown a signal may be missing. */
-		if (ret == ETIMEDOUT)
-			continue;
-
-		/*
-		 * Send LldpFrames, two possibilites:
-		 *  a) Generate it, or
-		 *  b) Use received ones if mirror enabled
-		 */
-		if (!mirror_enabled) {
-			if (num_frames) {
-				lldp_gen_and_send_frames(thread_context, socket_fd, &destination,
-							 sequence_counter);
-				sequence_counter += num_frames;
-			}
-		} else {
-			size_t len;
-
-			ring_buffer_fetch(thread_context->mirror_buffer, received_frames,
-					  received_frames_length, &len);
-
-			/* Len should be a multiple of frame size */
-			num_frames = len / lldp_config->frame_length;
-			lldp_send_frames(thread_context, received_frames, num_frames, socket_fd,
-					 &destination);
-
-			pthread_mutex_lock(&thread_context->data_mutex);
-			thread_context->num_frames_available = 0;
-			pthread_mutex_unlock(&thread_context->data_mutex);
-		}
-
-		tc_signal_next(thread_context);
-
-		if (thread_context->is_last)
-			stat_update();
-	}
-
-	return NULL;
 }
 
 static int lldp_rx_frame(void *data, unsigned char *frame_data, size_t len)
@@ -315,162 +146,39 @@ static int lldp_rx_frame(void *data, unsigned char *frame_data, size_t len)
 	/* Store the new frame. */
 	ring_buffer_add(thread_context->mirror_buffer, frame_data, len);
 
-	pthread_mutex_lock(&thread_context->data_mutex);
-	thread_context->num_frames_available++;
-	pthread_mutex_unlock(&thread_context->data_mutex);
-
 	return 0;
 }
 
-static void *lldp_rx_thread_routine(void *data)
+int lldp_threads_create(struct thread_context *ctx)
 {
-	struct thread_context *thread_context = data;
-	const struct traffic_class_config *lldp_config = thread_context->conf;
-	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
-	struct timespec wakeup_time;
-	int socket_fd, ret;
-
-	socket_fd = thread_context->socket_fd;
-
-	ret = get_interface_mac_address(lldp_config->interface, thread_context->source, ETH_ALEN);
-	if (ret < 0) {
-		log_message(LOG_LEVEL_ERROR, "LldpRx: Failed to get Source MAC address!\n");
-		return NULL;
-	}
-
-	ret = get_thread_start_time(app_config.application_rx_base_offset_ns, &wakeup_time);
-	if (ret) {
-		log_message(LOG_LEVEL_ERROR, "LldpRx: Failed to calculate thread start time: %s!\n",
-			    strerror(errno));
-		return NULL;
-	}
-
-	while (!thread_context->stop) {
-		struct packet_receive_request recv_req = {
-			.traffic_class = thread_context->traffic_class,
-			.socket_fd = socket_fd,
-			.receive_function = lldp_rx_frame,
-			.data = thread_context,
-		};
-
-		/* Wait until next period. */
-		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
-		if (ret)
-			return NULL;
-
-		/* Receive Lldp frames. */
-		packet_receive_messages(thread_context->packet_context, &recv_req);
-	}
-
-	return NULL;
-}
-
-int lldp_threads_create(struct thread_context *thread_context)
-{
-	struct traffic_class_config *lldp_config;
+	struct traffic_class_config *conf;
 	int ret;
 
 	if (!config_is_tc_active(LLDP_FRAME_TYPE))
-		goto out;
+		return 0;
 
-	thread_context->conf = lldp_config = &app_config.classes[LLDP_FRAME_TYPE];
-	thread_context->frame_type = LLDP_FRAME_TYPE;
-	thread_context->traffic_class = stat_frame_type_to_string(LLDP_FRAME_TYPE);
+	ctx->conf = conf = &app_config.classes[LLDP_FRAME_TYPE];
+	ctx->frame_type = LLDP_FRAME_TYPE;
+	ctx->traffic_class = stat_frame_type_to_string(LLDP_FRAME_TYPE);
+	ctx->frame_id = 0;
 
-	thread_context->socket_fd = create_lldp_socket();
-	if (thread_context->socket_fd < 0) {
-		fprintf(stderr, "Failed to create LldpSocket!\n");
-		ret = -errno;
-		goto err;
+	ctx->desc = calloc(1, sizeof(*ctx->desc));
+	if (!ctx->desc) {
+		fprintf(stderr, "Failed to allocate %s TC description!\n", ctx->traffic_class);
+		return -ENOMEM;
 	}
 
-	init_mutex(&thread_context->data_mutex);
-	init_condition_variable(&thread_context->data_cond_var);
+	ctx->desc->tx_model = TC_TX_BURST;
+	ctx->desc->ops.initialize_frame = lldp_initialize_frame;
+	ctx->desc->ops.receive_frame = lldp_rx_frame;
+	ctx->desc->ops.create_socket = create_lldp_socket;
+	ctx->desc->ops.tx_thread = tc_tx_thread;
+	ctx->desc->ops.rx_thread = tc_rx_thread;
 
-	thread_context->packet_context = packet_init(lldp_config->num_frames_per_cycle);
-	if (!thread_context->packet_context) {
-		fprintf(stderr, "Failed to allocate Lldp packet context!\n");
-		ret = -ENOMEM;
-		goto err_packet;
-	}
+	ret = tc_threads_create(ctx);
+	if (ret)
+		free(ctx->desc);
 
-	thread_context->tx_frame_data = calloc(lldp_config->num_frames_per_cycle, MAX_FRAME_SIZE);
-	if (!thread_context->tx_frame_data) {
-		fprintf(stderr, "Failed to allocate LldpTxFrameData!\n");
-		ret = -ENOMEM;
-		goto err_tx;
-	}
-
-	thread_context->rx_frame_data = calloc(lldp_config->num_frames_per_cycle, MAX_FRAME_SIZE);
-	if (!thread_context->rx_frame_data) {
-		fprintf(stderr, "Failed to allocate LldpRxFrameData!\n");
-		ret = -ENOMEM;
-		goto err_rx;
-	}
-
-	if (lldp_config->rx_mirror_enabled) {
-		/* Per period the expectation is: LldpNumFramesPerCycle * MAX_FRAME */
-		thread_context->mirror_buffer =
-			ring_buffer_allocate(MAX_FRAME_SIZE * lldp_config->num_frames_per_cycle);
-		if (!thread_context->mirror_buffer) {
-			fprintf(stderr, "Failed to allocate Lldp Mirror RingBuffer!\n");
-			ret = -ENOMEM;
-			goto err_buffer;
-		}
-	}
-
-	thread_context->meta_data_offset =
-		get_meta_data_offset(LLDP_FRAME_TYPE, SECURITY_MODE_NONE);
-
-	ret = create_rt_thread(&thread_context->tx_task_id, lldp_config->tx_thread_priority,
-			       lldp_config->tx_thread_cpu, lldp_tx_thread_routine, thread_context,
-			       "LldpTxThread");
-	if (ret) {
-		fprintf(stderr, "Failed to create Lldp Tx Thread!\n");
-		goto err_thread;
-	}
-
-	if (!lldp_config->rx_mirror_enabled) {
-		ret = create_rt_thread(&thread_context->tx_gen_task_id,
-				       lldp_config->tx_thread_priority, lldp_config->tx_thread_cpu,
-				       tc_tx_gen_thread, thread_context, "LldpTxGenThread");
-		if (ret) {
-			fprintf(stderr, "Failed to create Lldp TxGen Thread!\n");
-			goto err_thread_txgen;
-		}
-	}
-
-	ret = create_rt_thread(&thread_context->rx_task_id, lldp_config->rx_thread_priority,
-			       lldp_config->rx_thread_cpu, lldp_rx_thread_routine, thread_context,
-			       "LldpRxThread");
-	if (ret) {
-		fprintf(stderr, "Failed to create Lldp Rx Thread!\n");
-		goto err_thread_rx;
-	}
-
-out:
-	ret = 0;
-
-	return ret;
-
-err_thread_rx:
-	thread_context->stop = 1;
-	if (thread_context->tx_gen_task_id)
-		pthread_join(thread_context->tx_gen_task_id, NULL);
-err_thread_txgen:
-	thread_context->stop = 1;
-	pthread_join(thread_context->tx_task_id, NULL);
-err_thread:
-	ring_buffer_free(thread_context->mirror_buffer);
-err_buffer:
-	free(thread_context->rx_frame_data);
-err_rx:
-	free(thread_context->tx_frame_data);
-err_tx:
-	packet_free(thread_context->packet_context);
-err_packet:
-	close(thread_context->socket_fd);
-err:
 	return ret;
 }
 
