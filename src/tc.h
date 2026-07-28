@@ -15,6 +15,12 @@ enum tc_tx_model {
 	TC_TX_STANDALONE, /* L2 */
 };
 
+enum tc_tx_wait_result {
+	TC_TX_WAIT_SEND,  /* Cycle triggered, send frames */
+	TC_TX_WAIT_STOP,  /* Signal missing, check stop */
+	TC_TX_WAIT_ERROR, /* Fatal, stop thread */
+};
+
 struct thread_context;
 
 struct traffic_class_ops {

@@ -94,6 +94,36 @@ void tc_signal_next(struct thread_context *ctx)
 	pthread_mutex_unlock(&ctx->next->data_mutex);
 }
 
+static enum tc_tx_wait_result tc_wait_for_tx_cycle(struct thread_context *ctx,
+						   struct timespec *wakeup_time, size_t *num_frames)
+{
+	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
+	const struct traffic_class_config *conf = ctx->conf;
+	int ret;
+
+	/*
+	 * Burst traffic classes are triggered by the previous traffic class just like the
+	 * cyclic ones. However, frames are only transmitted in cycles for which the Tx
+	 * generation thread marked them as available.
+	 */
+	if (ctx->desc->tx_model == TC_TX_BURST) {
+		ret = tc_wait_for_tx_burst(ctx, num_frames);
+		return ret == ETIMEDOUT ? TC_TX_WAIT_STOP : TC_TX_WAIT_SEND;
+	}
+
+	*num_frames = conf->num_frames_per_cycle;
+
+	if (!ctx->is_first) {
+		/* In case of shutdown a signal may be missing. */
+		ret = tc_wait_for_tx(ctx);
+		return ret == ETIMEDOUT ? TC_TX_WAIT_STOP : TC_TX_WAIT_SEND;
+	}
+
+	ret = tc_sleep_until(ctx, wakeup_time, cycle_time_ns);
+
+	return ret ? TC_TX_WAIT_ERROR : TC_TX_WAIT_SEND;
+}
+
 void *tc_tx_gen_thread(void *data)
 {
 	struct thread_context *ctx = data;
@@ -283,7 +313,6 @@ void *tc_tx_thread(void *data)
 	struct thread_context *ctx = data;
 	const struct traffic_class_config *conf = ctx->conf;
 	size_t received_frames_length = MAX_FRAME_SIZE * conf->num_frames_per_cycle;
-	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	struct security_context *security_context = ctx->tx_security_context;
 	unsigned char *received_frames = ctx->rx_frame_data;
 	const bool mirror_enabled = conf->rx_mirror_enabled;
@@ -341,18 +370,14 @@ void *tc_tx_thread(void *data)
 	}
 
 	while (!ctx->stop) {
-		if (!ctx->is_first) {
-			ret = tc_wait_for_tx(ctx);
+		enum tc_tx_wait_result wait;
+		size_t num_frames;
 
-			/* In case of shutdown a signal may be missing. */
-			if (ret == ETIMEDOUT)
-				continue;
-		} else {
-			/* Wait until next period */
-			ret = tc_sleep_until(ctx, &wakeup_time, cycle_time_ns);
-			if (ret)
-				return NULL;
-		}
+		wait = tc_wait_for_tx_cycle(ctx, &wakeup_time, &num_frames);
+		if (wait == TC_TX_WAIT_STOP)
+			continue;
+		if (wait == TC_TX_WAIT_ERROR)
+			return NULL;
 
 		workload_check_finished(ctx);
 
@@ -362,12 +387,14 @@ void *tc_tx_thread(void *data)
 		 *  b) Use received ones if mirror enabled
 		 */
 		if (!mirror_enabled) {
-			tc_gen_and_send_frames(ctx, socket_fd, &destination, sequence_counter,
-					       duration);
+			if (num_frames) {
+				tc_gen_and_send_frames(ctx, socket_fd, &destination,
+						       sequence_counter, duration);
 
-			sequence_counter += conf->num_frames_per_cycle;
+				sequence_counter += conf->num_frames_per_cycle;
+			}
 		} else {
-			size_t len, num_frames;
+			size_t len;
 
 			ring_buffer_fetch(ctx->mirror_buffer, received_frames,
 					  received_frames_length, &len);
@@ -391,10 +418,8 @@ void *tc_xdp_tx_thread(void *data)
 {
 	struct thread_context *ctx = data;
 	const struct traffic_class_config *conf = ctx->conf;
-	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	struct security_context *security_context = ctx->tx_security_context;
 	uint32_t frame_number = XSK_RING_PROD__DEFAULT_NUM_DESCS;
-	const size_t num_frames = conf->num_frames_per_cycle;
 	const bool mirror_enabled = conf->rx_mirror_enabled;
 	unsigned char source[ETH_ALEN];
 	uint64_t sequence_counter = 0;
@@ -445,18 +470,14 @@ void *tc_xdp_tx_thread(void *data)
 	}
 
 	while (!ctx->stop) {
-		if (!ctx->is_first) {
-			ret = tc_wait_for_tx(ctx);
+		enum tc_tx_wait_result wait;
+		size_t num_frames;
 
-			/* In case of shutdown a signal may be missing. */
-			if (ret == ETIMEDOUT)
-				continue;
-		} else {
-			/* Wait until next period */
-			ret = tc_sleep_until(ctx, &wakeup_time, cycle_time_ns);
-			if (ret)
-				return NULL;
-		}
+		wait = tc_wait_for_tx_cycle(ctx, &wakeup_time, &num_frames);
+		if (wait == TC_TX_WAIT_STOP)
+			continue;
+		if (wait == TC_TX_WAIT_ERROR)
+			return NULL;
 
 		workload_check_finished(ctx);
 
@@ -466,9 +487,11 @@ void *tc_xdp_tx_thread(void *data)
 		 *  b) Use received ones if mirror enabled
 		 */
 		if (!mirror_enabled) {
-			tc_gen_and_send_xdp_frames(ctx, xsk, sequence_counter, duration,
-						   &frame_number);
-			sequence_counter += num_frames;
+			if (num_frames) {
+				tc_gen_and_send_xdp_frames(ctx, xsk, sequence_counter, duration,
+							   &frame_number);
+				sequence_counter += num_frames;
+			}
 		} else {
 			unsigned int received;
 
@@ -714,14 +737,24 @@ int tc_threads_create(struct thread_context *ctx)
 			       ctx->desc->ops.tx_thread, ctx, "%sTxThread", ctx->traffic_class);
 	if (ret) {
 		fprintf(stderr, "Failed to create %s Tx thread!\n", ctx->traffic_class);
-		goto err_thread_create1;
+		goto err_thread_tx;
+	}
+
+	if (ctx->desc->tx_model == TC_TX_BURST && !conf->rx_mirror_enabled) {
+		ret = create_rt_thread(&ctx->tx_gen_task_id, conf->tx_thread_priority,
+				       conf->tx_thread_cpu, tc_tx_gen_thread, ctx, "%sTxGenThread",
+				       ctx->traffic_class);
+		if (ret) {
+			fprintf(stderr, "Failed to create %s TxGen Thread!\n", ctx->traffic_class);
+			goto err_thread_txgen;
+		}
 	}
 
 	ret = create_rt_thread(&ctx->rx_task_id, conf->rx_thread_priority, conf->rx_thread_cpu,
 			       ctx->desc->ops.rx_thread, ctx, "%sRxThread", ctx->traffic_class);
 	if (ret) {
 		fprintf(stderr, "Failed to create %s Rx thread!\n", ctx->traffic_class);
-		goto err_thread_create2;
+		goto err_thread_rx;
 	}
 
 	/* Create workload thread for execution after network RX */
@@ -736,10 +769,14 @@ int tc_threads_create(struct thread_context *ctx)
 err_thread_wl:
 	ctx->stop = 1;
 	pthread_join(ctx->rx_task_id, NULL);
-err_thread_create2:
+err_thread_rx:
+	ctx->stop = 1;
+	if (ctx->tx_gen_task_id)
+		pthread_join(ctx->tx_gen_task_id, NULL);
+err_thread_txgen:
 	ctx->stop = 1;
 	pthread_join(ctx->tx_task_id, NULL);
-err_thread_create1:
+err_thread_tx:
 	security_exit(ctx->rx_security_context);
 err_rx_sec:
 	security_exit(ctx->tx_security_context);
