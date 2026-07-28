@@ -16,8 +16,9 @@
 #include "utils.h"
 #include "xdp.h"
 
-void initialize_ethercat_frame(unsigned char *frame_data, size_t frame_length,
-			       const unsigned char *source, const unsigned char *destination)
+void initialize_ethercat_frame(struct thread_context __unused *ctx, unsigned char *frame_data,
+			       size_t frame_length, const unsigned char *source,
+			       const unsigned char *destination)
 {
 	__u8 ethercat_header[ETHERCAT_HEADER_LEN] = {0x16, 0x10};
 	__u8 ethercat_nop_cmd[20] = {

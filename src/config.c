@@ -927,6 +927,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_thread_priority = 80;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* TSN Low */
 	conf = &app_config.classes[TSN_LOW_FRAME_TYPE];
@@ -953,6 +954,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->rx_thread_cpu = 1;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* Real Time Cyclic (RTC) */
 	conf = &app_config.classes[RTC_FRAME_TYPE];
@@ -980,6 +982,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->workload_thread_priority = 80;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* Real Time Acyclic (RTA) */
 	conf = &app_config.classes[RTA_FRAME_TYPE];
@@ -1006,6 +1009,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->rx_thread_cpu = 3;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_destination, ETH_ALEN);
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* Discovery and Configuration Protocol (DCP) */
 	conf = &app_config.classes[DCP_FRAME_TYPE];
@@ -1030,6 +1034,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->rx_thread_cpu = 4;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_dcp_identify, ETH_ALEN);
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* Link Layer Discovery Protocol (LLDP) */
 	conf = &app_config.classes[LLDP_FRAME_TYPE];
@@ -1052,6 +1057,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->rx_thread_cpu = 5;
 	strncpy(conf->interface, "enp3s0", sizeof(conf->interface) - 1);
 	memcpy((void *)conf->l2_destination, default_lldp_destination, ETH_ALEN);
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* User Datagram Protocol (UDP) High */
 	conf = &app_config.classes[UDP_HIGH_FRAME_TYPE];
@@ -1082,6 +1088,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->l3_source = strdup(default_udp_low_source);
 	if (!conf->l3_source)
 		goto out;
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* User Datagram Protocol (UDP) Low */
 	conf = &app_config.classes[UDP_LOW_FRAME_TYPE];
@@ -1112,6 +1119,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->l3_source = strdup(default_udp_low_source);
 	if (!conf->l3_source)
 		goto out;
+	conf->protocol_type = GENERICL2_PROTOCOL_TYPE;
 
 	/* Generic L2 */
 	conf = &app_config.classes[GENERICL2_FRAME_TYPE];

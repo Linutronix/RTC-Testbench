@@ -4,12 +4,15 @@
  * Author Haithem Jebali <h.jebali@acontis.com>
  */
 
+struct thread_context;
+
 /*
  * This function initializes an EtherCAT Ethernet frame. The Ethernet header, EtherCAT header and
- * payload is initialized. The sequenceCounter is set to zero.
+ * payload is initialized.
  */
-void initialize_ethercat_frame(unsigned char *frame_data, size_t frame_length,
-			       const unsigned char *source, const unsigned char *destination);
+void initialize_ethercat_frame(struct thread_context *ctx, unsigned char *frame_data,
+			       size_t frame_length, const unsigned char *source,
+			       const unsigned char *destination);
 
 /*
  * This function receives an EtherCAT frame. It performs all required tests such as checking

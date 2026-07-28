@@ -113,7 +113,8 @@ static enum tc_tx_wait_result tc_wait_for_tx_cycle(struct thread_context *ctx,
 
 	*num_frames = conf->num_frames_per_cycle;
 
-	if (!ctx->is_first) {
+	/* Standalone traffic classes just use clock_nanosleep() below. */
+	if (ctx->desc->tx_model != TC_TX_STANDALONE && !ctx->is_first) {
 		/* In case of shutdown a signal may be missing. */
 		ret = tc_wait_for_tx(ctx);
 		return ret == ETIMEDOUT ? TC_TX_WAIT_STOP : TC_TX_WAIT_SEND;
@@ -259,7 +260,7 @@ static int tc_gen_and_send_frames(struct thread_context *ctx, int socket_fd,
 		frame_config.tx_timestamp = ts_to_ns(&tx_time);
 		frame_config.meta_data_offset = ctx->meta_data_offset;
 		frame_config.frame_type = ctx->frame_type;
-		frame_config.protocol_type = GENERICL2_PROTOCOL_TYPE;
+		frame_config.protocol_type = conf->protocol_type;
 
 		err = prepare_frame_for_tx(&frame_config);
 		if (err)
@@ -302,7 +303,7 @@ static void tc_gen_and_send_xdp_frames(struct thread_context *ctx, struct xdp_so
 		.meta_data_offset = ctx->meta_data_offset,
 		.frame_type = ctx->frame_type,
 		.tx_time = conf->tx_time_enabled ? &tx_time : NULL,
-		.protocol_type = GENERICL2_PROTOCOL_TYPE,
+		.protocol_type = conf->protocol_type,
 	};
 
 	xdp_gen_and_send_frames(xsk, &xdp);
@@ -399,7 +400,7 @@ void *tc_tx_thread(void *data)
 
 		tc_signal_next(ctx);
 
-		if (ctx->is_last)
+		if (ctx->is_last || ctx->desc->tx_model == TC_TX_STANDALONE)
 			stat_update();
 	}
 
@@ -505,7 +506,7 @@ void *tc_xdp_tx_thread(void *data)
 
 		tc_signal_next(ctx);
 
-		if (ctx->is_last)
+		if (ctx->is_last || ctx->desc->tx_model == TC_TX_STANDALONE)
 			stat_update();
 	}
 
