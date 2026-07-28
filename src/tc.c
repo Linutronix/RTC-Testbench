@@ -834,11 +834,4 @@ void tc_threads_free(struct thread_context *ctx)
 	workload_thread_free(ctx);
 
 	free(ctx->desc);
-
-	/*
-	 * FIXME: For some reason, l2 has a different allocation scheme than all other traffic
-	 * traffic classes. Kein Kommentar.
-	 */
-	if (ctx->frame_type == GENERICL2_FRAME_TYPE)
-		free(ctx);
 }

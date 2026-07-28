@@ -641,15 +641,10 @@ static void *generic_l2_xdp_rx_thread_routine(void *data)
 	return NULL;
 }
 
-struct thread_context *generic_l2_threads_create(void)
+int generic_l2_threads_create(struct thread_context *thread_context)
 {
 	struct traffic_class_config *l2_config;
-	struct thread_context *thread_context;
 	int ret;
-
-	thread_context = calloc(1, sizeof(*thread_context));
-	if (!thread_context)
-		return NULL;
 
 	if (!config_is_tc_active(GENERICL2_FRAME_TYPE))
 		goto out;
@@ -663,6 +658,7 @@ struct thread_context *generic_l2_threads_create(void)
 		thread_context->packet_context = packet_init(l2_config->num_frames_per_cycle);
 		if (!thread_context->packet_context) {
 			fprintf(stderr, "Failed to allocate GenericL2 packet context!\n");
+			ret = -ENOMEM;
 			goto err_packet;
 		}
 
@@ -670,6 +666,7 @@ struct thread_context *generic_l2_threads_create(void)
 			calloc(l2_config->num_frames_per_cycle, MAX_FRAME_SIZE);
 		if (!thread_context->tx_frame_data) {
 			fprintf(stderr, "Failed to allocate GenericL2TxFrameData\n");
+			ret = -ENOMEM;
 			goto err_tx;
 		}
 
@@ -677,6 +674,7 @@ struct thread_context *generic_l2_threads_create(void)
 			calloc(l2_config->num_frames_per_cycle, MAX_FRAME_SIZE);
 		if (!thread_context->rx_frame_data) {
 			fprintf(stderr, "Failed to allocate GenericL2RxFrameData\n");
+			ret = -ENOMEM;
 			goto err_rx;
 		}
 	}
@@ -691,6 +689,7 @@ struct thread_context *generic_l2_threads_create(void)
 			l2_config->tx_time_enabled, l2_config->tx_hwtstamp_enabled);
 		if (!thread_context->xsk) {
 			fprintf(stderr, "Failed to create GenericL2 Xdp socket!\n");
+			ret = -ENOMEM;
 			goto err_socket;
 		}
 	} else {
@@ -703,6 +702,7 @@ struct thread_context *generic_l2_threads_create(void)
 
 		if (thread_context->socket_fd < 0) {
 			fprintf(stderr, "Failed to create GenericL2 Socket!\n");
+			ret = -errno;
 			goto err_socket;
 		}
 	}
@@ -716,6 +716,7 @@ struct thread_context *generic_l2_threads_create(void)
 			ring_buffer_allocate(MAX_FRAME_SIZE * l2_config->num_frames_per_cycle);
 		if (!thread_context->mirror_buffer) {
 			fprintf(stderr, "Failed to allocate GenericL2 Mirror RingBuffer!\n");
+			ret = -ENOMEM;
 			goto err_buffer;
 		}
 	}
@@ -751,7 +752,7 @@ struct thread_context *generic_l2_threads_create(void)
 	}
 
 out:
-	return thread_context;
+	return 0;
 
 err_thread_wl:
 	thread_context->stop = 1;
@@ -774,8 +775,7 @@ err_rx:
 err_tx:
 	packet_free(thread_context->packet_context);
 err_packet:
-	free(thread_context);
-	return NULL;
+	return ret;
 }
 
 void generic_l2_threads_free(struct thread_context *thread_context)

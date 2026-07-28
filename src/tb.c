@@ -213,8 +213,13 @@ void tb_startup(int argc, char *argv[], struct tb_startup_mode *mode)
 		exit(EXIT_FAILURE);
 	}
 
-	g2_threads = generic_l2_threads_create();
+	g2_threads = calloc(1, sizeof(struct thread_context));
 	if (!g2_threads) {
+		fprintf(stderr, "Failed to allocate Generic L2 Threads!\n");
+		exit(EXIT_FAILURE);
+	}
+	ret = generic_l2_threads_create(g2_threads);
+	if (ret) {
 		fprintf(stderr, "Failed to create and start Generic L2 Threads!\n");
 		exit(EXIT_FAILURE);
 	}
@@ -314,6 +319,7 @@ void tb_startup(int argc, char *argv[], struct tb_startup_mode *mode)
 	stat_free();
 	log_free();
 	config_free();
+	free(g2_threads);
 	free(threads);
 
 	restore_cpu_latency();
