@@ -18,6 +18,7 @@
 #include "net_def.h"
 #include "security.h"
 #include "stat.h"
+#include "thread.h"
 #include "utils.h"
 
 #include "dcp_thread.h"

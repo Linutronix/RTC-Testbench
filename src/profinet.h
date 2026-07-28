@@ -3,6 +3,9 @@
  * Copyright (C) 2020-2026 Linutronix GmbH
  */
 
+#ifndef PROFINET_H
+#define PROFINET_H
+
 #include "security.h"
 
 /*
@@ -23,3 +26,5 @@ void initialize_profinet_frame(enum security_mode mode, unsigned char *frame_dat
  * code.
  */
 int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len);
+
+#endif /* PROFINET_H */

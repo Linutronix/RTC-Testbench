@@ -15,6 +15,7 @@
 #include "profinet.h"
 #include "rta_thread.h"
 #include "tc.h"
+#include "thread.h"
 
 static void rta_initialize_frame(struct thread_context *ctx, unsigned char *frame_data,
 				 size_t frame_length, const unsigned char *source,
