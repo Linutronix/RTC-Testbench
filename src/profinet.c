@@ -358,12 +358,5 @@ int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len)
 				len + sizeof(struct vlan_header));
 	}
 
-	/* RTA is a burst traffic class and needs to update num_frames_available */
-	if (thread_context->frame_type == RTA_FRAME_TYPE) {
-		pthread_mutex_lock(&thread_context->data_mutex);
-		thread_context->num_frames_available++;
-		pthread_mutex_unlock(&thread_context->data_mutex);
-	}
-
 	return 0;
 }
