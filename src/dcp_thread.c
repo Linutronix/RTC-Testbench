@@ -30,18 +30,15 @@
 #include "tc.h"
 #include "utils.h"
 
-static void dcp_initialize_frames(struct thread_context *thread_context, unsigned char *frame_data,
-				  size_t num_frames, const unsigned char *source)
+static void dcp_initialize_frame(struct thread_context *thread_context, unsigned char *frame_data,
+				 size_t frame_length, const unsigned char *source,
+				 const unsigned char *destination)
 {
-	const struct traffic_class_config *dcp_config = thread_context->conf;
-	size_t i;
+	const struct traffic_class_config *conf = thread_context->conf;
 
-	for (i = 0; i < num_frames; ++i)
-		initialize_profinet_frame(
-			SECURITY_MODE_NONE, frame_idx(frame_data, i), MAX_FRAME_SIZE, source,
-			dcp_config->l2_destination, dcp_config->payload_pattern,
-			dcp_config->payload_pattern_length,
-			dcp_config->vid | dcp_config->pcp << VLAN_PCP_SHIFT, DCP_FRAMEID);
+	initialize_profinet_frame(SECURITY_MODE_NONE, frame_data, frame_length, source, destination,
+				  conf->payload_pattern, conf->payload_pattern_length,
+				  conf->vid | conf->pcp << VLAN_PCP_SHIFT, DCP_FRAMEID);
 }
 
 static void dcp_build_frame_from_rx(struct thread_context *thread_context,
@@ -81,160 +78,6 @@ static void dcp_build_frame_from_rx(struct thread_context *thread_context,
 
 	rt = (struct profinet_rt_header *)(new_frame + sizeof(*eth_new));
 	set_mirror_tx_timestamp_est(&rt->meta_data);
-}
-
-static int dcp_send_messages(struct thread_context *thread_context, int socket_fd,
-			     struct sockaddr_ll *destination, unsigned char *frame_data,
-			     size_t num_frames)
-{
-	const struct traffic_class_config *dcp_config = thread_context->conf;
-	struct packet_send_request send_req = {
-		.traffic_class = stat_frame_type_to_string(DCP_FRAME_TYPE),
-		.socket_fd = socket_fd,
-		.destination = destination,
-		.frame_data = frame_data,
-		.num_frames = num_frames,
-		.frame_length = dcp_config->frame_length,
-		.duration = 0,
-		.tx_time_offset = 0,
-		.meta_data_offset = thread_context->meta_data_offset,
-		.mirror_enabled = dcp_config->rx_mirror_enabled,
-		.tx_time_enabled = false,
-	};
-
-	return packet_send_messages(thread_context->packet_context, &send_req);
-}
-
-static int dcp_send_frames(struct thread_context *thread_context, unsigned char *frame_data,
-			   size_t num_frames, int socket_fd, struct sockaddr_ll *destination)
-{
-	const struct traffic_class_config *dcp_config = thread_context->conf;
-	int len, i;
-
-	/* Adjust meta data */
-	set_mirror_tx_timestamp(dcp_config, frame_data, dcp_config->frame_length, num_frames,
-				thread_context->meta_data_offset);
-
-	/* Send them */
-	len = dcp_send_messages(thread_context, socket_fd, destination, frame_data, num_frames);
-
-	for (i = 0; i < len; i++) {
-		uint64_t sequence_counter;
-
-		sequence_counter = get_sequence_counter(frame_data + i * dcp_config->frame_length,
-							thread_context->meta_data_offset,
-							dcp_config->num_frames_per_cycle);
-
-		stat_frame_sent(DCP_FRAME_TYPE, sequence_counter);
-	}
-
-	return len;
-}
-
-static void dcp_gen_and_send_frames(struct thread_context *thread_context, int socket_fd,
-				    struct sockaddr_ll *destination,
-				    uint64_t sequence_counter_begin)
-{
-	const struct traffic_class_config *dcp_config = thread_context->conf;
-	struct vlan_ethernet_header *eth;
-	struct profinet_rt_header *rt;
-	struct timespec tx_time = {};
-	int len, i;
-
-	app_clock_get(&tx_time);
-
-	/* Adjust meta data */
-	for (i = 0; i < dcp_config->num_frames_per_cycle; i++) {
-		rt = (struct profinet_rt_header *)(frame_idx(thread_context->tx_frame_data, i) +
-						   sizeof(*eth));
-		sequence_counter_to_meta_data(&rt->meta_data, sequence_counter_begin + i,
-					      dcp_config->num_frames_per_cycle);
-
-		tx_timestamp_to_meta_data(&rt->meta_data, ts_to_ns(&tx_time));
-	}
-
-	/* Send them */
-	len = dcp_send_messages(thread_context, socket_fd, destination,
-				thread_context->tx_frame_data, dcp_config->num_frames_per_cycle);
-
-	if (len > 0)
-		stat_frames_sent_batch(DCP_FRAME_TYPE, sequence_counter_begin, len);
-}
-
-static void *dcp_tx_thread_routine(void *data)
-{
-	struct thread_context *thread_context = data;
-	const struct traffic_class_config *dcp_config = thread_context->conf;
-	size_t received_frames_length = MAX_FRAME_SIZE * dcp_config->num_frames_per_cycle;
-	unsigned char *received_frames = thread_context->rx_frame_data;
-	const bool mirror_enabled = dcp_config->rx_mirror_enabled;
-	struct sockaddr_ll destination;
-	uint64_t sequence_counter = 0;
-	unsigned int if_index;
-	int socket_fd;
-
-	socket_fd = thread_context->socket_fd;
-
-	if_index = if_nametoindex(dcp_config->interface);
-	if (!if_index) {
-		log_message(LOG_LEVEL_ERROR, "DcpTx: if_nametoindex() failed!\n");
-		return NULL;
-	}
-
-	memset(&destination, '\0', sizeof(destination));
-	destination.sll_family = PF_PACKET;
-	destination.sll_ifindex = if_index;
-	destination.sll_halen = ETH_ALEN;
-	memcpy(destination.sll_addr, dcp_config->l2_destination, ETH_ALEN);
-
-	dcp_initialize_frames(thread_context, thread_context->tx_frame_data,
-			      dcp_config->num_frames_per_cycle, thread_context->source);
-
-	while (!thread_context->stop) {
-		size_t num_frames;
-		int ret;
-
-		ret = tc_wait_for_tx_burst(thread_context, &num_frames);
-
-		/* In case of shutdown a signal may be missing. */
-		if (ret == ETIMEDOUT)
-			continue;
-
-		/*
-		 * Send DcpFrames, two possibilites:
-		 *  a) Generate it, or
-		 *  b) Use received ones if mirror enabled
-		 */
-		if (!mirror_enabled) {
-			if (num_frames) {
-				dcp_gen_and_send_frames(thread_context, socket_fd, &destination,
-							sequence_counter);
-
-				sequence_counter += num_frames;
-			}
-		} else {
-			size_t len;
-
-			ring_buffer_fetch(thread_context->mirror_buffer, received_frames,
-					  received_frames_length, &len);
-
-			/* Len should be a multiple of frame size */
-			num_frames = len / dcp_config->frame_length;
-			dcp_send_frames(thread_context, received_frames, num_frames, socket_fd,
-					&destination);
-
-			pthread_mutex_lock(&thread_context->data_mutex);
-			thread_context->num_frames_available = 0;
-			pthread_mutex_unlock(&thread_context->data_mutex);
-		}
-
-		tc_signal_next(thread_context);
-
-		if (thread_context->is_last)
-			stat_update();
-	}
-
-	return NULL;
 }
 
 static int dcp_rx_frame(void *data, unsigned char *frame_data, size_t len)
@@ -302,160 +145,39 @@ static int dcp_rx_frame(void *data, unsigned char *frame_data, size_t len)
 	/* Store the new frame. */
 	ring_buffer_add(thread_context->mirror_buffer, new_frame, len + sizeof(struct vlan_header));
 
-	pthread_mutex_lock(&thread_context->data_mutex);
-	thread_context->num_frames_available++;
-	pthread_mutex_unlock(&thread_context->data_mutex);
-
 	return 0;
 }
 
-static void *dcp_rx_thread_routine(void *data)
+int dcp_threads_create(struct thread_context *ctx)
 {
-	struct thread_context *thread_context = data;
-	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
-	struct timespec wakeup_time;
-	int socket_fd, ret;
-
-	socket_fd = thread_context->socket_fd;
-
-	ret = get_thread_start_time(app_config.application_rx_base_offset_ns, &wakeup_time);
-	if (ret) {
-		log_message(LOG_LEVEL_ERROR, "DcpRx: Failed to calculate thread start time: %s!\n",
-			    strerror(errno));
-		return NULL;
-	}
-
-	while (!thread_context->stop) {
-		struct packet_receive_request recv_req = {
-			.traffic_class = thread_context->traffic_class,
-			.socket_fd = socket_fd,
-			.receive_function = dcp_rx_frame,
-			.data = thread_context,
-		};
-
-		/* Wait until next period. */
-		ret = tc_sleep_until(thread_context, &wakeup_time, cycle_time_ns);
-		if (ret)
-			return NULL;
-
-		/* Receive Dcp frames. */
-		packet_receive_messages(thread_context->packet_context, &recv_req);
-	}
-
-	return NULL;
-}
-
-int dcp_threads_create(struct thread_context *thread_context)
-{
-	struct traffic_class_config *dcp_config;
+	struct traffic_class_config *conf;
 	int ret;
 
 	if (!config_is_tc_active(DCP_FRAME_TYPE))
-		goto out;
+		return 0;
 
-	thread_context->conf = dcp_config = &app_config.classes[DCP_FRAME_TYPE];
-	thread_context->frame_type = DCP_FRAME_TYPE;
-	thread_context->traffic_class = stat_frame_type_to_string(DCP_FRAME_TYPE);
-	thread_context->frame_id = DCP_FRAMEID;
+	ctx->conf = conf = &app_config.classes[DCP_FRAME_TYPE];
+	ctx->frame_type = DCP_FRAME_TYPE;
+	ctx->traffic_class = stat_frame_type_to_string(DCP_FRAME_TYPE);
+	ctx->frame_id = DCP_FRAMEID;
 
-	thread_context->socket_fd = create_dcp_socket();
-	if (thread_context->socket_fd < 0) {
-		fprintf(stderr, "Failed to create DcpSocket!\n");
-		ret = -ENOMEM;
-		goto err;
+	ctx->desc = calloc(1, sizeof(*ctx->desc));
+	if (!ctx->desc) {
+		fprintf(stderr, "Failed to allocate %s TC description!\n", ctx->traffic_class);
+		return -ENOMEM;
 	}
 
-	init_mutex(&thread_context->data_mutex);
-	init_condition_variable(&thread_context->data_cond_var);
+	ctx->desc->tx_model = TC_TX_BURST;
+	ctx->desc->ops.initialize_frame = dcp_initialize_frame;
+	ctx->desc->ops.receive_frame = dcp_rx_frame;
+	ctx->desc->ops.create_socket = create_dcp_socket;
+	ctx->desc->ops.tx_thread = tc_tx_thread;
+	ctx->desc->ops.rx_thread = tc_rx_thread;
 
-	thread_context->packet_context = packet_init(dcp_config->num_frames_per_cycle);
-	if (!thread_context->packet_context) {
-		fprintf(stderr, "Failed to allocate Dcp packet context!\n");
-		ret = -ENOMEM;
-		goto err_packet;
-	}
+	ret = tc_threads_create(ctx);
+	if (ret)
+		free(ctx->desc);
 
-	thread_context->tx_frame_data = calloc(dcp_config->num_frames_per_cycle, MAX_FRAME_SIZE);
-	if (!thread_context->tx_frame_data) {
-		fprintf(stderr, "Failed to allocate DcpTxFrameData!\n");
-		ret = -ENOMEM;
-		goto err_tx;
-	}
-
-	thread_context->rx_frame_data = calloc(dcp_config->num_frames_per_cycle, MAX_FRAME_SIZE);
-	if (!thread_context->rx_frame_data) {
-		fprintf(stderr, "Failed to allocate DcpRxFrameData!\n");
-		ret = -ENOMEM;
-		goto err_rx;
-	}
-
-	ret = get_interface_mac_address(dcp_config->interface, thread_context->source,
-					sizeof(thread_context->source));
-	if (ret < 0) {
-		fprintf(stderr, "Failed to get Dcp Source MAC address!\n");
-		goto err_mac;
-	}
-
-	if (dcp_config->rx_mirror_enabled) {
-		/* Per period the expectation is: DcpNumFramesPerCycle * MAX_FRAME */
-		thread_context->mirror_buffer =
-			ring_buffer_allocate(MAX_FRAME_SIZE * dcp_config->num_frames_per_cycle);
-		if (!thread_context->mirror_buffer) {
-			fprintf(stderr, "Failed to allocate Dcp Mirror RingBuffer!\n");
-			ret = -ENOMEM;
-			goto err_mac;
-		}
-	}
-
-	thread_context->meta_data_offset = get_meta_data_offset(DCP_FRAME_TYPE, SECURITY_MODE_NONE);
-
-	ret = create_rt_thread(&thread_context->tx_task_id, dcp_config->tx_thread_priority,
-			       dcp_config->tx_thread_cpu, dcp_tx_thread_routine, thread_context,
-			       "DcpTxThread");
-	if (ret) {
-		fprintf(stderr, "Failed to create Dcp Tx Thread!\n");
-		goto err_thread;
-	}
-
-	if (!dcp_config->rx_mirror_enabled) {
-		ret = create_rt_thread(&thread_context->tx_gen_task_id,
-				       dcp_config->tx_thread_priority, dcp_config->tx_thread_cpu,
-				       tc_tx_gen_thread, thread_context, "DcpTxGenThread");
-		if (ret) {
-			fprintf(stderr, "Failed to create Dcp TxGen Thread!\n");
-			goto err_thread_txgen;
-		}
-	}
-
-	ret = create_rt_thread(&thread_context->rx_task_id, dcp_config->rx_thread_priority,
-			       dcp_config->rx_thread_cpu, dcp_rx_thread_routine, thread_context,
-			       "DcpRxThread");
-	if (ret) {
-		fprintf(stderr, "Failed to create Dcp Rx Thread!\n");
-		goto err_thread_rx;
-	}
-
-out:
-	return 0;
-
-err_thread_rx:
-	thread_context->stop = 1;
-	if (thread_context->tx_gen_task_id)
-		pthread_join(thread_context->tx_gen_task_id, NULL);
-err_thread_txgen:
-	thread_context->stop = 1;
-	pthread_join(thread_context->tx_task_id, NULL);
-err_thread:
-	ring_buffer_free(thread_context->mirror_buffer);
-err_mac:
-	free(thread_context->rx_frame_data);
-err_rx:
-	free(thread_context->tx_frame_data);
-err_tx:
-	packet_free(thread_context->packet_context);
-err_packet:
-	close(thread_context->socket_fd);
-err:
 	return ret;
 }
 

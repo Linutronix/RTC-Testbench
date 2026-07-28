@@ -317,7 +317,6 @@ void *tc_tx_thread(void *data)
 	unsigned char *received_frames = ctx->rx_frame_data;
 	const bool mirror_enabled = conf->rx_mirror_enabled;
 	struct sockaddr_ll destination;
-	unsigned char source[ETH_ALEN];
 	uint64_t sequence_counter = 0;
 	struct timespec wakeup_time;
 	unsigned int if_index;
@@ -326,13 +325,6 @@ void *tc_tx_thread(void *data)
 	uint64_t duration;
 
 	socket_fd = ctx->socket_fd;
-
-	ret = get_interface_mac_address(conf->interface, source, ETH_ALEN);
-	if (ret < 0) {
-		log_message(LOG_LEVEL_ERROR, "%sTx: Failed to get Source MAC address!\n",
-			    ctx->traffic_class);
-		return NULL;
-	}
 
 	ret = get_interface_link_speed(conf->interface, &link_speed);
 	if (ret) {
@@ -356,11 +348,11 @@ void *tc_tx_thread(void *data)
 
 	duration = tx_time_get_frame_duration(link_speed, conf->frame_length);
 
-	tc_initialize_frames(ctx, ctx->tx_frame_data, conf->num_frames_per_cycle, source,
+	tc_initialize_frames(ctx, ctx->tx_frame_data, conf->num_frames_per_cycle, ctx->source,
 			     conf->l2_destination);
 
 	prepare_openssl(security_context);
-	tc_initialize_frames(ctx, ctx->frame_copy, 1, source, conf->l2_destination);
+	tc_initialize_frames(ctx, ctx->frame_copy, 1, ctx->source, conf->l2_destination);
 
 	ret = get_thread_start_time(app_config.application_tx_base_offset_ns, &wakeup_time);
 	if (ret) {
@@ -421,7 +413,6 @@ void *tc_xdp_tx_thread(void *data)
 	struct security_context *security_context = ctx->tx_security_context;
 	uint32_t frame_number = XSK_RING_PROD__DEFAULT_NUM_DESCS;
 	const bool mirror_enabled = conf->rx_mirror_enabled;
-	unsigned char source[ETH_ALEN];
 	uint64_t sequence_counter = 0;
 	struct timespec wakeup_time;
 	unsigned char *frame_data;
@@ -434,13 +425,6 @@ void *tc_xdp_tx_thread(void *data)
 	xsk->tx_hwts.rtt = &round_trip_contexts[ctx->frame_type];
 	xsk->tx_hwts.frames_per_cycle = conf->num_frames_per_cycle;
 	xsk->tx_hwts.meta_data_offset = ctx->meta_data_offset;
-
-	ret = get_interface_mac_address(conf->interface, source, ETH_ALEN);
-	if (ret < 0) {
-		log_message(LOG_LEVEL_ERROR, "%sTx: Failed to get Source MAC address!\n",
-			    ctx->traffic_class);
-		return NULL;
-	}
 
 	ret = get_interface_link_speed(conf->interface, &link_speed);
 	if (ret) {
@@ -456,11 +440,11 @@ void *tc_xdp_tx_thread(void *data)
 					XDP_FRAME_SIZE * XSK_RING_PROD__DEFAULT_NUM_DESCS);
 
 	/* Initialize all Tx frames */
-	tc_initialize_frames(ctx, frame_data, XSK_RING_CONS__DEFAULT_NUM_DESCS, source,
+	tc_initialize_frames(ctx, frame_data, XSK_RING_CONS__DEFAULT_NUM_DESCS, ctx->source,
 			     conf->l2_destination);
 
 	prepare_openssl(security_context);
-	tc_initialize_frames(ctx, ctx->frame_copy, 1, source, conf->l2_destination);
+	tc_initialize_frames(ctx, ctx->frame_copy, 1, ctx->source, conf->l2_destination);
 
 	ret = get_thread_start_time(app_config.application_tx_base_offset_ns, &wakeup_time);
 	if (ret) {
@@ -660,6 +644,12 @@ int tc_threads_create(struct thread_context *ctx)
 		}
 	}
 
+	ret = get_interface_mac_address(conf->interface, ctx->source, sizeof(ctx->source));
+	if (ret) {
+		fprintf(stderr, "Failed to get %s Source MAC address!\n", ctx->traffic_class);
+		goto err_mac;
+	}
+
 	/* Initialize data structures for AE */
 	ctx->frame_copy = calloc(1, MAX_FRAME_SIZE);
 	if (!ctx->frame_copy) {
@@ -790,6 +780,7 @@ err_thread:
 err_socket:
 	free(ctx->frame_copy);
 err_payload:
+err_mac:
 	free(ctx->rx_frame_data);
 err_rx:
 	free(ctx->tx_frame_data);
