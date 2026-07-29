@@ -1,0 +1,60 @@
+---
+#
+# Copyright (C) 2026 Linutronix GmbH
+# Author Kurt Kanzenbach <kurt@linutronix.de>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Sample reference YAML configuration file for Intel Comet Lake platforms with
+# i225 NIC(s).
+#
+Application:
+  ApplicationClockId: CLOCK_TAI
+  # ApplicationBaseStartTimeNS: 0
+  ApplicationBaseCycleTimeNS: 1ms
+  ApplicationTxBaseOffsetNS: 800us
+  ApplicationRxBaseOffsetNS: 300us
+  ApplicationXdpProgram: xdp_kern_profinet_vid100.o
+RTC:
+  RtcEnabled: true
+  RtcXdpEnabled: true
+  RtcXdpSkbMode: false
+  RtcXdpZcMode: true
+  RtcXdpWakeupMode: true
+  RtcXdpBusyPollMode: true
+  RtcTxTimeStampEnabled: false
+  RtcVid: 100
+  RtcNumFramesPerCycle: 64
+  RtcPayloadPattern: |
+    RtcPayloadPattern
+  RtcFrameLength: 550
+  RtcRxQueue: 2
+  RtcTxQueue: 2
+  RtcSocketPriority: 5
+  RtcTxThreadPriority: 98
+  RtcRxThreadPriority: 98
+  RtcTxThreadCpu: 1
+  RtcRxThreadCpu: 1
+  RtcInterface: enp3s0
+  RtcDestination: a8:74:1d:62:74:a3
+LLDP:
+  LldpEnabled: true
+  LldpBurstPeriodNS: 5s
+  LldpNumFramesPerCycle: 1
+  LldpPayloadPattern: |
+    LldpPayloadPattern
+  LldpFrameLength: 200
+  LldpRxQueue: 3
+  LldpTxQueue: 3
+  LldpSocketPriority: 3
+  LldpTxThreadPriority: 52
+  LldpRxThreadPriority: 52
+  LldpTxThreadCpu: 1
+  LldpRxThreadCpu: 1
+  LldpInterface: enp3s0
+  LldpDestination: 01:80:c2:00:00:0e
+Log:
+  LogThreadPriority: 1
+  LogThreadCpu: 1
+  LogFile: /var/log/mirror_vid100.log
+  LogLevel: Info
