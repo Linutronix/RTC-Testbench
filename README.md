@@ -91,7 +91,6 @@ The following list contains ideas for further development:
 - Add DPDK support
 - Add libpcap support
 - Cleanup Grafana configuration
-- Cleanup traffic class code
 
 ## Documentation
 
