@@ -1258,6 +1258,13 @@ bool config_sanity_check(void)
 		return false;
 	}
 
+	/* Cycle time should be > 0 */
+	if (!app_config.application_base_cycle_time_ns) {
+		fprintf(stderr,
+			"ApplicationBaseCycleTimeNS should be greater than 0! For example 1ms!\n");
+		return false;
+	}
+
 	/* Tx and Rx offset should be <= cycle time */
 	if (app_config.application_rx_base_offset_ns > app_config.application_base_cycle_time_ns ||
 	    app_config.application_tx_base_offset_ns > app_config.application_base_cycle_time_ns) {
