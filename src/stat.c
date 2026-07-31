@@ -278,7 +278,8 @@ static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_
 
 	stat_update_min_max_s(oneway_time, &stat->oneway_min, &stat->oneway_max);
 
-	if (stat_frame_type_is_real_time(frame_type) && oneway_time > rtt_expected_rt_limit / 2) {
+	if (stat_frame_type_is_real_time(frame_type) &&
+	    oneway_time > (int64_t)(rtt_expected_rt_limit / 2)) {
 		stat->oneway_outliers++;
 		outlier = true;
 	}
