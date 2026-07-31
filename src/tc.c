@@ -240,7 +240,8 @@ static int tc_gen_and_send_frames(struct thread_context *ctx, int socket_fd,
 {
 	const struct traffic_class_config *conf = ctx->conf;
 	struct timespec tx_time = {};
-	int len, i;
+	size_t i;
+	int len;
 
 	app_clock_get(&tx_time);
 
