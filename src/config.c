@@ -598,9 +598,9 @@ static int config_store_app_option(const char *key, const char *value)
 int config_read_from_file(const char *config_file)
 {
 	bool base_time_seen = false;
+	yaml_token_t token = {};
 	int ret, state_key = 0;
 	yaml_parser_t parser;
-	yaml_token_t token;
 	const char *value;
 	char *key = NULL;
 	FILE *f;
