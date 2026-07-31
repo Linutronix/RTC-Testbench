@@ -177,10 +177,6 @@ static void *udp_tx_thread_routine(void *data)
 					       udp_config->frame_length,
 					       udp_config->num_frames_per_cycle, socket_fd,
 					       &thread_context->destination);
-
-			pthread_mutex_lock(&thread_context->data_mutex);
-			thread_context->num_frames_available = 0;
-			pthread_mutex_unlock(&thread_context->data_mutex);
 		}
 
 		tc_signal_next(thread_context);
@@ -295,10 +291,6 @@ static void *udp_rx_thread_routine(void *data)
 
 			/* Store the new frame. */
 			ring_buffer_add(thread_context->mirror_buffer, frame, len);
-
-			pthread_mutex_lock(&thread_context->data_mutex);
-			thread_context->num_frames_available++;
-			pthread_mutex_unlock(&thread_context->data_mutex);
 		}
 	}
 
