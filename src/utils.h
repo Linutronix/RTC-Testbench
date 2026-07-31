@@ -225,7 +225,7 @@ static inline int snprintf_err_handling(char **buffer, size_t *len, int ret)
 		return -EINVAL;
 
 	/* Buffer too small? */
-	if (ret >= *len)
+	if ((size_t)ret >= *len)
 		return -EINVAL;
 
 	/* All good */
