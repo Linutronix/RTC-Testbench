@@ -98,7 +98,7 @@ void packet_free(struct packet_context *context)
 
 int packet_send_messages(struct packet_context *context, struct packet_send_request *send_req)
 {
-	int sent = 0;
+	size_t sent = 0;
 
 	/*
 	 * It is expected to sent exactly num_frames_per_cycle. However, in case frames arrived late
@@ -107,7 +107,7 @@ int packet_send_messages(struct packet_context *context, struct packet_send_requ
 	while (sent < send_req->num_frames) {
 		struct iovec *iovecs = context->tx_iovecs;
 		struct mmsghdr *msgs = context->tx_msgs;
-		int i, inner_sent = 0, to_be_sent;
+		size_t i, inner_sent = 0, to_be_sent;
 
 		to_be_sent = send_req->num_frames - sent;
 		if (to_be_sent > context->num_frames_per_cycle)
@@ -182,7 +182,8 @@ int packet_receive_messages(struct packet_context *context, struct packet_receiv
 	while (true) {
 		struct iovec *iovecs = context->rx_iovecs;
 		struct mmsghdr *msgs = context->rx_msgs;
-		int i, len;
+		size_t i;
+		int len;
 
 		for (i = 0; i < context->num_frames_per_cycle; i++) {
 			iovecs[i].iov_base = frame_idx(context->rx_frames, i);
@@ -203,7 +204,7 @@ int packet_receive_messages(struct packet_context *context, struct packet_receiv
 		}
 
 		/* Process received frames. */
-		for (i = 0; i < len; i++)
+		for (i = 0; i < (size_t)len; i++)
 			recv_req->receive_function(recv_req->data, frame_idx(context->rx_frames, i),
 						   msgs[i].msg_len);
 
