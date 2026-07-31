@@ -1132,6 +1132,7 @@ int config_set_defaults(bool mirror_enabled)
 	conf->vid = 100;
 	conf->pcp = 6;
 	conf->ether_type = 0xb62c;
+	conf->num_frames_per_cycle = 1;
 	conf->payload_pattern = strdup(default_payload_pattern);
 	if (!conf->payload_pattern)
 		goto out;
