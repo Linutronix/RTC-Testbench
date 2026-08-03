@@ -50,11 +50,16 @@ static void log_mqtt_add_traffic_class(struct mosquitto *mosq, const char *mqtt_
 {
 	const char *tc = stat_frame_type_to_string(frame_type);
 	char stat_message[4096] = {};
-	int result_pub;
+	int result_pub, ret;
 
 	/* Convert stats to json */
-	stat_to_json(stat_message, sizeof(stat_message), frame_type, stat, tc,
-		     mqtt_base_topic_name);
+	ret = stat_to_json(stat_message, sizeof(stat_message), frame_type, stat, tc,
+			   mqtt_base_topic_name);
+	if (ret) {
+		log_message(LOG_LEVEL_DEBUG, "MqttTx: Failed to compose JSON message: %s\n",
+			    strerror(errno));
+		return;
+	}
 
 	/* Publish */
 	result_pub = mosquitto_publish(mosq, NULL, "testbench", strlen(stat_message), stat_message,
