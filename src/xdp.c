@@ -607,7 +607,7 @@ void xdp_complete_tx(struct xdp_socket *xsk)
 
 	/* Re-add for Rx */
 	slots = xsk_ring_prod__reserve(&xsk->umem.fq, received, &idx_fq);
-	while (slots != received) {
+	if (slots != received) {
 		log_message(LOG_LEVEL_ERROR, "XdpTx: xsk_ring_prod__reserve() failed\n");
 
 		if (xsk->busy_poll_mode || xsk_ring_prod__needs_wakeup(&xsk->umem.fq)) {
@@ -617,6 +617,11 @@ void xdp_complete_tx(struct xdp_socket *xsk)
 					    strerror(errno));
 		}
 		slots = xsk_ring_prod__reserve(&xsk->umem.fq, received, &idx_fq);
+	}
+	if (slots != received) {
+		log_message(LOG_LEVEL_ERROR, "XdpTx: xsk_ring_prod__reserve() failed\n");
+		xsk_ring_cons__cancel(&xsk->umem.cq, received);
+		return;
 	}
 
 	/*
@@ -832,7 +837,7 @@ unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, boo
 	if (mirror_enabled) {
 		/* Reserve space in Tx ring */
 		slots = xsk_ring_prod__reserve(&xsk->tx, received, &idx_tx);
-		while (slots != received) {
+		if (slots != received) {
 			log_message(LOG_LEVEL_ERROR, "XdpRx: xsk_ring_prod__reserve() failed\n");
 
 			if (xsk->busy_poll_mode || xsk_ring_prod__needs_wakeup(&xsk->tx)) {
@@ -845,10 +850,15 @@ unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, boo
 			}
 			slots = xsk_ring_prod__reserve(&xsk->tx, received, &idx_tx);
 		}
+		if (slots != received) {
+			log_message(LOG_LEVEL_ERROR, "XdpRx: xsk_ring_prod__reserve() failed\n");
+			xsk_ring_cons__cancel(&xsk->rx, received);
+			return 0;
+		}
 	} else {
 		/* Reserve space in fill queue */
 		slots = xsk_ring_prod__reserve(&xsk->umem.fq, received, &idx_fq);
-		while (slots != received) {
+		if (slots != received) {
 			log_message(LOG_LEVEL_ERROR, "XdpRx: xsk_ring_prod__reserve() failed\n");
 
 			if (xsk->busy_poll_mode || xsk_ring_prod__needs_wakeup(&xsk->umem.fq)) {
@@ -860,6 +870,11 @@ unsigned int xdp_receive_frames(struct xdp_socket *xsk, size_t frame_length, boo
 						    strerror(errno));
 			}
 			slots = xsk_ring_prod__reserve(&xsk->umem.fq, received, &idx_fq);
+		}
+		if (slots != received) {
+			log_message(LOG_LEVEL_ERROR, "XdpRx: xsk_ring_prod__reserve() failed\n");
+			xsk_ring_cons__cancel(&xsk->rx, received);
+			return 0;
 		}
 	}
 
