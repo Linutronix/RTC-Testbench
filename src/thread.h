@@ -79,7 +79,6 @@ struct thread_context {
 	const char *traffic_class;         /* Traffic class string */
 	uint32_t meta_data_offset;         /* Where is the MetaData in the frame? */
 	uint16_t frame_id;                 /* What's the Profinet frame id */
-	int (*create_socket)(void);        /* Function to create socket */
 
 	/* Workload related */
 	struct workload_config *workload;
