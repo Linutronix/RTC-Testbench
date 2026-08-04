@@ -1,0 +1,140 @@
+---
+#
+# Copyright (C) 2026 Linutronix GmbH
+# Author Kurt Kanzenbach <kurt@linutronix.de>
+#
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# Sample reference YAML configuration file for ST STM32MP257F-DK.
+#
+Application:
+  ApplicationClockId: CLOCK_TAI
+  # ApplicationBaseStartTimeNS: 0
+  ApplicationBaseCycleTimeNS: 1ms
+  ApplicationTxBaseOffsetNS: 700us
+  ApplicationRxBaseOffsetNS: 300us
+  ApplicationXdpProgram: xdp_kern_profinet_vid100.o
+RTC:
+  RtcEnabled: true
+  RtcXdpEnabled: true
+  RtcXdpSkbMode: false
+  RtcXdpZcMode: true
+  RtcXdpWakeupMode: true
+  RtcXdpBusyPollMode: true
+  RtcTxTimeStampEnabled: false
+  RtcVid: 100
+  RtcNumFramesPerCycle: 8
+  RtcPayloadPattern: |
+    RtcPayloadPattern
+  RtcFrameLength: 128
+  RtcRxQueue: 1
+  RtcTxQueue: 1
+  RtcSocketPriority: 7
+  RtcTxThreadPriority: 98
+  RtcRxThreadPriority: 98
+  RtcTxThreadCpu: 1
+  RtcRxThreadCpu: 1
+  RtcInterface: end0
+  RtcDestination: a8:74:1d:9d:98:d8
+RTA:
+  RtaEnabled: true
+  RtaXdpEnabled: true
+  RtaXdpSkbMode: false
+  RtaXdpZcMode: false
+  RtaXdpWakeupMode: true
+  RtaXdpBusyPollMode: false
+  RtaTxTimeStampEnabled: false
+  RtaVid: 100
+  RtaBurstPeriodNS: 200ms
+  RtaNumFramesPerCycle: 4
+  RtaPayloadPattern: |
+    RtaPayloadPattern
+  RtaFrameLength: 128
+  RtaRxQueue: 0
+  RtaTxQueue: 0
+  RtaSocketPriority: 6
+  RtaTxThreadPriority: 97
+  RtaRxThreadPriority: 97
+  RtaTxThreadCpu: 0
+  RtaRxThreadCpu: 0
+  RtaInterface: end0
+  RtaDestination: a8:74:1d:9d:98:d8
+DCP:
+  DcpEnabled: true
+  DcpVid: 100
+  DcpBurstPeriodNS: 2s
+  DcpNumFramesPerCycle: 1
+  DcpPayloadPattern: |
+    DcpPayloadPattern
+  DcpFrameLength: 200
+  DcpRxQueue: 0
+  DcpTxQueue: 0
+  DcpSocketPriority: 5
+  DcpTxThreadPriority: 53
+  DcpRxThreadPriority: 53
+  DcpTxThreadCpu: 0
+  DcpRxThreadCpu: 0
+  DcpInterface: end0
+  DcpDestination: 01:0e:cf:00:00:00
+LLDP:
+  LldpEnabled: true
+  LldpBurstPeriodNS: 5s
+  LldpNumFramesPerCycle: 1
+  LldpPayloadPattern: |
+    LldpPayloadPattern
+  LldpFrameLength: 200
+  LldpRxQueue: 0
+  LldpTxQueue: 0
+  LldpSocketPriority: 5
+  LldpTxThreadPriority: 52
+  LldpRxThreadPriority: 52
+  LldpTxThreadCpu: 0
+  LldpRxThreadCpu: 0
+  LldpInterface: end0
+  LldpDestination: 01:80:c2:00:00:0e
+UDPHigh:
+  UdpHighEnabled: true
+  UdpHighBurstPeriodNS: 1s
+  UdpHighNumFramesPerCycle: 1
+  UdpHighPayloadPattern: |
+    UdpHighPayloadPattern
+  UdpHighFrameLength: 1400
+  UdpHighRxQueue: 0
+  UdpHighTxQueue: 0
+  UdpHighSocketPriority: 5
+  UdpHighTxThreadPriority: 51
+  UdpHighRxThreadPriority: 51
+  UdpHighTxThreadCpu: 0
+  UdpHighRxThreadCpu: 0
+  UdpHighInterface: end0
+  UdpHighPort: 6666
+  UdpHighDestination: 192.168.1.2
+  UdpHighSource: 192.168.1.1
+UDPLow:
+  UdpLowEnabled: true
+  UdpLowBurstPeriodNS: 1s
+  UdpLowNumFramesPerCycle: 1
+  UdpLowPayloadPattern: |
+    UdpLowPayloadPattern
+  UdpLowFrameLength: 1400
+  UdpLowRxQueue: 0
+  UdpLowTxQueue: 0
+  UdpLowSocketPriority: 4
+  UdpLowTxThreadPriority: 51
+  UdpLowRxThreadPriority: 51
+  UdpLowTxThreadCpu: 0
+  UdpLowRxThreadCpu: 0
+  UdpLowInterface: end0
+  UdpLowPort: 6667
+  UdpLowDestination: 192.168.1.2
+  UdpLowSource: 192.168.1.1
+Log:
+  LogThreadPriority: 1
+  LogThreadCpu: 0
+  LogFile: /var/log/reference_vid100.log
+  LogLevel: Info
+Debug:
+  DebugStopTraceOnOutlier: false
+  DebugStopTraceOnError: false
+  DebugMonitorMode: false
+  DebugMonitorDestination: 44:44:44:44:44:44
