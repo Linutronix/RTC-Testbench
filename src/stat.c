@@ -672,14 +672,14 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 	/* Stop tracing after certain amount of time */
 	if (app_config.debug_stop_trace_on_outlier && outlier) {
 		fprintf(file_trace_marker,
-			"Outlier hit: %" PRIu64 " [us] -- Type: %s -- Cycle Counter: %" PRIu64 "\n",
-			rt_time ? rt_time : oneway_time, stat_frame_type_to_string(frame_type),
-			cycle_number);
+			"Outlier hit: %" PRIi64 " [us] -- Type: %s -- Cycle Counter: %" PRIu64 "\n",
+			(int64_t)rt_time ? (int64_t)rt_time : oneway_time,
+			stat_frame_type_to_string(frame_type), cycle_number);
 		fprintf(file_tracing_on, "0\n");
 		fprintf(stderr,
-			"Outlier hit: %" PRIu64 " [us] -- Type: %s -- Cycle Counter: %" PRIu64 "\n",
-			rt_time ? rt_time : oneway_time, stat_frame_type_to_string(frame_type),
-			cycle_number);
+			"Outlier hit: %" PRIi64 " [us] -- Type: %s -- Cycle Counter: %" PRIu64 "\n",
+			(int64_t)rt_time ? (int64_t)rt_time : oneway_time,
+			stat_frame_type_to_string(frame_type), cycle_number);
 		fclose(file_trace_marker);
 		fclose(file_tracing_on);
 		exit(EXIT_SUCCESS);
