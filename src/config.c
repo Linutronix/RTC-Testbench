@@ -720,7 +720,7 @@ err_yaml:
 	return ret;
 }
 
-static void config_print_separator(void)
+void config_print_separator(void)
 {
 	printf("-------------------------------------------------------------------"
 	       "------------------------\n");

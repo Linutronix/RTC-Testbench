@@ -262,6 +262,7 @@ void config_print_values(void);
 bool config_sanity_check(void);
 void config_free(void);
 bool config_is_tc_active(enum stat_frame_type type);
+void config_print_separator(void);
 
 static inline bool config_have_busy_poll(void)
 {

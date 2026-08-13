@@ -49,8 +49,7 @@ void print_stats(void)
 			++active;
 		}
 
-		printf("-------------------------------------------------------------------"
-		       "------------------------\n");
+		config_print_separator();
 
 		printf("\033[%dA", active + 2);
 
