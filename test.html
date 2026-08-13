@@ -89,6 +89,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#profinet-rt">PROFINET RT</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#netload">Netload</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#busypolling">Busypolling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ethercat">EtherCAT</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#working-clock">Working Clock</a></li>
 </ul>
 </li>
@@ -661,6 +662,15 @@ busy polling can be configured with the <code class="docutils literal notranslat
 <p>All required configuration files and scripts are located in
 <code class="docutils literal notranslate"><span class="pre">tests/busypolling/</span></code>.</p>
 <p>Hardware: Intel CPU with Intel i225/i226</p>
+</section>
+<section id="ethercat">
+<h3>EtherCAT<a class="headerlink" href="#ethercat" title="Permalink to this heading"></a></h3>
+<p>The following test scenario is designed to simulate EtherCAT. It creates a cyclic EtherCAT traffic.
+The NIC is connected to an EtherCAT sub-device (e.g. EK1100). No other traffic should be running
+parallel to EtherCAT. There is no need for the mirror application, since the sub-device acts as the
+mirror of the traffic.</p>
+<p>All required configuration files and scripts are located in
+<code class="docutils literal notranslate"><span class="pre">tests/ethercat/</span></code>.</p>
 </section>
 <section id="working-clock">
 <h3>Working Clock<a class="headerlink" href="#working-clock" title="Permalink to this heading"></a></h3>
