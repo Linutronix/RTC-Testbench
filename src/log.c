@@ -82,8 +82,10 @@ void log_message(enum log_level level, const char *format, ...)
 	char *p;
 
 	/* Stop trace on error if desired. */
-	if (level == LOG_LEVEL_ERROR && app_config.debug_stop_trace_on_error)
+	if (level == LOG_LEVEL_ERROR && app_config.debug_stop_trace_on_error) {
 		fprintf(file_tracing_on, "0\n");
+		fflush(file_tracing_on);
+	}
 
 	/* Log message only if log level fulfilled. */
 	if (level > current_log_level)
