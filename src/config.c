@@ -1273,6 +1273,13 @@ bool config_sanity_check(void)
 		return false;
 	}
 
+	/* First in cycle comes Rx then optionally workload and last Tx */
+	if (app_config.application_rx_base_offset_ns >= app_config.application_tx_base_offset_ns) {
+		fprintf(stderr, "ApplicationRxBaseOffsetNS should be less than "
+				"ApplicationTxBaseOffsetNS!\n");
+		return false;
+	}
+
 	/* Frame lengths */
 	if (app_config.classes[GENERICL2_FRAME_TYPE].frame_length > MAX_FRAME_SIZE ||
 	    app_config.classes[GENERICL2_FRAME_TYPE].frame_length <
