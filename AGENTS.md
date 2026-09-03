@@ -6,9 +6,10 @@ This file provides guidance to AI assistants when working with code in this repo
 
 The **Linux RealTime Communication Testbench** validates real-time and non-real-time traffic on
 converged (TSN) Ethernet networks. It generates, mirrors, and checks cyclic Ethernet frames to
-measure round-trip latency, jitter and frame loss for middlewares like PROFINET and OPC/UA PubSub,
-and to benchmark per-frame security (AES-256). It is a platform/driver/stack evaluation tool, **not**
-a TSN conformance tester. All TSN mechanisms use mainline-Linux-only utilities.
+measure round-trip latency, jitter and frame loss for middlewares like PROFINET, OPC/UA PubSub,
+AVTP and EtherCAT, and to benchmark per-frame security (AES-256-GCM, AES-128-GCM,
+ChaCha20-Poly1305). It is a platform/driver/stack evaluation tool, **not** a TSN conformance tester.
+All TSN mechanisms use mainline-Linux-only utilities.
 
 Two binaries are built:
 
@@ -42,10 +43,18 @@ Build deps: `cmake`, `gcc`, `clang`, `llvm`, `pkg-config`, `libbpf-dev`, `libyam
 (for the `napictl` helper, which also needs kernel v6.13+ headers).
 
 XDP eBPF programs (`src/xdp_kern_*.c`) are compiled separately by CMake with `clang -target bpf`.
-`src/xdp_kern_tb.c` is compiled multiple times via `add_xdp_prog_tb()` in `CMakeLists.txt` with
-different `-DEBPF_VID`/`-DEBPF_ETH_TYPE`/`-DEBPF_PRIORITY` defines, producing one `.o` per
-VID/protocol (PROFINET, OPC/UA, AVTP). When changing XDP steering, edit both the source and the
-`add_xdp_prog_tb()` invocations.
+There are two CMake helpers:
+
+- `add_xdp_prog_tb(name vid eth_type priority check_profinet)` compiles the generic skeleton
+  `src/xdp_kern_tb.c` once per VID/protocol with different
+  `-DEBPF_VID`/`-DEBPF_ETH_TYPE`/`-DEBPF_PRIORITY`/`-DEBPF_CHECK_FRAMEID` defines (PROFINET, OPC/UA,
+  AVTP).
+- `add_xdp_prog(name)` compiles a standalone program as-is — currently
+  `xdp_kern_profinet_veth_dispatch` and `xdp_kern_ethercat`.
+
+When changing XDP steering, edit both the source and the corresponding invocation in
+`CMakeLists.txt`. `src/xdp_metadata.c` is **not** a userspace translation unit: it is `#include`d by
+the BPF programs and provides `populate_rx_timestamp()` (guarded by `RX_TIMESTAMP`).
 
 ## Unit tests
 
@@ -96,42 +105,90 @@ The applications perform cyclic Ethernet communication split into **traffic clas
 real-time Layer 2 up to UDP. Receivers/transmitters use either traditional `AF_PACKET` (BPF filter
 steering) or modern `AF_XDP` (eBPF/XDP steering) sockets, selected per class by config.
 
-- **`src/reference.c` / `src/mirror.c`** — entry points. Parse config, spawn threads per enabled
-  class, link them into the send chain, run until Ctrl-C.
-- **`src/config.c/.h`** — YAML parsing into `struct app_config` + per-class
-  `struct traffic_class_config`. The config is the source of truth for which classes run, cycle
-  time, frame counts/sizes, VID/PCP, socket type, and security.
-- **`src/thread.h`** — the central `struct thread_context`: socket fd, XDP socket, ring buffer,
-  Tx/Rx security contexts, traffic-class config, and `next` pointer to the following class. The
-  `enum pn_thread_type` (TSN_HIGH, TSN_LOW, RTC, RTA, DCP, LLDP, UDP_HIGH, UDP_LOW) defines class
-  ordering and priority.
-- **`src/*_thread.c`** — one file per traffic class (`tsn`, `rtc`, `rta`, `dcp`, `lldp`, `udp`,
-  `layer2`). Each provides Rx, Tx, and (for generated classes) a Tx-generation thread.
-- **`src/xdp.c` / `src/xdp_metadata.c`** — AF_XDP socket setup and the zero-copy send/receive path;
-  Rx/Tx metadata (timestamps, launch time).
-- **`src/security.c`** — per-frame AES-256-GCM authentication/encryption via OpenSSL 3.x.
-- **`src/packet.c` / `src/net.c` / `src/profinet.c`** — frame construction/parsing, low-level
-  socket helpers, PROFINET frame layout and frame-id handling.
-- **`src/stat.c` / `src/hist.c`** — per-frame-type round-trip statistics and latency histograms.
-- **`src/ring_buffer.c`** — lock-free-ish ring buffer carrying Rx frames to be mirrored.
-- **`src/log.c` / `src/log_json.c` / `src/log_mqtt.c`** — text, JSON, and optional MQTT metric output.
+- **`src/reference.c` / `src/mirror.c`** — thin entry points (~25 lines each). They only fill in a
+  `struct tb_startup_mode` (binary name, `enum log_stat_options`, histogram on/off, mirror flag) and
+  call `tb_startup()`. Put nothing else here.
+- **`src/tb.c` / `src/tb.h`** — the actual `main()` body shared by both binaries: option parsing,
+  config load + sanity check, `mlockall()`, signal handlers, logging/stat init, creation of all
+  traffic-class threads in order, the wait-for-finish loop, and teardown.
+- **`src/config.c/.h`** — YAML parsing into `struct application_config` (the global `app_config`) +
+  per-class `struct traffic_class_config`. Options are declared as table entries in
+  `global_options[]` and `class_options[]`; a class option is gated by a `tcs` bitmask
+  (`TC_ALL`, `TC_XDP`, `TC_L2`, `TC_L3`, `TC_BURST`, `TC_SECURITY`, `TC_WORKLOAD`, `TC_TXTIME`).
+  **Adding a config option means adding one table row** — parsing, printing and freeing are all
+  driven from these tables. The config is the source of truth for which classes run, cycle time,
+  frame counts/sizes, VID/PCP, socket type, and security.
+- **`src/tc.c` / `src/tc.h`** — the generic traffic-class engine, and where most behaviour now
+  lives. It owns the shared thread routines (`tc_tx_thread`, `tc_rx_thread`, `tc_xdp_tx_thread`,
+  `tc_xdp_rx_thread`, `tc_tx_gen_thread`), the cycle wait/sleep helpers, and
+  `tc_threads_create()` / `tc_threads_wait_for_finish()` / `tc_threads_free()` which allocate every
+  per-class resource (sockets, frame buffers, mirror ring, security contexts, workload threads).
+  Per-class behaviour is injected through `struct traffic_class_desc`:
+  - `struct traffic_class_ops` — `initialize_frame`, `receive_frame`, `create_socket`, plus the
+    `tx_thread`/`rx_thread` pair chosen by `XdpEnabled`.
+  - `enum tc_tx_model` — `TC_TX_CYCLIC` (TSN, RTC), `TC_TX_BURST` (RTA, DCP, LLDP, UDP — driven by
+    `BurstPeriodNS` via a Tx-gen thread), `TC_TX_STANDALONE` (GenericL2, own `clock_nanosleep()`).
+- **`src/*_thread.c`** — one file per traffic class (`tsn`, `rtc`, `rta`, `dcp`, `lldp`, `layer2`).
+  These are now small registration shims: set `conf`/`frame_type`/`frame_id`, allocate and populate
+  `ctx->desc`, then call `tc_threads_create()`. Frame layout callbacks live here.
+  **`src/udp_thread.c` is the exception** — UDP uses ordinary L3 sockets and still carries its own
+  `udp_tx_thread_routine()` / `udp_rx_thread_routine()` and its own create/free path.
+- **`src/thread.h`** — the central `struct thread_context`: socket fd, XDP socket, frame buffers,
+  mirror ring buffer, Tx/Rx security contexts, workload config, `conf`/`desc` pointers, and the
+  `next` pointer to the following class. `enum pn_thread_type` (TSN_HIGH, TSN_LOW, RTC, RTA, DCP,
+  LLDP, UDP_HIGH, UDP_LOW) defines the send order within a cycle; thread priorities come from the
+  config, not from this enum.
+- **`src/xdp.c`** — AF_XDP socket/umem setup and the zero-copy send/receive path, including Tx
+  launch time and Tx HW timestamp metadata (`HAVE_XDP_TX_TIME` / `TX_TIMESTAMP`).
+- **`src/security.c`** — per-frame AEAD authentication/encryption via OpenSSL 3.x. Algorithm is
+  configurable: AES-256-GCM, AES-128-GCM or ChaCha20-Poly1305; mode is `None`, `AO`
+  (authenticate only) or `AE` (authenticate + encrypt). PROFINET RT classes only.
+- **`src/utils.c` / `src/utils.h`** — frame preparation (`prepare_frame_for_tx()`), VLAN insertion,
+  MAC swapping, meta-data accessors (sequence counter / Tx timestamp), clock helpers. Most of the
+  per-frame hot-path helpers are `static inline` in `utils.h`.
+- **`src/packet.c`** — the AF_PACKET batching layer: `sendmmsg()`/`recvmmsg()` with pre-allocated
+  iovec/mmsghdr arrays and `SO_TXTIME` control messages.
+- **`src/net.c`** — socket creation and the per-class classic-BPF Rx filters; `src/net_def.h` holds
+  the on-wire frame structs, EtherTypes, PROFINET VIDs/PCPs and FrameIDs.
+- **`src/profinet.c` / `src/ethercat.c`** — PROFINET frame layout, frame-id handling and secure
+  header; EtherCAT frame construction and receive checks (selected per GenericL2 via
+  `GenericL2ProtocolType: L2 | EtherCAT`).
+- **`src/stat.c` / `src/hist.c`** — per-frame-type round-trip, oneway, Rx/Tx-timestamp and workload
+  statistics, plus latency histograms.
+- **`src/print.c`** — the live terminal statistics table rendered by the main thread while the run
+  is in progress.
+- **`src/ring_buffer.c`** — byte-oriented ring buffer carrying Rx frames to be mirrored on the
+  AF_PACKET path (the AF_XDP path reuses the umem instead). It is **mutex-protected** (PI mutex),
+  not lock-free; policy is drop-oldest on overflow.
+- **`src/log.c` / `src/log_json.c` / `src/log_mqtt.c`** — text, JSON/UDP, and optional MQTT metric
+  output. Each runs on its own low-priority thread driven by `StatsCollectionIntervalNS`.
 - **`src/workload.c`** — dynamically loaded `.so` workload plugins simulating RT CPU load (see
-  `tests/workloads/`, e.g. `jacobi_2d`, `pointer_chasing`). `mirror` is linked with
-  `--export-dynamic` so plugins can resolve symbols.
+  `tests/workloads/`, e.g. `jacobi_2d`, `pointer_chasing`), one thread per CPU in
+  `RxWorkloadThreadCpu`, signalled by the Rx thread each cycle. Supported for `TsnHigh`, `Rtc` and
+  `GenericL2` (`TC_WORKLOAD`). Note that only `mirror` is currently linked with `--export-dynamic`,
+  although the feature is available in `reference` too.
 - **`src/tx_time.c`** — ETF / Tx launch-time (Qbv end-station) support.
 - **`src/napictl.c`** — standalone helper (built only with libnl3 + kernel v6.13+) for NAPI config.
 
-**Thread chaining is the key mechanism:** the traffic classes form a linked list via
-`thread_context.next` (`link_pn_threads()`). When the first class finishes its Tx cycle it signals
-the next via `pthread_cond_signal` on `data_cond_var`, so frames leave the wire in deterministic
-strict-priority order within each cycle. `is_first`/`is_last` mark the chain ends.
+**Thread chaining is the key mechanism:** the PROFINET traffic classes form a linked list via
+`thread_context.next` (`link_pn_threads()` in `src/thread.c`). When the first class finishes its Tx
+cycle it signals the next via `pthread_cond_signal` on `data_cond_var`, so frames leave the wire in
+deterministic strict-priority order within each cycle. `is_first`/`is_last` mark the chain ends;
+`is_last` also drives `stat_update()`.
+
+`GenericL2` is **not** part of that chain — it is a separate standalone `thread_context` allocated
+in `tb.c` with tx model `TC_TX_STANDALONE`, waking on its own `clock_nanosleep()`. This is why
+`config_sanity_check()` rejects running GenericL2 and PROFINET classes in the same instance; use two
+instances with different profiles instead.
 
 ## Code style
 
-Linux kernel coding style. Run `clang-format` (config in `.clang-format`) on C files when unsure;
-`.clang-tidy` is also present. Perl scripts in `scripts/` use the same style via `perltidy` (config
-in `.perltidyrc`, since clang-format does not support Perl); run `perltidy -b <file>.pl`. Use
-**reverse xmas tree** (RCS) local-variable ordering — longest declarations first:
+Linux kernel coding style, enforced automatically: `.pre-commit-config.yaml` runs `clang-format`
+(config in `.clang-format`) over every `.c`/`.h` file, so format your changes before committing or
+the hook will rewrite them. `.clang-tidy` (naming conventions only) is checked separately via
+`run-clang-tidy`. Perl scripts in `scripts/` use `perltidy` (config in `.perltidyrc`, since
+clang-format does not support Perl), also wired into pre-commit. Use **reverse xmas tree** (RCS)
+local-variable ordering — longest declarations first:
 
 ```c
 unsigned long long big_variable;
@@ -143,9 +200,9 @@ Commit messages follow the Linux kernel convention: imperative subject, body exp
 `Signed-off-by:` trailer. Contributions are BSD-2-Clause (eBPF programs are dual BSD/GPL). The repo
 is REUSE-compliant — every file needs an SPDX header (see `REUSE.toml`).
 
-`.pre-commit-config.yaml` runs commitizen (commit-msg), prettier, black/isort/flake8 (Python
-scripts), and shfmt (shell). CI workflows live in `.github/workflows/` (`build.yml`, `qa.yml`,
-`sphinx.yml`).
+`.pre-commit-config.yaml` runs commitizen (commit-msg), clang-format (C), perltidy (Perl), prettier,
+black/isort/flake8 (Python scripts), shfmt (shell), and yamlfmt. CI workflows live in
+`.github/workflows/` (`build.yml`, `qa.yml`, `sphinx.yml`, `label.yml`).
 
 ## Documentation
 
