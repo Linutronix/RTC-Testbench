@@ -644,7 +644,13 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 	oneway_time = (int64_t)curr_time - (int64_t)tx_timestamp;
 	oneway_time /= 1000;
 
-	if (rx_hw_timestamp != 0 && rx_sw_timestamp != 0) {
+	/*
+	 * Both timestamps are in the app's clock domain: AF_XDP's SW timestamp uses
+	 * bpf_ktime_get_tai_ns(), AF_PACKET's is converted from CLOCK_REALTIME to CLOCK_TAI via
+	 * get_tai_offset_ns() in packet.c.
+	 */
+	if (rx_hw_timestamp != 0 && rx_sw_timestamp != 0 && rx_hw_timestamp <= rx_sw_timestamp &&
+	    rx_sw_timestamp <= curr_time) {
 		/* Calculate Rx times */
 		rx_hw2app_time = curr_time - rx_hw_timestamp;
 		rx_hw2app_time /= 1000;
@@ -653,7 +659,7 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 		rx_xdp2app_time = curr_time - rx_sw_timestamp;
 		rx_xdp2app_time /= 1000;
 	} else {
-		/* If one of the timestamp is not available, set them to zero */
+		/* Unavailable or, under clock jitter, out of order: zero instead of underflowing */
 		rx_hw2app_time = 0;
 		rx_hw2xdp_time = 0;
 		rx_xdp2app_time = 0;

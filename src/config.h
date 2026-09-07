@@ -310,4 +310,10 @@ static inline bool config_have_tx_timestamp(void)
 #endif
 }
 
+/* RX HW timestamping (AF_XDP or AF_PACKET) is limited to TC_XDP classes. */
+static inline bool config_class_rx_timestamp_enabled(enum stat_frame_type frame_type)
+{
+	return config_have_rx_timestamp() && (BIT(frame_type) & TC_XDP);
+}
+
 #endif /* _CONFIG_H_ */

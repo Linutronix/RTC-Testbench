@@ -19,6 +19,7 @@
 #include "layer2_thread.h"
 #include "log.h"
 #include "net.h"
+#include "packet.h"
 #include "stat.h"
 #include "tc.h"
 #include "thread.h"
@@ -136,6 +137,8 @@ static int generic_l2_rx_frame(void *data, unsigned char *frame_data, size_t len
 
 	if (config_have_rx_timestamp() && l2_config->xdp_enabled)
 		xdp_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
+	else if (config_have_rx_timestamp())
+		packet_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
 	out_of_order = sequence_counter != thread_context->rx_sequence_counter;
 	payload_mismatch = memcmp(p, expected_pattern, expected_pattern_length);
 	frame_id_mismatch = false;

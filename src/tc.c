@@ -518,6 +518,7 @@ void *tc_rx_thread(void *data)
 {
 	struct thread_context *ctx = data;
 	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
+	const bool rx_hwtstamp_enabled = config_class_rx_timestamp_enabled(ctx->frame_type);
 	int socket_fd, ret, received;
 	struct timespec wakeup_time;
 
@@ -538,6 +539,7 @@ void *tc_rx_thread(void *data)
 			.socket_fd = socket_fd,
 			.receive_function = ctx->desc->ops.receive_frame,
 			.data = ctx,
+			.rx_hwtstamp_enabled = rx_hwtstamp_enabled,
 		};
 
 		/* Wait until next period. */

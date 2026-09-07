@@ -95,6 +95,9 @@ void prepare_openssl(struct security_context *context);
 
 int get_thread_start_time(uint64_t base_offset, struct timespec *wakeup_time);
 
+/* Returns CLOCK_TAI minus CLOCK_REALTIME, in ns (0 if not set by ptp4l/phc2sys). */
+int64_t get_tai_offset_ns(void);
+
 void configure_cpu_latency(void);
 void restore_cpu_latency(void);
 
