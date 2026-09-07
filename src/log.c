@@ -176,13 +176,13 @@ static int log_add_proc_batch_stats(const char *name, enum stat_frame_type frame
 	return 0;
 }
 
-static int log_add_xdp_rx_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
-				size_t *length)
+static int log_add_rx_hwts_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
+				 size_t *length)
 {
 	const struct statistics *stat = &global_statistics[frame_type];
 	int ret;
 
-	if (config_have_rx_timestamp() && app_config.classes[frame_type].xdp_enabled) {
+	if (config_class_rx_timestamp_enabled(frame_type)) {
 		ret = snprintf(*buffer, *length,
 			       "%sRxMin=%" PRIu64 " [us] | %sRxMax=%" PRIu64
 			       " [us] | %sRxAvg=%lf [us] | "
@@ -301,7 +301,7 @@ static int log_add_traffic_class(const char *name, enum stat_frame_type frame_ty
 	if (ret)
 		return ret;
 
-	ret = log_add_xdp_rx_stats(name, frame_type, buffer, length);
+	ret = log_add_rx_hwts_stats(name, frame_type, buffer, length);
 	if (ret)
 		return ret;
 

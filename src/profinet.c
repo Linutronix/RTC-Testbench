@@ -10,6 +10,7 @@
 
 #include "log.h"
 #include "net_def.h"
+#include "packet.h"
 #include "ring_buffer.h"
 #include "thread.h"
 #include "utils.h"
@@ -302,6 +303,8 @@ int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len)
 
 	if (config_have_rx_timestamp() && class_config->xdp_enabled)
 		xdp_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
+	else if (config_have_rx_timestamp())
+		packet_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
 	out_of_order = sequence_counter != thread_context->rx_sequence_counter;
 	payload_mismatch = memcmp(p, expected_pattern, expected_pattern_length);
 	frame_id_mismatch = frame_id != thread_context->frame_id;

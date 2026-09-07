@@ -16,6 +16,60 @@
 #include "tx_time.h"
 #include "utils.h"
 
+struct packet_rx_meta {
+	uint64_t rx_hw_timestamp;
+	uint64_t rx_sw_timestamp;
+};
+
+/* Frame data is preceded by a packet_rx_meta header within each rx_frames slot. */
+static inline unsigned char *packet_rx_payload(struct packet_context *context, size_t idx)
+{
+	return context->rx_frames + idx * (MAX_FRAME_SIZE + sizeof(struct packet_rx_meta)) +
+	       sizeof(struct packet_rx_meta);
+}
+
+static void packet_store_rx_timestamps(struct packet_context *context, struct mmsghdr *msgs,
+				       size_t num_msgs)
+{
+	size_t i;
+
+	for (i = 0; i < num_msgs; i++) {
+		struct packet_rx_meta *meta =
+			(struct packet_rx_meta *)(packet_rx_payload(context, i) - sizeof(*meta));
+		struct cmsghdr *cmsg;
+
+		meta->rx_hw_timestamp = 0;
+		meta->rx_sw_timestamp = 0;
+
+		for (cmsg = CMSG_FIRSTHDR(&msgs[i].msg_hdr); cmsg;
+		     cmsg = CMSG_NXTHDR(&msgs[i].msg_hdr, cmsg)) {
+			struct scm_timestamping *ts;
+
+			if (cmsg->cmsg_level != SOL_SOCKET || cmsg->cmsg_type != SCM_TIMESTAMPING)
+				continue;
+
+			ts = (struct scm_timestamping *)CMSG_DATA(cmsg);
+			if (ts->ts[2].tv_sec || ts->ts[2].tv_nsec)
+				meta->rx_hw_timestamp = ts_to_ns(&ts->ts[2]);
+			if (ts->ts[0].tv_sec || ts->ts[0].tv_nsec)
+				/*
+				 * Kernel SW RX timestamp is CLOCK_REALTIME; convert to
+				 * CLOCK_TAI to match rx_hw_timestamp and the app clock.
+				 */
+				meta->rx_sw_timestamp = ts_to_ns(&ts->ts[0]) + get_tai_offset_ns();
+			break;
+		}
+	}
+}
+
+void packet_get_timestamp_metadata(void *data, uint64_t *rx_hw_ts, uint64_t *rx_sw_ts)
+{
+	struct packet_rx_meta *meta = data - sizeof(*meta);
+
+	*rx_hw_ts = meta->rx_hw_timestamp;
+	*rx_sw_ts = meta->rx_sw_timestamp;
+}
+
 struct packet_context *packet_init(size_t num_frames_per_cycle)
 {
 	struct packet_context *context;
@@ -26,7 +80,8 @@ struct packet_context *packet_init(size_t num_frames_per_cycle)
 		return NULL;
 	}
 
-	context->rx_frames = calloc(MAX_FRAME_SIZE * num_frames_per_cycle, sizeof(unsigned char));
+	context->rx_frames =
+		calloc(num_frames_per_cycle, MAX_FRAME_SIZE + sizeof(struct packet_rx_meta));
 	if (!context->rx_frames) {
 		fprintf(stderr, "Failed to allocate receive frame buffers!\n");
 		goto err_rx_frames;
@@ -62,10 +117,18 @@ struct packet_context *packet_init(size_t num_frames_per_cycle)
 		goto err_tx_ctrl_msgs;
 	}
 
+	context->rx_control_msgs = calloc(num_frames_per_cycle, sizeof(*context->rx_control_msgs));
+	if (!context->rx_control_msgs) {
+		fprintf(stderr, "Failed to allocate receive control messages!\n");
+		goto err_rx_ctrl_msgs;
+	}
+
 	context->num_frames_per_cycle = num_frames_per_cycle;
 
 	return context;
 
+err_rx_ctrl_msgs:
+	free(context->tx_control_msgs);
 err_tx_ctrl_msgs:
 	free(context->tx_msgs);
 err_tx_msgs:
@@ -93,6 +156,7 @@ void packet_free(struct packet_context *context)
 	free(context->rx_msgs);
 	free(context->tx_msgs);
 	free(context->tx_control_msgs);
+	free(context->rx_control_msgs);
 	free(context);
 }
 
@@ -186,10 +250,19 @@ int packet_receive_messages(struct packet_context *context, struct packet_receiv
 		int len;
 
 		for (i = 0; i < context->num_frames_per_cycle; i++) {
-			iovecs[i].iov_base = frame_idx(context->rx_frames, i);
+			iovecs[i].iov_base = packet_rx_payload(context, i);
 			iovecs[i].iov_len = MAX_FRAME_SIZE;
 			msgs[i].msg_hdr.msg_iov = &iovecs[i];
 			msgs[i].msg_hdr.msg_iovlen = 1;
+
+			if (recv_req->rx_hwtstamp_enabled) {
+				msgs[i].msg_hdr.msg_control = context->rx_control_msgs[i].control;
+				msgs[i].msg_hdr.msg_controllen =
+					sizeof(context->rx_control_msgs[i].control);
+			} else {
+				msgs[i].msg_hdr.msg_control = NULL;
+				msgs[i].msg_hdr.msg_controllen = 0;
+			}
 		}
 
 		len = recvmmsg(recv_req->socket_fd, msgs, context->num_frames_per_cycle, 0, NULL);
@@ -203,9 +276,12 @@ int packet_receive_messages(struct packet_context *context, struct packet_receiv
 			break;
 		}
 
+		if (recv_req->rx_hwtstamp_enabled)
+			packet_store_rx_timestamps(context, msgs, (size_t)len);
+
 		/* Process received frames. */
 		for (i = 0; i < (size_t)len; i++)
-			recv_req->receive_function(recv_req->data, frame_idx(context->rx_frames, i),
+			recv_req->receive_function(recv_req->data, packet_rx_payload(context, i),
 						   msgs[i].msg_len);
 
 		received += len;
