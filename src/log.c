@@ -142,7 +142,7 @@ static int log_add_proc_first_stats(const char *name, enum stat_frame_type frame
 	int ret;
 
 	if (app_config.classes[frame_type].tx_hwtstamp_enabled && config_have_rx_timestamp() &&
-	    app_config.classes[frame_type].xdp_enabled && stat->proc_first_count > 0) {
+	    stat->proc_first_count > 0) {
 		ret = snprintf(*buffer, *length,
 			       "%sProcFirstMin=%" PRIu64 " [us] | %sProcFirstMax=%" PRIu64
 			       " [us] | %sProcFirstAvg=%lf [us] | "
@@ -162,7 +162,7 @@ static int log_add_proc_batch_stats(const char *name, enum stat_frame_type frame
 	int ret;
 
 	if (app_config.classes[frame_type].tx_hwtstamp_enabled && config_have_rx_timestamp() &&
-	    app_config.classes[frame_type].xdp_enabled && stat->proc_batch_count > 0) {
+	    stat->proc_batch_count > 0) {
 		ret = snprintf(*buffer, *length,
 			       "%sProcBatchMin=%" PRIu64 " [us] | %sProcBatchMax=%" PRIu64
 			       " [us] | %sProcBatchAvg=%lf [us] | "
@@ -201,14 +201,13 @@ static int log_add_rx_hwts_stats(const char *name, enum stat_frame_type frame_ty
 	return 0;
 }
 
-static int log_add_xdp_tx_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
-				size_t *length)
+static int log_add_tx_hwts_stats(const char *name, enum stat_frame_type frame_type, char **buffer,
+				 size_t *length)
 {
 	const struct statistics *stat = &global_statistics[frame_type];
 	int ret;
 
-	if (app_config.classes[frame_type].tx_hwtstamp_enabled &&
-	    app_config.classes[frame_type].xdp_enabled) {
+	if (app_config.classes[frame_type].tx_hwtstamp_enabled) {
 		ret = snprintf(*buffer, *length,
 			       "%sTxMin=%" PRIu64 " [us] | %sTxMax=%" PRIu64
 			       " [us] | %sTxAvg=%lf [us] | %sTxHwTimestampMissing=%" PRIu64 " | ",
@@ -305,7 +304,7 @@ static int log_add_traffic_class(const char *name, enum stat_frame_type frame_ty
 	if (ret)
 		return ret;
 
-	ret = log_add_xdp_tx_stats(name, frame_type, buffer, length);
+	ret = log_add_tx_hwts_stats(name, frame_type, buffer, length);
 	if (ret)
 		return ret;
 
