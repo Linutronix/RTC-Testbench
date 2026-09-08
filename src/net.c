@@ -327,6 +327,55 @@ static void warn_if_rx_hwtstamp_disabled(enum stat_frame_type frame_type)
 			tc, if_name, hwtstamp_rx_filter_to_string(hwconfig.rx_filter), if_name);
 }
 
+/* Shared by AF_XDP and AF_PACKET. Only touches tx_type; rx_filter is left to ptp4l. */
+int enable_hw_tx_timestamping(const char *if_name)
+{
+	struct ifreq ifr = {};
+	struct hwtstamp_config hwconfig = {};
+	int socket_fd;
+
+	socket_fd = socket(PF_INET, SOCK_DGRAM, 0);
+	if (socket_fd < 0) {
+		fprintf(stderr, "TxHwTs: Failed to create socket for interface %s: %s\n", if_name,
+			strerror(errno));
+		return -errno;
+	}
+
+	strncpy(ifr.ifr_name, if_name, IFNAMSIZ - 1);
+	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+	ifr.ifr_data = (char *)&hwconfig;
+
+	if (ioctl(socket_fd, SIOCGHWTSTAMP, &ifr) < 0) {
+		fprintf(stderr, "TxHwTs: Failed to read HW timestamp config for %s: %s\n", if_name,
+			strerror(errno));
+		close(socket_fd);
+		return -errno;
+	}
+
+	if (hwconfig.tx_type == HWTSTAMP_TX_ON) {
+		close(socket_fd);
+		return 0;
+	}
+
+	/* Only change TX type, keep RX settings */
+	hwconfig.tx_type = HWTSTAMP_TX_ON;
+	ifr.ifr_data = (char *)&hwconfig;
+
+	if (ioctl(socket_fd, SIOCSHWTSTAMP, &ifr) < 0) {
+		if (errno == EINVAL || errno == EOPNOTSUPP)
+			fprintf(stderr, "TxHwTs: HW timestamping not supported by driver on %s\n",
+				if_name);
+		else
+			fprintf(stderr, "TxHwTs: Failed to enable HW TX timestamping on %s: %s\n",
+				if_name, strerror(errno));
+		close(socket_fd);
+		return -errno;
+	}
+
+	close(socket_fd);
+	return 0;
+}
+
 static int create_socket(enum stat_frame_type frame_type, struct sock_filter *filter,
 			 size_t filter_len)
 {
@@ -370,6 +419,16 @@ static int create_socket(enum stat_frame_type frame_type, struct sock_filter *fi
 		if (ret)
 			fprintf(stderr, "Failed to enable RX HW timestamping for %s: %s\n",
 				stat_frame_type_to_string(frame_type), strerror(errno));
+	}
+
+	/* Enable TX HW timestamping on the interface. Explicit opt-in, so fail loudly. */
+	if (config_class_tx_timestamp_enabled(frame_type)) {
+		ret = enable_hw_tx_timestamping(app_config.classes[frame_type].interface);
+		if (ret) {
+			fprintf(stderr, "Failed to enable TX HW timestamping for %s!\n",
+				stat_frame_type_to_string(frame_type));
+			goto err_filter;
+		}
 	}
 
 	/* Enable SO_TXTIME */

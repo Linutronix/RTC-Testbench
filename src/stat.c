@@ -557,6 +557,11 @@ void stat_frame_sent_latency(enum stat_frame_type frame_type, uint64_t seq)
 
 	} else {
 		/* If HW timestamp isn't available after 1 cycle, consider it a miss */
+		log_message(LOG_LEVEL_DEBUG,
+			    "TxLatency [%s] Seq %" PRIu64
+			    ": Miss -- SW %llu ns, HW %llu ns, idx=%zu\n",
+			    stat_frame_type_to_string(frame_type), seq, (unsigned long long)sw_ts,
+			    (unsigned long long)hw_ts, idx);
 		stat->tx_hw_timestamp_missing++;
 		stat_per_period->tx_hw_timestamp_missing++;
 

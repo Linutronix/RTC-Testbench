@@ -186,6 +186,25 @@ static void tc_initialize_frames(struct thread_context *ctx, unsigned char *fram
 	}
 }
 
+/*
+ * Draining must happen after the caller records its Tx SW timestamp: a completion can
+ * arrive fast enough that draining first would make the recorded SW timestamp race behind
+ * the real HW Tx timestamp, turning valid completions into false TxHwTimestampMissing misses.
+ */
+static void tc_process_tx_completions(struct thread_context *ctx, int socket_fd)
+{
+	const struct traffic_class_config *conf = ctx->conf;
+	struct packet_tx_completion_request completion_req = {
+		.traffic_class = ctx->traffic_class,
+		.socket_fd = socket_fd,
+		.frame_type = ctx->frame_type,
+		.meta_data_offset = ctx->meta_data_offset,
+		.num_frames_per_cycle = conf->num_frames_per_cycle,
+	};
+
+	packet_process_tx_completions(ctx->packet_context, &completion_req);
+}
+
 static int tc_send_messages(struct thread_context *ctx, int socket_fd,
 			    struct sockaddr_ll *destination, unsigned char *frame_data,
 			    size_t num_frames, uint64_t duration)
@@ -203,6 +222,7 @@ static int tc_send_messages(struct thread_context *ctx, int socket_fd,
 		.meta_data_offset = ctx->meta_data_offset,
 		.mirror_enabled = conf->rx_mirror_enabled,
 		.tx_time_enabled = conf->tx_time_enabled,
+		.tx_hwtstamp_enabled = config_class_tx_timestamp_enabled(ctx->frame_type),
 	};
 
 	return packet_send_messages(ctx->packet_context, &send_req);
@@ -230,6 +250,9 @@ static int tc_send_frames(struct thread_context *ctx, unsigned char *frame_data,
 
 		stat_frame_sent(ctx->frame_type, sequence_counter);
 	}
+
+	if (config_class_tx_timestamp_enabled(ctx->frame_type))
+		tc_process_tx_completions(ctx, socket_fd);
 
 	return len;
 }
@@ -275,6 +298,9 @@ static int tc_gen_and_send_frames(struct thread_context *ctx, int socket_fd,
 
 	if (len > 0)
 		stat_frames_sent_batch(ctx->frame_type, sequence_counter_begin, len);
+
+	if (config_class_tx_timestamp_enabled(ctx->frame_type))
+		tc_process_tx_completions(ctx, socket_fd);
 
 	return len;
 }
