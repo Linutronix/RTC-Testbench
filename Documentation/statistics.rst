@@ -81,7 +81,7 @@ The following table shows all gathered statistics. All statistics are collected 
      - Latency from NIC hardware to user space based on hardware timestamps.
        See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
-   * - RxHw2Xdp[Min,Max,Av] [us]
+   * - RxHw2Sw[Min,Max,Av] [us]
      - Latency from NIC hardware to the earliest available software timestamp (the XDP program
        for AF_XDP, or the kernel's software RX timestamp for AF_PACKET) based on hardware
        timestamps. See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
@@ -89,7 +89,7 @@ The following table shows all gathered statistics. All statistics are collected 
    * - RxWorkload[Min,Max,Av] [us]
      - Duration of workload execution.
 
-   * - RxXdp2App[Min,Max,Av] [us]
+   * - RxSw2App[Min,Max,Av] [us]
      - Latency from the earliest available software timestamp (the XDP program for AF_XDP, or
        the kernel's software RX timestamp for AF_PACKET) to user space.
        See :ref:`Processing Latency <ProcessingLatency>` for detailed information.

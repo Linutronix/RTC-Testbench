@@ -258,10 +258,10 @@ the Timestamp Details table above:
    * - **Rx**
      - RX App TS - RX HW TS
      - Total RX path latency
-   * - **RxHw2Xdp**
+   * - **RxHw2Sw**
      - RX SW TS - RX HW TS
      - NIC HW to earliest SW timestamp latency
-   * - **RxXdp2App**
+   * - **RxSw2App**
      - RX App TS - RX SW TS
      - Earliest SW timestamp to userspace latency
    * - **Tx**
@@ -277,14 +277,14 @@ Measures total receive-path latency from NIC hardware timestamp to the userspace
 timestamp captured when the application processes the received frame.
 Useful for assessing overall RX path performance.
 
-**RxHw2Xdp:**
+**RxHw2Sw:**
 Measures latency from where the NIC records the hardware timestamp
 (MAC / PHY / DMA write depending on NIC implementation) to the earliest available software
 timestamp: execution of the XDP program for AF_XDP, or the kernel's
 ``SOF_TIMESTAMPING_RX_SOFTWARE`` timestamp for AF_PACKET.
 Useful for debugging NIC to kernel boundary delays.
 
-**RxXdp2App:**
+**RxSw2App:**
 Measures latency between that earliest software timestamp and the application's receive
 handler. Includes XSK ring polling and packet extraction for AF_XDP, or ``recvmmsg()``
 processing for AF_PACKET.
