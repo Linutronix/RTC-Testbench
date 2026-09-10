@@ -257,6 +257,125 @@ int get_interface_link_speed(const char *if_name, uint32_t *speed)
 	return 0;
 }
 
+static const char *hwtstamp_rx_filter_to_string(int filter)
+{
+	switch (filter) {
+	case HWTSTAMP_FILTER_NONE:
+		return "NONE";
+	case HWTSTAMP_FILTER_ALL:
+		return "ALL";
+	case HWTSTAMP_FILTER_SOME:
+		return "SOME";
+	default:
+		return "a PTP/NTP-only filter";
+	}
+}
+
+/*
+ * Read-only diagnostic: does not touch rx_filter, so it can never clash with ptp4l. Explains
+ * *why* the RxMin/Max/Avg, RxHw2Sw/RxSw2App stats will read 0, since that would otherwise be
+ * silent and hard to debug.
+ */
+static void warn_if_rx_hwtstamp_disabled(enum stat_frame_type frame_type)
+{
+	const char *tc = stat_frame_type_to_string(frame_type);
+	const char *if_name = app_config.classes[frame_type].interface;
+	struct hwtstamp_config hwconfig = {};
+	struct ifreq ifreq = {0};
+	int socket_fd, ret;
+
+	socket_fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (socket_fd < 0)
+		return;
+
+	strncpy(ifreq.ifr_name, if_name, sizeof(ifreq.ifr_name) - 1);
+	ifreq.ifr_data = (char *)&hwconfig;
+
+	ret = ioctl(socket_fd, SIOCGHWTSTAMP, &ifreq);
+	close(socket_fd);
+
+	if (ret < 0) {
+		fprintf(stderr,
+			"%s: Cannot query RX HW timestamp config on %s (SIOCGHWTSTAMP: %s). All "
+			"Rx HW timestamp stats will read 0 -- the driver may not support HW "
+			"timestamping at all.\n",
+			tc, if_name, strerror(errno));
+		return;
+	}
+
+	if (hwconfig.rx_filter == HWTSTAMP_FILTER_NONE) {
+		fprintf(stderr,
+			"%s: RX HW timestamping is not enabled on %s (rx_filter=NONE). All Rx HW "
+			"timestamp stats will read 0.\n"
+			"    Fix: start ptp4l with hardware timestamping (-H) before running "
+			"this application.\n",
+			tc, if_name);
+		return;
+	}
+
+	/*
+	 * ptp4l only ever requests a PTP/NTP specific filter for its own traffic. Many drivers
+	 * silently upscale that to HWTSTAMP_FILTER_ALL (the kernel explicitly permits this), but
+	 * some only ever timestamp the traffic they were asked for.
+	 */
+	if (hwconfig.rx_filter != HWTSTAMP_FILTER_ALL && hwconfig.rx_filter != HWTSTAMP_FILTER_SOME)
+		fprintf(stderr,
+			"%s: RX HW timestamping on %s is limited to %s, not ALL. This traffic "
+			"class's own frames may not receive HW timestamps, so RxMin/Max/Avg and "
+			"RxHw2Sw/RxSw2App will all read 0.\n"
+			"    Check actual driver capabilities with: ethtool -T %s\n",
+			tc, if_name, hwtstamp_rx_filter_to_string(hwconfig.rx_filter), if_name);
+}
+
+/* Shared by AF_XDP and AF_PACKET. Only touches tx_type; rx_filter is left to ptp4l. */
+int enable_hw_tx_timestamping(const char *if_name)
+{
+	struct ifreq ifr = {};
+	struct hwtstamp_config hwconfig = {};
+	int socket_fd;
+
+	socket_fd = socket(PF_INET, SOCK_DGRAM, 0);
+	if (socket_fd < 0) {
+		fprintf(stderr, "TxHwTs: Failed to create socket for interface %s: %s\n", if_name,
+			strerror(errno));
+		return -errno;
+	}
+
+	strncpy(ifr.ifr_name, if_name, IFNAMSIZ - 1);
+	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
+	ifr.ifr_data = (char *)&hwconfig;
+
+	if (ioctl(socket_fd, SIOCGHWTSTAMP, &ifr) < 0) {
+		fprintf(stderr, "TxHwTs: Failed to read HW timestamp config for %s: %s\n", if_name,
+			strerror(errno));
+		close(socket_fd);
+		return -errno;
+	}
+
+	if (hwconfig.tx_type == HWTSTAMP_TX_ON) {
+		close(socket_fd);
+		return 0;
+	}
+
+	/* Only change TX type, keep RX settings */
+	hwconfig.tx_type = HWTSTAMP_TX_ON;
+	ifr.ifr_data = (char *)&hwconfig;
+
+	if (ioctl(socket_fd, SIOCSHWTSTAMP, &ifr) < 0) {
+		if (errno == EINVAL || errno == EOPNOTSUPP)
+			fprintf(stderr, "TxHwTs: HW timestamping not supported by driver on %s\n",
+				if_name);
+		else
+			fprintf(stderr, "TxHwTs: Failed to enable HW TX timestamping on %s: %s\n",
+				if_name, strerror(errno));
+		close(socket_fd);
+		return -errno;
+	}
+
+	close(socket_fd);
+	return 0;
+}
+
 static int create_socket(enum stat_frame_type frame_type, struct sock_filter *filter,
 			 size_t filter_len)
 {
@@ -285,6 +404,31 @@ static int create_socket(enum stat_frame_type frame_type, struct sock_filter *fi
 		fprintf(stderr, "Failed to mark %s socket as non-blocking!\n",
 			stat_frame_type_to_string(frame_type));
 		goto err_filter;
+	}
+
+	/* Enable RX HW/SW timestamp reporting. Best effort: driver may not support it. */
+	if (config_class_rx_timestamp_enabled(frame_type)) {
+		unsigned int ts_flags = SOF_TIMESTAMPING_RX_HARDWARE |
+					SOF_TIMESTAMPING_RX_SOFTWARE | SOF_TIMESTAMPING_SOFTWARE |
+					SOF_TIMESTAMPING_RAW_HARDWARE;
+
+		warn_if_rx_hwtstamp_disabled(frame_type);
+
+		ret = setsockopt(socket_fd, SOL_SOCKET, SO_TIMESTAMPING, &ts_flags,
+				 sizeof(ts_flags));
+		if (ret)
+			fprintf(stderr, "Failed to enable RX HW timestamping for %s: %s\n",
+				stat_frame_type_to_string(frame_type), strerror(errno));
+	}
+
+	/* Enable TX HW timestamping on the interface. Explicit opt-in, so fail loudly. */
+	if (config_class_tx_timestamp_enabled(frame_type)) {
+		ret = enable_hw_tx_timestamping(app_config.classes[frame_type].interface);
+		if (ret) {
+			fprintf(stderr, "Failed to enable TX HW timestamping for %s!\n",
+				stat_frame_type_to_string(frame_type));
+			goto err_filter;
+		}
 	}
 
 	/* Enable SO_TXTIME */

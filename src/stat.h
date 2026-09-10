@@ -104,16 +104,16 @@ struct statistics {
 	uint64_t rx_count;
 	double rx_sum;
 	double rx_avg;
-	/* Rx latency from NIC Rx Hw timestamp to Xdp prog timestamp */
-	uint64_t rx_hw2xdp_min;
-	uint64_t rx_hw2xdp_max;
-	double rx_hw2xdp_sum;
-	double rx_hw2xdp_avg;
-	/* Rx latency from Xdp prog timestamp to user space timestamp */
-	uint64_t rx_xdp2app_min;
-	uint64_t rx_xdp2app_max;
-	double rx_xdp2app_sum;
-	double rx_xdp2app_avg;
+	/* Rx latency from NIC Rx Hw timestamp to earliest SW (XDP or kernel) timestamp */
+	uint64_t rx_hw2sw_min;
+	uint64_t rx_hw2sw_max;
+	double rx_hw2sw_sum;
+	double rx_hw2sw_avg;
+	/* Rx latency from earliest SW timestamp to user space timestamp */
+	uint64_t rx_sw2app_min;
+	uint64_t rx_sw2app_max;
+	double rx_sw2app_sum;
+	double rx_sw2app_avg;
 	/* Workload statistics */
 	struct workload_statistics workload[WORKLOAD_MAX];
 	/* Tx latency from user space (at send) to NIC Tx HW timestamp */

@@ -58,73 +58,6 @@ static void xdp_set_prog_bind_flags(struct bpf_object __unused *obj, unsigned in
 }
 
 #ifdef TX_TIMESTAMP
-static int xdp_enable_hw_tx_timestamping(const char *if_name)
-{
-	struct ifreq ifr = {};
-	struct hwtstamp_config hwconfig = {};
-	int socket_fd;
-
-	socket_fd = socket(PF_INET, SOCK_DGRAM, 0);
-	if (socket_fd < 0) {
-		fprintf(stderr, "XdpTxHwTs: Failed to create socket for interface %s: %s\n",
-			if_name, strerror(errno));
-		return -errno;
-	}
-
-	strncpy(ifr.ifr_name, if_name, IFNAMSIZ - 1);
-	ifr.ifr_name[IFNAMSIZ - 1] = '\0';
-	ifr.ifr_data = (char *)&hwconfig;
-
-	if (ioctl(socket_fd, SIOCGHWTSTAMP, &ifr) < 0) {
-		fprintf(stderr, "XdpTxHwTs: Failed to read HW timestamp config for %s: %s\n",
-			if_name, strerror(errno));
-		close(socket_fd);
-		return -errno;
-	}
-
-	if (hwconfig.rx_filter != HWTSTAMP_FILTER_NONE) {
-		log_message(
-			LOG_LEVEL_INFO,
-			"XdpTxHwTs: ptp4l or another service already configured RX HW timestamping "
-			"on %s — keeping existing RX settings\n",
-			if_name);
-	}
-
-	if (hwconfig.tx_type == HWTSTAMP_TX_ON) {
-		log_message(
-			LOG_LEVEL_INFO,
-			"XdpTxHwTs: TX HW timestamping already enabled on %s — skipping reapply\n",
-			if_name);
-		close(socket_fd);
-		return 0;
-	}
-
-	/* Only change TX type, keep RX settings */
-	hwconfig.tx_type = HWTSTAMP_TX_ON;
-	ifr.ifr_data = (char *)&hwconfig;
-
-	if (ioctl(socket_fd, SIOCSHWTSTAMP, &ifr) < 0) {
-		if (errno == EINVAL || errno == EOPNOTSUPP) {
-			fprintf(stderr,
-				"XdpTxHwTs: HW timestamping not supported by driver on %s\n",
-				if_name);
-		} else {
-			fprintf(stderr,
-				"XdpTxHwTs: Failed to enable HW TX timestamping on %s: %s\n",
-				if_name, strerror(errno));
-		}
-		close(socket_fd);
-		return -errno;
-	}
-
-	log_message(
-		LOG_LEVEL_INFO,
-		"XdpTxHwTs: HW TX timestamping enabled for interface %s (RX config preserved)\n",
-		if_name);
-	close(socket_fd);
-	return 0;
-}
-
 static void xdp_process_tx_timestamp(struct xdp_socket *xsk, uint32_t idx_cq)
 {
 	struct round_trip_context *rtt = xsk->tx_hwts.rtt;
@@ -433,7 +366,7 @@ struct xdp_socket *xdp_open_socket(const char *interface, const char *xdp_progra
 #ifdef TX_TIMESTAMP
 	/* Enable HW TX timestamping if requested */
 	if (tx_hwtstamp_mode) {
-		ret = xdp_enable_hw_tx_timestamping(interface);
+		ret = enable_hw_tx_timestamping(interface);
 		if (ret) {
 			fprintf(stderr, "Failed to enable HW TX timestamping on %s!\n", interface);
 			goto err_hw_ts;

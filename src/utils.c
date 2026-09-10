@@ -15,6 +15,7 @@
 #include <arpa/inet.h>
 
 #include <sys/stat.h>
+#include <sys/timex.h>
 #include <sys/types.h>
 
 #include <linux/if_ether.h>
@@ -303,6 +304,17 @@ void print_cpu_list(const int *cpus, size_t cpus_len)
 			printf(", ");
 	}
 	printf("\n");
+}
+
+int64_t get_tai_offset_ns(void)
+{
+	static int64_t tai_offset_ns = INT64_MIN; /* Not yet queried */
+	struct timex tx = {};
+
+	if (tai_offset_ns == INT64_MIN)
+		tai_offset_ns = adjtimex(&tx) < 0 ? 0 : (int64_t)tx.tai * NSEC_PER_SEC;
+
+	return tai_offset_ns;
 }
 
 void print_clockid(clockid_t clock)
