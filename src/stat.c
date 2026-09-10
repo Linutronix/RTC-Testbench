@@ -69,8 +69,8 @@ static void stat_reset(struct statistics *stats)
 	stats->oneway_min = INT64_MAX;
 	stats->oneway_max = INT64_MIN;
 	stats->rx_min = UINT64_MAX;
-	stats->rx_hw2xdp_min = UINT64_MAX;
-	stats->rx_xdp2app_min = UINT64_MAX;
+	stats->rx_hw2sw_min = UINT64_MAX;
+	stats->rx_sw2app_min = UINT64_MAX;
 	for (int i = 0; i < WORKLOAD_MAX; i++)
 		stats->workload[i].rx_workload_min = UINT64_MAX;
 	stats->tx_min = UINT64_MAX;
@@ -258,8 +258,8 @@ static inline size_t get_first_frame_backlog_idx(uint64_t cycle_number,
 static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_type frame_type,
 				       uint64_t rt_time, int64_t oneway_time, bool out_of_order,
 				       bool payload_mismatch, bool frame_id_mismatch,
-				       uint64_t rx_hw2app_time, uint64_t rx_hw2xdp_time,
-				       uint64_t rx_xdp2app_time)
+				       uint64_t rx_hw2app_time, uint64_t rx_hw2sw_time,
+				       uint64_t rx_sw2app_time)
 {
 	bool outlier = false;
 
@@ -287,20 +287,20 @@ static bool stat_frame_received_common(struct statistics *stat, enum stat_frame_
 	stat->oneway_sum += oneway_time;
 	stat->oneway_avg = stat->oneway_sum / (double)stat->oneway_count;
 
-	if (rx_hw2app_time != 0 && rx_hw2xdp_time != 0 && rx_xdp2app_time != 0) {
+	if (rx_hw2app_time != 0 && rx_hw2sw_time != 0 && rx_sw2app_time != 0) {
 		stat->rx_count++;
 
 		stat_update_min_max(rx_hw2app_time, &stat->rx_min, &stat->rx_max);
 		stat->rx_sum += rx_hw2app_time;
 		stat->rx_avg = stat->rx_sum / (double)stat->rx_count;
 
-		stat_update_min_max(rx_hw2xdp_time, &stat->rx_hw2xdp_min, &stat->rx_hw2xdp_max);
-		stat->rx_hw2xdp_sum += rx_hw2xdp_time;
-		stat->rx_hw2xdp_avg = stat->rx_hw2xdp_sum / (double)stat->rx_count;
+		stat_update_min_max(rx_hw2sw_time, &stat->rx_hw2sw_min, &stat->rx_hw2sw_max);
+		stat->rx_hw2sw_sum += rx_hw2sw_time;
+		stat->rx_hw2sw_avg = stat->rx_hw2sw_sum / (double)stat->rx_count;
 
-		stat_update_min_max(rx_xdp2app_time, &stat->rx_xdp2app_min, &stat->rx_xdp2app_max);
-		stat->rx_xdp2app_sum += rx_xdp2app_time;
-		stat->rx_xdp2app_avg = stat->rx_xdp2app_sum / (double)stat->rx_count;
+		stat_update_min_max(rx_sw2app_time, &stat->rx_sw2app_min, &stat->rx_sw2app_max);
+		stat->rx_sw2app_sum += rx_sw2app_time;
+		stat->rx_sw2app_avg = stat->rx_sw2app_sum / (double)stat->rx_count;
 	}
 
 	stat->frames_received++;
@@ -350,15 +350,15 @@ static void stat_frame_proc_batch_common(struct statistics *stat, uint64_t proc_
 static void stat_frame_received_per_period(enum stat_frame_type frame_type, uint64_t curr_time,
 					   uint64_t rt_time, int64_t oneway_time, bool out_of_order,
 					   bool payload_mismatch, bool frame_id_mismatch,
-					   uint64_t rx_hw2app_time, uint64_t rx_hw2xdp_time,
-					   uint64_t rx_xdp2app_time)
+					   uint64_t rx_hw2app_time, uint64_t rx_hw2sw_time,
+					   uint64_t rx_sw2app_time)
 {
 	struct statistics *stat_per_period = &statistics_per_period[frame_type];
 
 	stat_per_period->time_stamp = curr_time;
 	stat_frame_received_common(stat_per_period, frame_type, rt_time, oneway_time, out_of_order,
 				   payload_mismatch, frame_id_mismatch, rx_hw2app_time,
-				   rx_hw2xdp_time, rx_xdp2app_time);
+				   rx_hw2sw_time, rx_sw2app_time);
 }
 
 static void stat_frame_sent_per_period(enum stat_frame_type frame_type)
@@ -419,7 +419,7 @@ static void stat_frame_received_per_period(enum stat_frame_type frame_type, uint
 					   uint64_t rt_time, bool out_of_order,
 					   bool payload_mismatch, bool frame_id_mismatch,
 					   uint64_t tx_timestamp, uint64_t rx_hw2app_time,
-					   uint64_t rx_hw2xdp_time, uint64_t rx_xdp2app_time)
+					   uint64_t rx_hw2sw_time, uint64_t rx_sw2app_time)
 {
 }
 
@@ -578,7 +578,7 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 			 bool payload_mismatch, bool frame_id_mismatch, uint64_t tx_timestamp,
 			 uint64_t rx_hw_timestamp, uint64_t rx_sw_timestamp)
 {
-	uint64_t rt_time = 0, curr_time, rx_hw2app_time, rx_hw2xdp_time, rx_xdp2app_time;
+	uint64_t rt_time = 0, curr_time, rx_hw2app_time, rx_hw2sw_time, rx_sw2app_time;
 	struct round_trip_context *rtt = &round_trip_contexts[frame_type];
 	const bool histogram = app_config.stats_histogram_enabled;
 	struct statistics *stat = &global_statistics[frame_type];
@@ -659,26 +659,26 @@ void stat_frame_received(enum stat_frame_type frame_type, uint64_t cycle_number,
 		/* Calculate Rx times */
 		rx_hw2app_time = curr_time - rx_hw_timestamp;
 		rx_hw2app_time /= 1000;
-		rx_hw2xdp_time = rx_sw_timestamp - rx_hw_timestamp;
-		rx_hw2xdp_time /= 1000;
-		rx_xdp2app_time = curr_time - rx_sw_timestamp;
-		rx_xdp2app_time /= 1000;
+		rx_hw2sw_time = rx_sw_timestamp - rx_hw_timestamp;
+		rx_hw2sw_time /= 1000;
+		rx_sw2app_time = curr_time - rx_sw_timestamp;
+		rx_sw2app_time /= 1000;
 	} else {
 		/* Unavailable or, under clock jitter, out of order: zero instead of underflowing */
 		rx_hw2app_time = 0;
-		rx_hw2xdp_time = 0;
-		rx_xdp2app_time = 0;
+		rx_hw2sw_time = 0;
+		rx_sw2app_time = 0;
 	}
 
 	/* Update global stats */
 	outlier = stat_frame_received_common(stat, frame_type, rt_time, oneway_time, out_of_order,
 					     payload_mismatch, frame_id_mismatch, rx_hw2app_time,
-					     rx_hw2xdp_time, rx_xdp2app_time);
+					     rx_hw2sw_time, rx_sw2app_time);
 
 	/* Update stats per collection interval */
 	stat_frame_received_per_period(frame_type, curr_time, rt_time, oneway_time, out_of_order,
 				       payload_mismatch, frame_id_mismatch, rx_hw2app_time,
-				       rx_hw2xdp_time, rx_xdp2app_time);
+				       rx_hw2sw_time, rx_sw2app_time);
 
 	/* Stop tracing after certain amount of time */
 	if (app_config.debug_stop_trace_on_outlier && outlier) {
@@ -1034,27 +1034,27 @@ int stat_to_json(char *json, size_t len, enum stat_frame_type frame_type,
 	if (ret)
 		return ret;
 
-	ret = append_jlog_u64(&json, &len, "RxHw2XdpMin", stat->rx_hw2xdp_min);
+	ret = append_jlog_u64(&json, &len, "RxHw2SwMin", stat->rx_hw2sw_min);
 	if (ret)
 		return ret;
 
-	ret = append_jlog_u64(&json, &len, "RxHw2XdpMax", stat->rx_hw2xdp_max);
+	ret = append_jlog_u64(&json, &len, "RxHw2SwMax", stat->rx_hw2sw_max);
 	if (ret)
 		return ret;
 
-	ret = append_jlog_float(&json, &len, "RxHw2XdpAv", stat->rx_hw2xdp_avg);
+	ret = append_jlog_float(&json, &len, "RxHw2SwAv", stat->rx_hw2sw_avg);
 	if (ret)
 		return ret;
 
-	ret = append_jlog_u64(&json, &len, "RxXdp2AppMin", stat->rx_xdp2app_min);
+	ret = append_jlog_u64(&json, &len, "RxSw2AppMin", stat->rx_sw2app_min);
 	if (ret)
 		return ret;
 
-	ret = append_jlog_u64(&json, &len, "RxXdp2AppMax", stat->rx_xdp2app_max);
+	ret = append_jlog_u64(&json, &len, "RxSw2AppMax", stat->rx_sw2app_max);
 	if (ret)
 		return ret;
 
-	ret = append_jlog_float(&json, &len, "RxXdp2AppAv", stat->rx_xdp2app_avg);
+	ret = append_jlog_float(&json, &len, "RxSw2AppAv", stat->rx_sw2app_avg);
 	if (ret)
 		return ret;
 

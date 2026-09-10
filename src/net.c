@@ -273,8 +273,8 @@ static const char *hwtstamp_rx_filter_to_string(int filter)
 
 /*
  * Read-only diagnostic: does not touch rx_filter, so it can never clash with ptp4l. Explains
- * *why* the RxHw2Xdp/RxXdp2App (and possibly RxMin/Max/Avg) stats will read 0, since that would
- * otherwise be silent and hard to debug.
+ * *why* the RxMin/Max/Avg, RxHw2Sw/RxSw2App stats will read 0, since that would otherwise be
+ * silent and hard to debug.
  */
 static void warn_if_rx_hwtstamp_disabled(enum stat_frame_type frame_type)
 {
@@ -321,8 +321,8 @@ static void warn_if_rx_hwtstamp_disabled(enum stat_frame_type frame_type)
 	if (hwconfig.rx_filter != HWTSTAMP_FILTER_ALL && hwconfig.rx_filter != HWTSTAMP_FILTER_SOME)
 		fprintf(stderr,
 			"%s: RX HW timestamping on %s is limited to %s, not ALL. This traffic "
-			"class's own frames may not receive HW timestamps, so RxHw2Xdp/"
-			"RxXdp2App/Rx will read 0.\n"
+			"class's own frames may not receive HW timestamps, so RxMin/Max/Avg and "
+			"RxHw2Sw/RxSw2App will all read 0.\n"
 			"    Check actual driver capabilities with: ethtool -T %s\n",
 			tc, if_name, hwtstamp_rx_filter_to_string(hwconfig.rx_filter), if_name);
 }
