@@ -406,19 +406,29 @@ static int create_socket(enum stat_frame_type frame_type, struct sock_filter *fi
 		goto err_filter;
 	}
 
-	/* Enable RX HW/SW timestamp reporting. Best effort: driver may not support it. */
-	if (config_class_rx_timestamp_enabled(frame_type)) {
-		unsigned int ts_flags = SOF_TIMESTAMPING_RX_HARDWARE |
-					SOF_TIMESTAMPING_RX_SOFTWARE | SOF_TIMESTAMPING_SOFTWARE |
-					SOF_TIMESTAMPING_RAW_HARDWARE;
+	/* Enable RX/TX HW/SW timestamp reporting. Best effort: driver may not support it. */
+	{
+		const bool rx_hwtstamp_enabled = config_class_rx_timestamp_enabled(frame_type);
+		const bool tx_hwtstamp_enabled = config_class_tx_timestamp_enabled(frame_type);
 
-		warn_if_rx_hwtstamp_disabled(frame_type);
+		if (rx_hwtstamp_enabled || tx_hwtstamp_enabled) {
+			unsigned int ts_flags =
+				SOF_TIMESTAMPING_SOFTWARE | SOF_TIMESTAMPING_RAW_HARDWARE;
 
-		ret = setsockopt(socket_fd, SOL_SOCKET, SO_TIMESTAMPING, &ts_flags,
-				 sizeof(ts_flags));
-		if (ret)
-			fprintf(stderr, "Failed to enable RX HW timestamping for %s: %s\n",
-				stat_frame_type_to_string(frame_type), strerror(errno));
+			if (rx_hwtstamp_enabled) {
+				ts_flags |=
+					SOF_TIMESTAMPING_RX_HARDWARE | SOF_TIMESTAMPING_RX_SOFTWARE;
+				warn_if_rx_hwtstamp_disabled(frame_type);
+			}
+			if (tx_hwtstamp_enabled)
+				ts_flags |= SOF_TIMESTAMPING_TX_HARDWARE;
+
+			ret = setsockopt(socket_fd, SOL_SOCKET, SO_TIMESTAMPING, &ts_flags,
+					 sizeof(ts_flags));
+			if (ret)
+				fprintf(stderr, "Failed to enable HW timestamping for %s: %s\n",
+					stat_frame_type_to_string(frame_type), strerror(errno));
+		}
 	}
 
 	/* Enable TX HW timestamping on the interface. Explicit opt-in, so fail loudly. */
