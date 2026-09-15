@@ -278,10 +278,10 @@ static const char *hwtstamp_rx_filter_to_string(int filter)
  */
 static void warn_if_rx_hwtstamp_disabled(enum stat_frame_type frame_type)
 {
-	const char *tc = stat_frame_type_to_string(frame_type);
-	const char *if_name = app_config.classes[frame_type].interface;
 	struct hwtstamp_config hwconfig = {};
 	struct ifreq ifreq = {0};
+	const char *if_name = app_config.classes[frame_type].interface;
+	const char *tc = stat_frame_type_to_string(frame_type);
 	int socket_fd, ret;
 
 	socket_fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
@@ -330,8 +330,8 @@ static void warn_if_rx_hwtstamp_disabled(enum stat_frame_type frame_type)
 /* Shared by AF_XDP and AF_PACKET. Only touches tx_type; rx_filter is left to ptp4l. */
 int enable_hw_tx_timestamping(const char *if_name)
 {
-	struct ifreq ifr = {};
 	struct hwtstamp_config hwconfig = {};
+	struct ifreq ifr = {};
 	int socket_fd;
 
 	socket_fd = socket(PF_INET, SOCK_DGRAM, 0);
