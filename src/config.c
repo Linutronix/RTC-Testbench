@@ -1377,6 +1377,16 @@ bool config_sanity_check(void)
 		return false;
 	}
 
+	/*
+	 * HW RX timestamps are always TAI-referenced (AF_XDP: bpf_ktime_get_tai_ns(); AF_PACKET:
+	 * CLOCK_REALTIME converted via get_tai_offset_ns()) and compared directly against the app
+	 * clock, so the app clock must be CLOCK_TAI too.
+	 */
+	if (config_have_rx_timestamp() && app_config.application_clock_id != CLOCK_TAI) {
+		fprintf(stderr, "Rx HW timestamping requires ApplicationClockId: CLOCK_TAI!\n");
+		return false;
+	}
+
 	if (!config_have_tx_timestamp() &&
 	    (app_config.classes[GENERICL2_FRAME_TYPE].tx_hwtstamp_enabled ||
 	     app_config.classes[RTC_FRAME_TYPE].tx_hwtstamp_enabled ||
@@ -1387,6 +1397,17 @@ bool config_sanity_check(void)
 		fprintf(stderr,
 			"Rebuild with -DTX_TIMESTAMP=ON (AF_XDP additionally requires libxdp "
 			">= v1.5.2 and Linux kernel >= v6.8).\n");
+		return false;
+	}
+
+	/* Same TAI requirement as RX above, since Tx HW timestamps are TAI-referenced too. */
+	if ((app_config.classes[GENERICL2_FRAME_TYPE].tx_hwtstamp_enabled ||
+	     app_config.classes[RTC_FRAME_TYPE].tx_hwtstamp_enabled ||
+	     app_config.classes[RTA_FRAME_TYPE].tx_hwtstamp_enabled ||
+	     app_config.classes[TSN_HIGH_FRAME_TYPE].tx_hwtstamp_enabled ||
+	     app_config.classes[TSN_LOW_FRAME_TYPE].tx_hwtstamp_enabled) &&
+	    app_config.application_clock_id != CLOCK_TAI) {
+		fprintf(stderr, "Tx HW timestamping requires ApplicationClockId: CLOCK_TAI!\n");
 		return false;
 	}
 
