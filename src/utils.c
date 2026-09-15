@@ -306,14 +306,21 @@ void print_cpu_list(const int *cpus, size_t cpus_len)
 	printf("\n");
 }
 
-int64_t get_tai_offset_ns(void)
+static int64_t tai_offset_ns = INT64_MIN; /* Not yet queried */
+
+/* Avoids a data race: concurrent per-traffic-class RT threads could otherwise race on lazy init. */
+void init_tai_offset(void)
 {
-	static int64_t tai_offset_ns = INT64_MIN; /* Not yet queried */
 	struct timex tx = {};
 
-	if (tai_offset_ns == INT64_MIN)
-		tai_offset_ns = adjtimex(&tx) < 0 ? 0 : (int64_t)tx.tai * NSEC_PER_SEC;
+	tai_offset_ns = adjtimex(&tx) < 0 ? 0 : (int64_t)tx.tai * NSEC_PER_SEC;
 
+	if (config_have_rx_timestamp() && !tx.tai)
+		fprintf(stderr, "Warning: CLOCK_TAI offset not set. Run ptp4l/phc2sys first!\n");
+}
+
+int64_t get_tai_offset_ns(void)
+{
 	return tai_offset_ns;
 }
 

@@ -154,6 +154,8 @@ void tb_startup(int argc, char *argv[], struct tb_startup_mode *mode)
 		exit(EXIT_FAILURE);
 	}
 
+	init_tai_offset();
+
 	if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
 		perror("mlockall() failed");
 		exit(EXIT_FAILURE);
