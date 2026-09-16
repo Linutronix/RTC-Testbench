@@ -135,7 +135,8 @@
 <p>Processing latency metrics quantify how long the Mirror DUT takes to process a full cycle
 of packets. It is measured from the hardware RX timestamp of the first packet in the cycle
 to the hardware TX timestamp of the response packet(s). These measurements work only in
-Mirror mode and only when AF_XDP and hardware timestamping are enabled.</p>
+Mirror mode, with either AF_XDP or AF_PACKET, when both RX and TX hardware timestamping
+are enabled.</p>
 <p>These metrics allow evaluating Mirror-side timing behavior for both:</p>
 <ul class="simple">
 <li><p>Pure forwarding scenarios (no workload)</p></li>
@@ -160,6 +161,14 @@ latency metrics measure:</p>
          [Pkt 1 RX] ◄────────── ProcFirst ──────────► [Pkt 1 TX]
          [Pkt 1 RX] ◄────────── ProcBatch ──────────► [Pkt N TX]
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The diagram above shows the AF_XDP case, where the “XDP” stage is a program running on
+the NIC driver’s RX path. Over AF_PACKET, there is no XDP program; the same intermediate
+software timestamp (RX SW TS) is instead captured by the kernel’s generic RX timestamping
+(<code class="docutils literal notranslate"><span class="pre">SOF_TIMESTAMPING_RX_SOFTWARE</span></code>). The rest of the flow, and all metrics below, are
+identical for both transports.</p>
 </div>
 </section>
 <section id="timestamp-details">
@@ -187,9 +196,9 @@ latency metrics measure:</p>
 <td><p>HW timestamp at NIC</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>RX SW TS</strong></p></td>
-<td><p>XDP Hook</p></td>
+<td><p>XDP hook / kernel RX</p></td>
 <td><p>After DMA completion</p></td>
-<td><p>XDP program timestamp</p></td>
+<td><p>XDP program, or RX_SOFTWARE flag</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>RX App TS</strong></p></td>
 <td><p>Userspace</p></td>
@@ -209,24 +218,29 @@ latency metrics measure:</p>
 </tbody>
 </table>
 <p><strong>RX HW TS:</strong> Exact hardware capture point varies by NIC (MAC layer, PHY, or DMA descriptor write).</p>
-<p><strong>RX SW TS:</strong> Timestamp is taken when the XDP program executes after the NIC DMA completes.</p>
+<p><strong>RX SW TS:</strong> For AF_XDP, taken when the XDP program executes after the NIC DMA completes. For
+AF_PACKET, this is the kernel’s software RX timestamp (<code class="docutils literal notranslate"><span class="pre">SOF_TIMESTAMPING_RX_SOFTWARE</span></code>),
+captured at the ingress of the network stack, before the frame is dispatched to any socket.</p>
 <p><strong>RX App TS:</strong> Timestamp is captured at stat_frame_received(), after userspace dequeues the packet.</p>
 <p><strong>TX SW TS:</strong> Timestamp represents the moment the TX descriptors are submitted to the TX ring.</p>
 <p><strong>TX HW TS:</strong> Exact capture point varies by NIC (MAC egress, PHY, or descriptor completion).</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>On the RX path, an intermediate software timestamp (RX SW TS) is available because,
-in AF_XDP mode, all packets are processed by the XDP program before they are
-delivered to userspace.</p>
-<p>On the TX path there is no equivalent midpoint timestamp: with AF_XDP, packets are
-transmitted directly from userspace via the TX ring, so only the userspace
-submission timestamp (TX SW TS) and the NIC hardware transmit timestamp (TX HW TS)
-are available.</p>
+<p>On the RX path, an intermediate software timestamp (RX SW TS) is available for both
+transports: for AF_XDP because all packets are processed by the XDP program before
+they are delivered to userspace, and for AF_PACKET because the kernel timestamps every
+frame at the ingress of the network stack, before it is dispatched to any socket.</p>
+<p>On the TX path there is no equivalent midpoint timestamp for either transport: with
+AF_XDP, packets are transmitted directly from userspace via the TX ring; with AF_PACKET,
+only the userspace submission timestamp (TX SW TS) and the NIC hardware transmit
+timestamp (TX HW TS) are requested, even though the kernel could in principle also
+supply a software TX timestamp (<code class="docutils literal notranslate"><span class="pre">SOF_TIMESTAMPING_TX_SOFTWARE</span></code>). This is a deliberate
+choice to keep both transports’ Tx latency model identical.</p>
 </div>
 </section>
 <section id="processing-latency-metrics">
 <h2>Processing Latency Metrics<a class="headerlink" href="#processing-latency-metrics" title="Permalink to this heading"></a></h2>
-<p>The following metrics are available in Mirror mode with AF_XDP when both RX and TX
+<p>The following metrics are available in Mirror mode with AF_XDP or AF_PACKET when both RX and TX
 hardware timestamping are enabled:</p>
 <table class="docutils align-default" id="id2">
 <caption><span class="caption-text">Primary Processing Latency Metrics</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
@@ -272,10 +286,11 @@ time matters.</p>
 <h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h2>
 <section id="dependencies">
 <h3>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading"></a></h3>
-<p>Processing latency metrics require both RX and TX hardware timestamp support.
-The following table summarizes all dependencies:</p>
+<p>Processing latency metrics require both RX and TX hardware timestamp support. Requirements
+differ depending on the transport used for the traffic class.</p>
+<p><strong>AF_XDP</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;XdpEnabled:</span> <span class="pre">true</span></code>):</p>
 <table class="docutils align-default" id="id3">
-<caption><span class="caption-text">Hardware Timestamp Dependencies</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">AF_XDP Hardware Timestamp Dependencies</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
 <colgroup>
 <col style="width: 27.3%" />
 <col style="width: 36.4%" />
@@ -312,6 +327,10 @@ The following table summarizes all dependencies:</p>
 timestamping capabilities first became available in the kernel. Real support
 depends on NIC driver implementation.</p>
 </div>
+<p><strong>AF_PACKET</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;XdpEnabled:</span> <span class="pre">false</span></code>):</p>
+<p>Needs only a NIC driver supporting <code class="docutils literal notranslate"><span class="pre">SIOCSHWTSTAMP</span></code> and <code class="docutils literal notranslate"><span class="pre">SO_TIMESTAMPING</span></code>; no particular
+libbpf/libxdp version is required, since this path uses plain socket APIs instead of AF_XDP
+metadata. Check driver support with <code class="docutils literal notranslate"><span class="pre">ethtool</span> <span class="pre">-T</span> <span class="pre">&lt;interface&gt;</span></code>.</p>
 </section>
 <section id="build-configuration">
 <h3>Build Configuration<a class="headerlink" href="#build-configuration" title="Permalink to this heading"></a></h3>
@@ -320,8 +339,13 @@ depends on NIC driver implementation.</p>
 </pre></div>
 </div>
 <p>Enable TX hardware timestamping for your traffic class in the YAML configuration.
-For example, to enable it for TsnHigh:</p>
+For example, to enable it for TsnHigh over AF_XDP:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">TsnHighXdpEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">TsnHighTxTimeStampEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+<p>Or over AF_PACKET (no libxdp/libbpf version requirements, see Dependencies above):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">TsnHighXdpEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="nt">TsnHighTxTimeStampEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
@@ -373,13 +397,13 @@ the Timestamp Details table above:</p>
 <td><p>RX App TS - RX HW TS</p></td>
 <td><p>Total RX path latency</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>RxHw2Xdp</strong></p></td>
+<tr class="row-odd"><td><p><strong>RxHw2Sw</strong></p></td>
 <td><p>RX SW TS - RX HW TS</p></td>
-<td><p>NIC HW to XDP hook latency</p></td>
+<td><p>NIC HW to earliest SW timestamp latency</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>RxXdp2App</strong></p></td>
+<tr class="row-even"><td><p><strong>RxSw2App</strong></p></td>
 <td><p>RX App TS - RX SW TS</p></td>
-<td><p>XDP hook to userspace latency</p></td>
+<td><p>Earliest SW timestamp to userspace latency</p></td>
 </tr>
 <tr class="row-odd"><td><p><strong>Tx</strong></p></td>
 <td><p>TX HW TS - TX SW TS</p></td>
@@ -395,13 +419,16 @@ the Timestamp Details table above:</p>
 Measures total receive-path latency from NIC hardware timestamp to the userspace
 timestamp captured when the application processes the received frame.
 Useful for assessing overall RX path performance.</p>
-<p><strong>RxHw2Xdp:</strong>
+<p><strong>RxHw2Sw:</strong>
 Measures latency from where the NIC records the hardware timestamp
-(MAC / PHY / DMA write depending on NIC implementation) to execution of the XDP program.
+(MAC / PHY / DMA write depending on NIC implementation) to the earliest available software
+timestamp: execution of the XDP program for AF_XDP, or the kernel’s
+<code class="docutils literal notranslate"><span class="pre">SOF_TIMESTAMPING_RX_SOFTWARE</span></code> timestamp for AF_PACKET.
 Useful for debugging NIC to kernel boundary delays.</p>
-<p><strong>RxXdp2App:</strong>
-Measures latency between the XDP program and the application’s receive handler.
-Includes XSK ring polling and packet extraction.
+<p><strong>RxSw2App:</strong>
+Measures latency between that earliest software timestamp and the application’s receive
+handler. Includes XSK ring polling and packet extraction for AF_XDP, or <code class="docutils literal notranslate"><span class="pre">recvmmsg()</span></code>
+processing for AF_PACKET.
 Useful for debugging kernel to userspace delays.</p>
 <p><strong>Tx:</strong>
 Measures latency from software submission to the TX ring to when the NIC hardware

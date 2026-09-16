@@ -199,15 +199,17 @@ real time issue (e.g., kernel, driver, hardware, …). Should be zero.</p></td>
 <td><p>Latency from NIC hardware to user space based on hardware timestamps.
 See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
-<tr class="row-even"><td><p>RxHw2Xdp[Min,Max,Av] [us]</p></td>
-<td><p>Latency from NIC hardware to XDP program based on hardware timestamps.
-See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
+<tr class="row-even"><td><p>RxHw2Sw[Min,Max,Av] [us]</p></td>
+<td><p>Latency from NIC hardware to the earliest available software timestamp (the XDP program
+for AF_XDP, or the kernel’s software RX timestamp for AF_PACKET) based on hardware
+timestamps. See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-odd"><td><p>RxWorkload[Min,Max,Av] [us]</p></td>
 <td><p>Duration of workload execution.</p></td>
 </tr>
-<tr class="row-even"><td><p>RxXdp2App[Min,Max,Av] [us]</p></td>
-<td><p>Latency from XDP program to user space.
+<tr class="row-even"><td><p>RxSw2App[Min,Max,Av] [us]</p></td>
+<td><p>Latency from the earliest available software timestamp (the XDP program for AF_XDP, or
+the kernel’s software RX timestamp for AF_PACKET) to user space.
 See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-odd"><td><p>Tx[Min,Max,Av] [us]</p></td>
