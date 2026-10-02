@@ -90,8 +90,35 @@ void tc_signal_next(struct thread_context *ctx)
 		return;
 
 	pthread_mutex_lock(&ctx->next->data_mutex);
+	if (app_config.application_rx_triggered_tx && ctx->next->conf->rx_mirror_enabled)
+		ctx->next->tx_chain_ready = true;
 	pthread_cond_signal(&ctx->next->data_cond_var);
 	pthread_mutex_unlock(&ctx->next->data_mutex);
+}
+
+static bool tc_rx_triggered_tx(const struct thread_context *ctx)
+{
+	return app_config.application_rx_triggered_tx && ctx->conf->rx_mirror_enabled;
+}
+
+static void tc_signal_rx_to_tx(struct thread_context *ctx)
+{
+	pthread_mutex_lock(&ctx->data_mutex);
+	ctx->rx_ready_for_tx = true;
+	pthread_cond_signal(&ctx->data_cond_var);
+	pthread_mutex_unlock(&ctx->data_mutex);
+}
+
+/* Signal workload completion and, in Rx-triggered Tx mode, release the matching Tx thread. */
+static void tc_rx_done(struct thread_context *ctx, unsigned int received)
+{
+	if (tc_rx_triggered_tx(ctx)) {
+		workload_signal_and_wait(ctx, received);
+		if (!ctx->stop)
+			tc_signal_rx_to_tx(ctx);
+	} else {
+		workload_signal(ctx, received);
+	}
 }
 
 static enum tc_tx_wait_result tc_wait_for_tx_cycle(struct thread_context *ctx,
@@ -100,6 +127,30 @@ static enum tc_tx_wait_result tc_wait_for_tx_cycle(struct thread_context *ctx,
 	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	const struct traffic_class_config *conf = ctx->conf;
 	int ret;
+
+	if (tc_rx_triggered_tx(ctx)) {
+		struct timespec timeout;
+
+		clock_gettime(CLOCK_MONOTONIC, &timeout);
+		timeout.tv_sec++;
+
+		/* Wait for Rx to complete before proceeding with Tx. */
+		pthread_mutex_lock(&ctx->data_mutex);
+		while (!ctx->rx_ready_for_tx || (ctx->desc->tx_model != TC_TX_STANDALONE &&
+						 !ctx->is_first && !ctx->tx_chain_ready)) {
+			ret = pthread_cond_timedwait(&ctx->data_cond_var, &ctx->data_mutex,
+						     &timeout);
+			if (ret == ETIMEDOUT) {
+				pthread_mutex_unlock(&ctx->data_mutex);
+				return TC_TX_WAIT_STOP;
+			}
+		}
+		ctx->rx_ready_for_tx = false;
+		ctx->tx_chain_ready = false;
+		pthread_mutex_unlock(&ctx->data_mutex);
+		*num_frames = conf->num_frames_per_cycle;
+		return TC_TX_WAIT_SEND;
+	}
 
 	/*
 	 * Burst traffic classes are triggered by the previous traffic class just like the
@@ -576,7 +627,7 @@ void *tc_rx_thread(void *data)
 		/* Receive TC frames. */
 		received = packet_receive_messages(ctx->packet_context, &recv_req);
 
-		workload_signal(ctx, received);
+		tc_rx_done(ctx, received);
 	}
 
 	return NULL;
@@ -634,7 +685,7 @@ void *tc_xdp_rx_thread(void *data)
 		ctx->received_frames = received;
 		pthread_mutex_unlock(&ctx->xdp_data_mutex);
 
-		workload_signal(ctx, received);
+		tc_rx_done(ctx, received);
 	}
 
 	return NULL;

@@ -45,6 +45,11 @@ Possible parameters include:
    * - ApplicationRxBaseOffsetNS (Integer)
      - Execution offset of Rx threads within Application cycle time
 
+   * - ApplicationRxTriggeredTx (Boolean)
+     - Mirror only: trigger Tx threads after Rx threads and any enabled Rx workload finish.
+       When enabled, ``ApplicationTxBaseOffsetNS`` does not schedule Tx threads. Not supported
+       in combination with UDP traffic classes.
+
    * - ApplicationXdpProgram (String)
      - Application specific XDP program
 

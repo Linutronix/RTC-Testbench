@@ -209,6 +209,7 @@ struct application_config {
 	uint64_t application_base_start_offset_ns;
 	uint64_t application_tx_base_offset_ns;
 	uint64_t application_rx_base_offset_ns;
+	bool application_rx_triggered_tx;
 	char *application_xdp_program;
 	size_t application_xdp_program_length;
 	/* Traffic class configurations */
@@ -259,7 +260,7 @@ extern struct application_config app_config;
 int config_read_from_file(const char *config_file);
 int config_set_defaults(bool mirror_enabled);
 void config_print_values(void);
-bool config_sanity_check(void);
+bool config_sanity_check(bool mirror_enabled);
 void config_free(void);
 bool config_is_tc_active(enum stat_frame_type type);
 void config_print_separator(void);

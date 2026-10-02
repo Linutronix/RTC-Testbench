@@ -39,6 +39,7 @@ static const struct config_app_option global_options[] = {
 		   CONFIG_TYPE_TIME),
 	APP_OPTION("ApplicationTxBaseOffsetNS", application_tx_base_offset_ns, CONFIG_TYPE_TIME),
 	APP_OPTION("ApplicationRxBaseOffsetNS", application_rx_base_offset_ns, CONFIG_TYPE_TIME),
+	APP_OPTION("ApplicationRxTriggeredTx", application_rx_triggered_tx, CONFIG_TYPE_BOOL),
 	APP_STRING_OPTION("ApplicationXdpProgram", application_xdp_program),
 
 	APP_OPTION("LogThreadPriority", log_thread_priority, CONFIG_TYPE_INT),
@@ -898,6 +899,7 @@ int config_set_defaults(bool mirror_enabled)
 	app_config.application_base_start_time_ns = (current.tv_sec + 30) * NSEC_PER_SEC;
 	app_config.application_tx_base_offset_ns = 800000;
 	app_config.application_rx_base_offset_ns = 300000;
+	app_config.application_rx_triggered_tx = false;
 	app_config.application_xdp_program = strdup(default_xdp_program);
 	if (!app_config.application_xdp_program)
 		goto out;
@@ -1236,7 +1238,7 @@ static bool config_check_keys(const char *traffic_class, enum security_mode mode
  *   - Frame lengths
  *   - Limitations
  */
-bool config_sanity_check(void)
+bool config_sanity_check(bool mirror_enabled)
 {
 	const size_t min_secure_profinet_frame_size = sizeof(struct vlan_ethernet_header) +
 						      sizeof(struct profinet_secure_header) +
@@ -1265,16 +1267,37 @@ bool config_sanity_check(void)
 		return false;
 	}
 
-	/* Tx and Rx offset should be <= cycle time */
-	if (app_config.application_rx_base_offset_ns > app_config.application_base_cycle_time_ns ||
+	if (app_config.application_rx_triggered_tx && !mirror_enabled) {
+		fprintf(stderr, "ApplicationRxTriggeredTx is only supported by mirror!\n");
+		return false;
+	}
+
+	/* UDP does not use the generic tc.c engine and hence doesn't support Rx-triggered Tx. */
+	if (app_config.application_rx_triggered_tx &&
+	    (config_is_tc_active(UDP_HIGH_FRAME_TYPE) || config_is_tc_active(UDP_LOW_FRAME_TYPE))) {
+		fprintf(stderr,
+			"ApplicationRxTriggeredTx is not supported in combination with UDP!\n");
+		return false;
+	}
+
+	/* Rx offset should be <= cycle time. */
+	if (app_config.application_rx_base_offset_ns > app_config.application_base_cycle_time_ns) {
+		fprintf(stderr, "ApplicationRxBaseOffsetNS should be less than "
+				"ApplicationBaseCycleTimeNS!\n");
+		return false;
+	}
+
+	/* Rx-triggered mirror Tx does not use ApplicationTxBaseOffsetNS. */
+	if (!app_config.application_rx_triggered_tx &&
 	    app_config.application_tx_base_offset_ns > app_config.application_base_cycle_time_ns) {
-		fprintf(stderr, "Application(Tx|Rx)BaseOffsetNS should be less than "
+		fprintf(stderr, "ApplicationTxBaseOffsetNS should be less than "
 				"ApplicationBaseCycleTimeNS!\n");
 		return false;
 	}
 
 	/* First in cycle comes Rx then optionally workload and last Tx */
-	if (app_config.application_rx_base_offset_ns >= app_config.application_tx_base_offset_ns) {
+	if (!app_config.application_rx_triggered_tx &&
+	    app_config.application_rx_base_offset_ns >= app_config.application_tx_base_offset_ns) {
 		fprintf(stderr, "ApplicationRxBaseOffsetNS should be less than "
 				"ApplicationTxBaseOffsetNS!\n");
 		return false;

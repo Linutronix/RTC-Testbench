@@ -62,6 +62,8 @@ struct thread_context {
 	pthread_mutex_t data_mutex;   /* Mutex to protect frame data */
 	pthread_cond_t data_cond_var; /* Cond var to signal Tx thread */
 	size_t num_frames_available;  /* How many frames are ready to be sent? */
+	bool rx_ready_for_tx;         /* RX and workload are complete for this cycle */
+	bool tx_chain_ready;          /* Previous traffic class completed its Tx step */
 	bool is_first;                /* Is this the first active traffic class? */
 	bool is_last;                 /* Is this the last active traffic class? */
 

@@ -149,7 +149,7 @@ void tb_startup(int argc, char *argv[], struct tb_startup_mode *mode)
 
 	config_print_values();
 
-	if (!config_sanity_check()) {
+	if (!config_sanity_check(mode->is_mirror)) {
 		fprintf(stderr, "Configuration failed sanity checks!\n");
 		exit(EXIT_FAILURE);
 	}

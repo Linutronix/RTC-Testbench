@@ -32,6 +32,7 @@ struct workload_thread {
 	uint64_t workload_sequence_counter;
 	pthread_mutex_t workload_mutex;
 	pthread_cond_t workload_cond;
+	pthread_cond_t workload_done_cond;
 	int workload_running;
 };
 
@@ -61,5 +62,6 @@ void workload_thread_wait_for_finish(struct thread_context *thread_context);
 
 void workload_check_finished(struct thread_context *thread_context);
 void workload_signal(struct thread_context *thread_context, unsigned int received);
+void workload_signal_and_wait(struct thread_context *thread_context, unsigned int received);
 
 #endif /* _WORKLOAD_H_ */

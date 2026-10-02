@@ -115,6 +115,7 @@ void *workload_thread_routine(void *data)
 		/* workload_running is checked by Tx threads to indicate workload time overruns. */
 		pthread_mutex_lock(&thread->workload_mutex);
 		thread->workload_running = 0;
+		pthread_cond_signal(&thread->workload_done_cond);
 		pthread_mutex_unlock(&thread->workload_mutex);
 
 		stat_frame_workload(ctx->id, wl_cfg->associated_frame,
@@ -213,6 +214,7 @@ int workload_context_init(struct thread_context *thread_context)
 
 		init_mutex(&thread->workload_mutex);
 		init_condition_variable(&thread->workload_cond);
+		init_condition_variable(&thread->workload_done_cond);
 
 		ctx->thread_context = thread_context;
 		ctx->id = i;
@@ -334,23 +336,57 @@ void workload_check_finished(struct thread_context *thread_context)
 	}
 }
 
-void workload_signal(struct thread_context *thread_context, unsigned int received)
+static bool workload_start(struct thread_context *thread_context, unsigned int received)
 {
 	const struct traffic_class_config *conf = thread_context->conf;
 	struct workload_config *wl_cfg = thread_context->workload;
 
-	if (!conf->rx_workload_enabled)
-		return;
+	if (!conf->rx_workload_enabled || (!received && !conf->rx_workload_prewarm))
+		return false;
 
 	/* Run workload if we received frames or prewarm is enabled */
-	if (received || conf->rx_workload_prewarm) {
-		for (int i = 0; i < conf->workload_thread_cpus_num; i++) {
-			struct workload_thread *thread = &wl_cfg->threads[i];
+	for (int i = 0; i < conf->workload_thread_cpus_num; i++) {
+		struct workload_thread *thread = &wl_cfg->threads[i];
 
-			pthread_mutex_lock(&thread->workload_mutex);
-			thread->workload_running = 1;
-			pthread_cond_signal(&thread->workload_cond);
-			pthread_mutex_unlock(&thread->workload_mutex);
+		pthread_mutex_lock(&thread->workload_mutex);
+		thread->workload_running = 1;
+		pthread_cond_signal(&thread->workload_cond);
+		pthread_mutex_unlock(&thread->workload_mutex);
+	}
+
+	return true;
+}
+
+void workload_signal(struct thread_context *thread_context, unsigned int received)
+{
+	workload_start(thread_context, received);
+}
+
+void workload_signal_and_wait(struct thread_context *thread_context, unsigned int received)
+{
+	const struct traffic_class_config *conf = thread_context->conf;
+	struct workload_config *wl_cfg = thread_context->workload;
+	struct timespec timeout;
+
+	if (!workload_start(thread_context, received))
+		return;
+
+	/* All workload threads share one half-cycle completion deadline. */
+	clock_gettime(CLOCK_MONOTONIC, &timeout);
+	increment_period(&timeout, app_config.application_base_cycle_time_ns / 2);
+
+	/* Wait for all workload threads to complete or until the half-cycle deadline. */
+	for (int i = 0; i < conf->workload_thread_cpus_num; i++) {
+		struct workload_thread *thread = &wl_cfg->threads[i];
+		int ret;
+
+		pthread_mutex_lock(&thread->workload_mutex);
+		while (thread->workload_running && !thread_context->stop) {
+			ret = pthread_cond_timedwait(&thread->workload_done_cond,
+						     &thread->workload_mutex, &timeout);
+			if (ret == ETIMEDOUT)
+				break;
 		}
+		pthread_mutex_unlock(&thread->workload_mutex);
 	}
 }

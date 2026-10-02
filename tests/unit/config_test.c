@@ -439,7 +439,7 @@ static void test_string_default_is_replaced(void __unused **state)
 static void test_defaults_pass_sanity_check(void __unused **state)
 {
 	assert_int_equal(config_set_defaults(false), 0);
-	assert_true(config_sanity_check());
+	assert_true(config_sanity_check(false));
 }
 
 int main(void)
