@@ -592,13 +592,28 @@ void *tc_xdp_tx_thread(void *data)
 	return NULL;
 }
 
+/*
+ * Burst traffic classes only receive frames once per burst period. Polling the whole Rx window
+ * in every other cycle would waste CPU time, so they only make a single receive attempt.
+ */
+static int64_t tc_rx_window_ns(const struct thread_context *ctx)
+{
+	if (ctx->desc->tx_model == TC_TX_BURST)
+		return 0;
+
+	return (int64_t)app_config.application_rx_window_ns;
+}
+
 void *tc_rx_thread(void *data)
 {
 	struct thread_context *ctx = data;
 	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	const bool rx_hwtstamp_enabled = config_class_rx_timestamp_enabled(ctx->frame_type);
-	int socket_fd, ret, received;
+	const int64_t rx_window_ns = tc_rx_window_ns(ctx);
 	struct timespec wakeup_time;
+	int64_t receive_deadline;
+	struct timespec now;
+	int socket_fd, ret;
 
 	socket_fd = ctx->socket_fd;
 
@@ -619,16 +634,27 @@ void *tc_rx_thread(void *data)
 			.data = ctx,
 			.rx_hwtstamp_enabled = rx_hwtstamp_enabled,
 		};
+		unsigned int total_received = 0;
 
 		/* Wait until next period. */
 		ret = tc_sleep_until(ctx, &wakeup_time, cycle_time_ns);
 		if (ret)
 			return NULL;
 
-		/* Receive TC frames. */
-		received = packet_receive_messages(ctx->packet_context, &recv_req);
+		receive_deadline = ts_to_ns(&wakeup_time) + rx_window_ns;
 
-		tc_rx_done(ctx, received);
+		/* Receive until all frames for this cycle arrive or the Rx window expires. */
+		do {
+			total_received += packet_receive_messages(ctx->packet_context, &recv_req);
+			if (clock_gettime(app_config.application_clock_id, &now)) {
+				log_message(LOG_LEVEL_ERROR, "%sRx: clock_gettime() failed: %s\n",
+					    ctx->traffic_class, strerror(errno));
+				break;
+			}
+		} while (!ctx->stop && total_received < ctx->conf->num_frames_per_cycle &&
+			 ts_to_ns(&now) < receive_deadline);
+
+		tc_rx_done(ctx, total_received);
 	}
 
 	return NULL;
@@ -640,9 +666,12 @@ void *tc_xdp_rx_thread(void *data)
 	const uint64_t cycle_time_ns = app_config.application_base_cycle_time_ns;
 	const struct traffic_class_config *conf = ctx->conf;
 	const bool mirror_enabled = conf->rx_mirror_enabled;
+	const int64_t rx_window_ns = tc_rx_window_ns(ctx);
 	const size_t frame_length = conf->frame_length;
 	struct xdp_socket *xsk = ctx->xsk;
 	struct timespec wakeup_time;
+	int64_t receive_deadline;
+	struct timespec now;
 	uint32_t link_speed;
 	uint64_t duration;
 	int ret;
@@ -673,20 +702,33 @@ void *tc_xdp_rx_thread(void *data)
 			.sequence_counter_begin = 0,
 			.traffic_class = ctx->traffic_class,
 		};
-		unsigned int received;
+		unsigned int total_received = 0;
 
 		/* Wait until next period */
 		ret = tc_sleep_until(ctx, &wakeup_time, cycle_time_ns);
 		if (ret)
 			return NULL;
 
+		receive_deadline = ts_to_ns(&wakeup_time) + rx_window_ns;
+
+		/* Receive until all frames for this cycle arrive or the Rx window expires. */
 		pthread_mutex_lock(&ctx->xdp_data_mutex);
-		received = xdp_receive_frames(xsk, frame_length, mirror_enabled,
-					      ctx->desc->ops.receive_frame, ctx, &tx_time);
-		ctx->received_frames = received;
+		do {
+			tx_time.sequence_counter_begin = total_received;
+			total_received +=
+				xdp_receive_frames(xsk, frame_length, mirror_enabled,
+						   ctx->desc->ops.receive_frame, ctx, &tx_time);
+			if (clock_gettime(app_config.application_clock_id, &now)) {
+				log_message(LOG_LEVEL_ERROR, "%sRx: clock_gettime() failed: %s\n",
+					    ctx->traffic_class, strerror(errno));
+				break;
+			}
+		} while (!ctx->stop && total_received < conf->num_frames_per_cycle &&
+			 ts_to_ns(&now) < receive_deadline);
+		ctx->received_frames = total_received;
 		pthread_mutex_unlock(&ctx->xdp_data_mutex);
 
-		tc_rx_done(ctx, received);
+		tc_rx_done(ctx, total_received);
 	}
 
 	return NULL;

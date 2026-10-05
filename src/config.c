@@ -39,6 +39,7 @@ static const struct config_app_option global_options[] = {
 		   CONFIG_TYPE_TIME),
 	APP_OPTION("ApplicationTxBaseOffsetNS", application_tx_base_offset_ns, CONFIG_TYPE_TIME),
 	APP_OPTION("ApplicationRxBaseOffsetNS", application_rx_base_offset_ns, CONFIG_TYPE_TIME),
+	APP_OPTION("ApplicationRxWindowNS", application_rx_window_ns, CONFIG_TYPE_TIME),
 	APP_OPTION("ApplicationRxTriggeredTx", application_rx_triggered_tx, CONFIG_TYPE_BOOL),
 	APP_STRING_OPTION("ApplicationXdpProgram", application_xdp_program),
 
@@ -920,6 +921,7 @@ int config_set_defaults(bool mirror_enabled)
 	app_config.application_base_start_time_ns = (current.tv_sec + 30) * NSEC_PER_SEC;
 	app_config.application_tx_base_offset_ns = 800000;
 	app_config.application_rx_base_offset_ns = 300000;
+	app_config.application_rx_window_ns = 0;
 	app_config.application_rx_triggered_tx = false;
 	app_config.application_xdp_program = strdup(default_xdp_program);
 	if (!app_config.application_xdp_program)
@@ -1321,6 +1323,28 @@ bool config_sanity_check(bool mirror_enabled)
 	    app_config.application_rx_base_offset_ns >= app_config.application_tx_base_offset_ns) {
 		fprintf(stderr, "ApplicationRxBaseOffsetNS should be less than "
 				"ApplicationTxBaseOffsetNS!\n");
+		return false;
+	}
+
+	/*
+	 * The Rx thread busy polls from ApplicationRxBaseOffsetNS until the end of the receive
+	 * window. The window must end within the cycle and, unless Tx is triggered by Rx, before
+	 * the Tx threads are scheduled. Otherwise, Rx can starve Tx when both share a CPU and
+	 * priority. Compare against the remaining time to avoid overflow.
+	 */
+	if (app_config.application_rx_window_ns >
+	    app_config.application_base_cycle_time_ns - app_config.application_rx_base_offset_ns) {
+		fprintf(stderr, "ApplicationRxBaseOffsetNS + ApplicationRxWindowNS should be less "
+				"than or equal to ApplicationBaseCycleTimeNS!\n");
+		return false;
+	}
+
+	if (!app_config.application_rx_triggered_tx &&
+	    app_config.application_rx_window_ns >
+		    app_config.application_tx_base_offset_ns -
+			    app_config.application_rx_base_offset_ns) {
+		fprintf(stderr, "ApplicationRxBaseOffsetNS + ApplicationRxWindowNS should be less "
+				"than or equal to ApplicationTxBaseOffsetNS!\n");
 		return false;
 	}
 
