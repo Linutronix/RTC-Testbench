@@ -209,6 +209,7 @@ struct application_config {
 	uint64_t application_base_start_offset_ns;
 	uint64_t application_tx_base_offset_ns;
 	uint64_t application_rx_base_offset_ns;
+	uint64_t application_rx_window_ns;
 	bool application_rx_triggered_tx;
 	char *application_xdp_program;
 	size_t application_xdp_program_length;

@@ -45,6 +45,21 @@ Possible parameters include:
    * - ApplicationRxBaseOffsetNS (Integer)
      - Execution offset of Rx threads within Application cycle time
 
+   * - ApplicationRxWindowNS (Integer)
+     - Optional receive window for AF_XDP and AF_PACKET, starting at ``ApplicationRxBaseOffsetNS``.
+       The Rx thread repeatedly checks for packets until it collects the configured number of frames
+       for the cycle or the window expires. Use this option when packets may arrive shortly after
+       the scheduled Rx check, including later frames in a batch, to avoid processing them in the
+       next cycle. This can allow a lower ``ApplicationRxBaseOffsetNS``: the Rx thread starts
+       checking earlier and continues checking for frames throughout the receive window. Set it to
+       ``0`` to make a single receive attempt (the default). ``ApplicationRxBaseOffsetNS`` plus the
+       window must not exceed ``ApplicationBaseCycleTimeNS`` and, unless
+       ``ApplicationRxTriggeredTx`` is enabled, must not exceed ``ApplicationTxBaseOffsetNS``, so
+       that Rx polling cannot overlap Tx. Polling for missing frames consumes CPU throughout the
+       window and can delay other real-time work. Burst traffic classes (RTA, DCP, LLDP, UDP) ignore
+       the window and always make a single receive attempt, because they only receive frames once
+       per burst period.
+
    * - ApplicationRxTriggeredTx (Boolean)
      - Mirror only: trigger Tx threads after Rx threads and any enabled Rx workload finish.
        When enabled, ``ApplicationTxBaseOffsetNS`` does not schedule Tx threads. Not supported
