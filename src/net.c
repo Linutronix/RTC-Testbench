@@ -420,8 +420,6 @@ static int create_socket(enum stat_frame_type frame_type, struct sock_filter *fi
 					SOF_TIMESTAMPING_RX_HARDWARE | SOF_TIMESTAMPING_RX_SOFTWARE;
 				warn_if_rx_hwtstamp_disabled(frame_type);
 			}
-			if (tx_hwtstamp_enabled)
-				ts_flags |= SOF_TIMESTAMPING_TX_HARDWARE;
 
 			ret = setsockopt(socket_fd, SOL_SOCKET, SO_TIMESTAMPING, &ts_flags,
 					 sizeof(ts_flags));
