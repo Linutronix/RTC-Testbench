@@ -11,6 +11,7 @@
 
 #include "log.h"
 #include "net_def.h"
+#include "packet.h"
 #include "ring_buffer.h"
 #include "thread.h"
 #include "utils.h"
@@ -89,14 +90,13 @@ void initialize_ethercat_frame(struct thread_context __unused *ctx, unsigned cha
 int receive_ethercat_frame(void *data, unsigned char *frame_data, size_t len)
 {
 	struct thread_context *thread_context = data;
-	uint64_t tx_sw_timestamp, rx_sw_timestamp;
+	const struct traffic_class_config *ecat_config = thread_context->conf;
+	uint64_t rx_hw_timestamp = 0, rx_sw_timestamp = 0;
 	unsigned char expected_source[ETH_ALEN];
-	struct timespec rx_time = {};
+	uint64_t tx_sw_timestamp;
 	void *p = frame_data;
 	struct ethhdr *eth;
 	uint16_t proto;
-
-	app_clock_get(&rx_time);
 
 	if (len < sizeof(struct ethhdr) + sizeof(struct ethercat_header) + 20) {
 		log_message(LOG_LEVEL_WARNING, "%sRx: Too small frame received!\n",
@@ -129,9 +129,13 @@ int receive_ethercat_frame(void *data, unsigned char *frame_data, size_t len)
 
 	memcpy(&tx_sw_timestamp, &frame_data[ECAT_TX_TIMESTAMP_OFF], sizeof(uint64_t));
 
-	rx_sw_timestamp = ts_to_ns(&rx_time);
+	if (config_have_rx_timestamp() && ecat_config->xdp_enabled)
+		xdp_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
+	else if (config_have_rx_timestamp())
+		packet_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
+
 	stat_frame_received(thread_context->frame_type, thread_context->rx_sequence_counter, false,
-			    false, false, tx_sw_timestamp, 0, rx_sw_timestamp);
+			    false, false, tx_sw_timestamp, rx_hw_timestamp, rx_sw_timestamp);
 
 	thread_context->rx_sequence_counter++;
 
