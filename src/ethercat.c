@@ -11,11 +11,10 @@
 
 #include "log.h"
 #include "net_def.h"
-#include "packet.h"
 #include "ring_buffer.h"
+#include "tc.h"
 #include "thread.h"
 #include "utils.h"
-#include "xdp.h"
 
 void initialize_ethercat_frame(struct thread_context __unused *ctx, unsigned char *frame_data,
 			       size_t frame_length, const unsigned char *source,
@@ -91,9 +90,8 @@ int receive_ethercat_frame(void *data, unsigned char *frame_data, size_t len)
 {
 	struct thread_context *thread_context = data;
 	const struct traffic_class_config *ecat_config = thread_context->conf;
-	uint64_t rx_hw_timestamp = 0, rx_sw_timestamp = 0;
+	uint64_t rx_hw_timestamp, rx_sw_timestamp, tx_sw_timestamp;
 	unsigned char expected_source[ETH_ALEN];
-	uint64_t tx_sw_timestamp;
 	void *p = frame_data;
 	struct ethhdr *eth;
 	uint16_t proto;
@@ -129,10 +127,7 @@ int receive_ethercat_frame(void *data, unsigned char *frame_data, size_t len)
 
 	memcpy(&tx_sw_timestamp, &frame_data[ECAT_TX_TIMESTAMP_OFF], sizeof(uint64_t));
 
-	if (config_have_rx_timestamp() && ecat_config->xdp_enabled)
-		xdp_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
-	else if (config_have_rx_timestamp())
-		packet_get_timestamp_metadata(frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
+	tc_get_timestamp_metadata(ecat_config, frame_data, &rx_hw_timestamp, &rx_sw_timestamp);
 
 	stat_frame_received(thread_context->frame_type, thread_context->rx_sequence_counter, false,
 			    false, false, tx_sw_timestamp, rx_hw_timestamp, rx_sw_timestamp);

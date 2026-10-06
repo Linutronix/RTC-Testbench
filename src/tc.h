@@ -7,7 +7,9 @@
 #ifndef TC_H
 #define TC_H
 
+#include "packet.h"
 #include "utils.h"
+#include "xdp.h"
 
 enum tc_tx_model {
 	TC_TX_CYCLIC,     /* TSN, RTC */
@@ -57,5 +59,16 @@ void tc_signal_next(struct thread_context *ctx);
 void *tc_tx_gen_thread(void *data);
 void tc_threads_wait_for_finish(struct thread_context *ctx);
 void tc_threads_free(struct thread_context *ctx);
+
+static inline void tc_get_timestamp_metadata(const struct traffic_class_config *conf, void *data,
+					     uint64_t *rx_hw_ts, uint64_t *rx_sw_ts)
+{
+	*rx_hw_ts = *rx_sw_ts = 0;
+
+	if (config_have_rx_timestamp() && conf->xdp_enabled)
+		xdp_get_timestamp_metadata(data, rx_hw_ts, rx_sw_ts);
+	else if (config_have_rx_timestamp())
+		packet_get_timestamp_metadata(data, rx_hw_ts, rx_sw_ts);
+}
 
 #endif /* TC_H */
