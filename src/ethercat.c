@@ -71,6 +71,11 @@ void initialize_ethercat_frame(struct thread_context __unused *ctx, unsigned cha
 	/* Ethernet header */
 	memcpy(eth->h_dest, destination, ETH_ALEN);
 	memcpy(eth->h_source, source, ETH_ALEN);
+	/*
+	 * Clear the U/L bit in the source MAC address. An EtherCAT Slave Controller sets it,
+	 * which is used on Rx to check that the frame has been processed.
+	 */
+	eth->h_source[0] &= ~BIT(1);
 	eth->h_proto = htons(ETH_P_ETHERCAT);
 
 	/* EtherCAT header */
@@ -85,6 +90,7 @@ int receive_ethercat_frame(void *data, unsigned char *frame_data, size_t len)
 {
 	struct thread_context *thread_context = data;
 	uint64_t tx_sw_timestamp, rx_sw_timestamp;
+	unsigned char expected_source[ETH_ALEN];
 	struct timespec rx_time = {};
 	void *p = frame_data;
 	struct ethhdr *eth;
@@ -108,9 +114,15 @@ int receive_ethercat_frame(void *data, unsigned char *frame_data, size_t len)
 		return -EINVAL;
 	}
 
-	/* check that the slave processed the frame */
-	if (eth->h_source[0] == thread_context->source[0]) {
-		log_message(LOG_LEVEL_WARNING, "%sRx: the slave did not process the frame!\n",
+	/*
+	 * Check that the slave processed the frame: An EtherCAT Slave Controller sets the locally
+	 * administered (U/L) bit in the source MAC address of every frame it processes.
+	 */
+	memcpy(expected_source, thread_context->source, ETH_ALEN);
+	expected_source[0] |= BIT(1);
+	if (memcmp(eth->h_source, expected_source, ETH_ALEN)) {
+		log_message(LOG_LEVEL_WARNING,
+			    "%sRx: the EtherCAT Slave Controller did not process the frame!\n",
 			    thread_context->traffic_class);
 		return -EINVAL;
 	}
