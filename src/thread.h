@@ -49,6 +49,7 @@ struct thread_context {
 	unsigned char *rx_frame_data;          /* Rx frame data */
 	unsigned char source[ETH_ALEN];        /* Source MAC Address */
 	struct sockaddr_storage destination;   /* Where to send L3 frames to */
+	socklen_t dest_len;                    /* Length of @destination */
 	struct ring_buffer *mirror_buffer;     /* Rx frames to be mirrored */
 	struct packet_context *packet_context; /* Packet Tx/Rx context */
 

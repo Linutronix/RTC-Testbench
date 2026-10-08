@@ -49,8 +49,7 @@ static void udp_initialize_frame(struct thread_context *thread_context, unsigned
 }
 
 static void udp_send_frame(struct thread_context *thread_context, const unsigned char *frame_data,
-			   size_t frame_length, size_t num_frames_per_cycle, int socket_fd,
-			   const struct sockaddr_storage *destination)
+			   size_t frame_length, size_t num_frames_per_cycle)
 {
 	struct reference_meta_data *meta;
 	struct timespec tx_time = {};
@@ -66,18 +65,10 @@ static void udp_send_frame(struct thread_context *thread_context, const unsigned
 	tx_timestamp_to_meta_data(meta, ts_to_ns(&tx_time));
 
 	/* Send it */
-	switch (destination->ss_family) {
-	case AF_INET:
-		ret = sendto(socket_fd, frame_data, frame_length, 0,
-			     (struct sockaddr_in *)destination, sizeof(struct sockaddr_in));
-		break;
-	case AF_INET6:
-		ret = sendto(socket_fd, frame_data, frame_length, 0,
-			     (struct sockaddr_in6 *)destination, sizeof(struct sockaddr_in6));
-		break;
-	default:
-		ret = -EINVAL;
-	}
+	ret = sendto(thread_context->socket_fd, frame_data, frame_length, 0,
+		     (const struct sockaddr *)&thread_context->destination,
+		     thread_context->dest_len);
+
 	if (ret < 0) {
 		log_message(LOG_LEVEL_ERROR, "%sTx: send() for %" PRIu64 " failed: %s\n",
 			    thread_context->traffic_class, sequence_counter, strerror(errno));
@@ -88,9 +79,8 @@ static void udp_send_frame(struct thread_context *thread_context, const unsigned
 }
 
 static void udp_gen_and_send_frame(struct thread_context *thread_context, unsigned char *frame_data,
-				   size_t frame_length, size_t num_frames_per_cycle, int socket_fd,
-				   uint64_t sequence_counter,
-				   const struct sockaddr_storage *destination)
+				   size_t frame_length, size_t num_frames_per_cycle,
+				   uint64_t sequence_counter)
 {
 	struct reference_meta_data *meta;
 	struct timespec tx_time = {};
@@ -105,18 +95,9 @@ static void udp_gen_and_send_frame(struct thread_context *thread_context, unsign
 	tx_timestamp_to_meta_data(meta, ts_to_ns(&tx_time));
 
 	/* Send it */
-	switch (destination->ss_family) {
-	case AF_INET:
-		ret = sendto(socket_fd, frame_data, frame_length, 0,
-			     (struct sockaddr_in *)destination, sizeof(struct sockaddr_in));
-		break;
-	case AF_INET6:
-		ret = sendto(socket_fd, frame_data, frame_length, 0,
-			     (struct sockaddr_in6 *)destination, sizeof(struct sockaddr_in6));
-		break;
-	default:
-		ret = -EINVAL;
-	}
+	ret = sendto(thread_context->socket_fd, frame_data, frame_length, 0,
+		     (const struct sockaddr *)&thread_context->destination,
+		     thread_context->dest_len);
 	if (ret < 0) {
 		log_message(LOG_LEVEL_ERROR, "%sTx: send() for %" PRIu64 " failed: %s\n",
 			    thread_context->traffic_class, sequence_counter, strerror(errno));
@@ -135,9 +116,7 @@ static void *udp_tx_thread_routine(void *data)
 	const bool mirror_enabled = udp_config->rx_mirror_enabled;
 	uint64_t sequence_counter = 0;
 	unsigned char *frame;
-	int socket_fd;
 
-	socket_fd = thread_context->socket_fd;
 	frame = thread_context->tx_frame_data;
 
 	udp_initialize_frame(thread_context, frame);
@@ -162,8 +141,7 @@ static void *udp_tx_thread_routine(void *data)
 			for (i = 0; i < num_frames; ++i)
 				udp_gen_and_send_frame(
 					thread_context, frame, udp_config->frame_length,
-					udp_config->num_frames_per_cycle, socket_fd,
-					sequence_counter++, &thread_context->destination);
+					udp_config->num_frames_per_cycle, sequence_counter++);
 		} else {
 			size_t len;
 
@@ -175,8 +153,7 @@ static void *udp_tx_thread_routine(void *data)
 				udp_send_frame(thread_context,
 					       received_frames + i * udp_config->frame_length,
 					       udp_config->frame_length,
-					       udp_config->num_frames_per_cycle, socket_fd,
-					       &thread_context->destination);
+					       udp_config->num_frames_per_cycle);
 		}
 
 		tc_signal_next(thread_context);
@@ -307,9 +284,10 @@ static int udp_threads_create(struct thread_context *thread_context)
 		goto out;
 	}
 
-	thread_context->socket_fd = create_udp_socket(
-		udp_config->l3_destination, udp_config->l3_source, udp_config->l3_port,
-		udp_config->socket_priority, &thread_context->destination);
+	thread_context->socket_fd =
+		create_udp_socket(udp_config->l3_destination, udp_config->l3_source,
+				  udp_config->l3_port, udp_config->socket_priority,
+				  &thread_context->destination, &thread_context->dest_len);
 	if (thread_context->socket_fd < 0) {
 		fprintf(stderr, "Failed to create UdpSocket!\n");
 		ret = -errno;

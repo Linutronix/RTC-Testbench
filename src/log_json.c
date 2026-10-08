@@ -41,18 +41,8 @@ static void log_json_add_traffic_class(struct log_json_thread_context *ctx,
 	}
 
 	/* Send it via UDP */
-	switch (ctx->dest.ss_family) {
-	case AF_INET:
-		ret = sendto(ctx->socket, stat_message, strlen(stat_message), 0,
-			     (struct sockaddr_in *)&ctx->dest, sizeof(struct sockaddr_in));
-		break;
-	case AF_INET6:
-		ret = sendto(ctx->socket, stat_message, strlen(stat_message), 0,
-			     (struct sockaddr_in6 *)&ctx->dest, sizeof(struct sockaddr_in6));
-		break;
-	default:
-		ret = -EINVAL;
-	}
+	ret = sendto(ctx->socket, stat_message, strlen(stat_message), 0,
+		     (const struct sockaddr *)&ctx->dest, ctx->dest_len);
 
 	if (ret < 0)
 		log_message(LOG_LEVEL_DEBUG, "JsonTx: sendto() for statistic message failed: %s\n",
@@ -113,7 +103,7 @@ struct log_json_thread_context *log_json_thread_create(void)
 
 	/* Allocate UDP client socket */
 	ctx->socket = create_udp_cl_socket(app_config.log_json_host, app_config.log_json_port,
-					   &ctx->dest);
+					   &ctx->dest, &ctx->dest_len);
 	if (ctx->socket <= 0) {
 		fprintf(stderr, "JSON: Failed to allocate UDP socket for JSON logging!\n");
 		goto err_socket;

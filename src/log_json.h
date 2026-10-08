@@ -12,6 +12,7 @@
 
 struct log_json_thread_context {
 	struct sockaddr_storage dest;
+	socklen_t dest_len;
 	pthread_t pid;
 	int socket;
 	volatile int stop;

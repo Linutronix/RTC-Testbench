@@ -530,7 +530,7 @@ int create_ethercat_socket(void)
 }
 
 static int dns_lookup(const char *host, const char *port, struct sockaddr_storage *addr,
-		      int *socket_fd)
+		      socklen_t *addr_len, int *socket_fd)
 {
 	struct addrinfo *sa_head, *sa, hints;
 	int ret, sock;
@@ -562,6 +562,8 @@ static int dns_lookup(const char *host, const char *port, struct sockaddr_storag
 
 		if (addr)
 			memcpy(addr, sa->ai_addr, sa->ai_addrlen);
+		if (addr_len)
+			*addr_len = sa->ai_addrlen;
 		break;
 	}
 
@@ -580,30 +582,22 @@ err_addrinfo:
 }
 
 int create_udp_socket(const char *udp_destination, const char *udp_source, const char *udp_port,
-		      int socket_priority, struct sockaddr_storage *destination)
+		      int socket_priority, struct sockaddr_storage *destination,
+		      socklen_t *dest_len)
 {
 	struct sockaddr_storage source;
 	int ret, socket_fd = -1;
+	socklen_t socklen;
 
-	ret = dns_lookup(udp_destination, udp_port, destination, NULL);
+	ret = dns_lookup(udp_destination, udp_port, destination, dest_len, NULL);
 	if (ret)
 		goto err_dns1;
 
-	ret = dns_lookup(udp_source, udp_port, &source, &socket_fd);
+	ret = dns_lookup(udp_source, udp_port, &source, &socklen, &socket_fd);
 	if (ret)
 		goto err_dns2;
 
-	switch (source.ss_family) {
-	case AF_INET:
-		ret = bind(socket_fd, (struct sockaddr_in *)&source, sizeof(struct sockaddr_in));
-		break;
-	case AF_INET6:
-		ret = bind(socket_fd, (struct sockaddr_in6 *)&source, sizeof(struct sockaddr_in6));
-		break;
-	default:
-		ret = -EINVAL;
-	}
-
+	ret = bind(socket_fd, (const struct sockaddr *)&source, socklen);
 	if (ret) {
 		perror("bind() failed");
 		goto err_bind;
@@ -635,11 +629,11 @@ err_dns1:
 }
 
 int create_udp_cl_socket(const char *udp_destination, const char *udp_port,
-			 struct sockaddr_storage *destination)
+			 struct sockaddr_storage *destination, socklen_t *dest_len)
 {
 	int ret, socket = -1;
 
-	ret = dns_lookup(udp_destination, udp_port, destination, &socket);
+	ret = dns_lookup(udp_destination, udp_port, destination, dest_len, &socket);
 	if (ret)
 		goto err;
 
