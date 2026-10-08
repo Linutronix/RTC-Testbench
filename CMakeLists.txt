@@ -33,6 +33,13 @@ check_symbol_exists(SO_BUSY_POLL_BUDGET "sys/socket.h" HAVE_SO_BUSY_POLL_BUDGET)
 check_symbol_exists(XDP_TXMD_FLAGS_LAUNCH_TIME "linux/if_xdp.h" HAVE_XDP_FLAGS_TX_TIME)
 check_symbol_exists(XDP_TXMD_FLAGS_TIMESTAMP "linux/if_xdp.h" HAVE_XDP_FLAGS_TX_HWTSTAMP)
 
+# pthread_attr_setaffinity_np() is a glibc extension and not available on e.g., musl
+set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+set(CMAKE_REQUIRED_LIBRARIES pthread)
+check_symbol_exists(pthread_attr_setaffinity_np "pthread.h" HAVE_PTHREAD_ATTR_SETAFFINITY_NP)
+unset(CMAKE_REQUIRED_DEFINITIONS)
+unset(CMAKE_REQUIRED_LIBRARIES)
+
 #
 # NETDEV_CMD_QUEUE_GET and NETDEV_CMD_NAPI_SET are enums. So check_symbol_exists() does not work
 # here. Use test programs instead.

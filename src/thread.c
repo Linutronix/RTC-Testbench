@@ -13,6 +13,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "app_config.h"
+
 #include "config.h"
 #include "log.h"
 #include "packet.h"
@@ -69,17 +71,31 @@ int create_rt_thread(pthread_t *task_id, int thread_priority, int cpu_core,
 
 	CPU_ZERO(&cpus);
 	CPU_SET(cpu_core, &cpus);
+#ifdef HAVE_PTHREAD_ATTR_SETAFFINITY_NP
 	ret = pthread_attr_setaffinity_np(&attr, sizeof(cpus), &cpus);
 	if (ret) {
 		pthread_error(ret, "pthread_attr_setaffinity_np() failed");
 		goto err;
 	}
+#endif
 
 	ret = pthread_create(task_id, &attr, thread_routine, data);
 	if (ret) {
 		pthread_error(ret, "pthread_create() failed");
 		goto err;
 	}
+
+#ifndef HAVE_PTHREAD_ATTR_SETAFFINITY_NP
+	/*
+	 * E.g., musl does not provide pthread_attr_setaffinity_np(). Set the affinity after the
+	 * thread has been created instead.
+	 */
+	ret = pthread_setaffinity_np(*task_id, sizeof(cpus), &cpus);
+	if (ret) {
+		pthread_error(ret, "pthread_setaffinity_np() failed");
+		goto err;
+	}
+#endif
 
 	ret = pthread_setname_np(*task_id, thread_name);
 	if (ret) {
