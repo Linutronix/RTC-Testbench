@@ -17,7 +17,7 @@ Application:
   ApplicationXdpProgram: xdp_kern_profinet_vid100.o
 TsnHigh:
   TsnHighEnabled: true
-  TsnHighXdpEnabled: true
+  TsnHighSocketType: AF_XDP
   TsnHighXdpSkbMode: false
   TsnHighXdpZcMode: true
   TsnHighXdpWakeupMode: true
