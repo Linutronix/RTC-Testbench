@@ -14,7 +14,7 @@ Application:
   ApplicationXdpProgram: xdp_kern_profinet_vid100.o
 RTC:
   RtcEnabled: true
-  RtcXdpEnabled: true
+  RtcSocketType: AF_XDP
   RtcXdpSkbMode: false
   RtcXdpZcMode: true
   RtcXdpWakeupMode: true

@@ -17,7 +17,7 @@ Application:
 GenericL2:
   GenericL2Name: OpcUa
   GenericL2Enabled: true
-  GenericL2XdpEnabled: false
+  GenericL2SocketType: AF_PACKET
   GenericL2XdpSkbMode: false
   GenericL2XdpZcMode: true
   GenericL2XdpWakeupMode: false
