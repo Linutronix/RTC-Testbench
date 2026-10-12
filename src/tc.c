@@ -227,7 +227,8 @@ static void tc_initialize_frames(struct thread_context *ctx, unsigned char *fram
 #if defined(HAVE_XDP_TX_TIME) || defined(TX_TIMESTAMP)
 		const struct traffic_class_config *conf = ctx->conf;
 
-		if (conf->xdp_enabled && (conf->tx_time_enabled || conf->tx_hwtstamp_enabled)) {
+		if (conf->socket_type == SOCKET_TYPE_AF_XDP &&
+		    (conf->tx_time_enabled || conf->tx_hwtstamp_enabled)) {
 			frame += sizeof(struct xsk_tx_metadata);
 			frame_length -= sizeof(struct xsk_tx_metadata);
 		}
@@ -701,7 +702,7 @@ int tc_threads_create(struct thread_context *ctx)
 	init_condition_variable(&ctx->data_cond_var);
 
 	/* For XDP the frames are stored in a umem area. That memory is part of the socket. */
-	if (!conf->xdp_enabled) {
+	if (conf->socket_type == SOCKET_TYPE_AF_PACKET) {
 		ctx->packet_context = packet_init(conf->num_frames_per_cycle);
 		if (!ctx->packet_context) {
 			fprintf(stderr, "Failed to allocate %s packet context!\n",
@@ -747,7 +748,7 @@ int tc_threads_create(struct thread_context *ctx)
 				      sizeof(struct security_checksum);
 
 	/* For XDP a AF_XDP socket is allocated. Otherwise a Linux raw socket is used. */
-	if (conf->xdp_enabled) {
+	if (conf->socket_type == SOCKET_TYPE_AF_XDP) {
 		ctx->socket_fd = 0;
 		ctx->xsk = xdp_open_socket(conf->interface, app_config.application_xdp_program,
 					   conf->rx_queue, conf->xdp_skb_mode, conf->xdp_zc_mode,
@@ -769,7 +770,7 @@ int tc_threads_create(struct thread_context *ctx)
 	}
 
 	/* Same as above. For XDP the umem area is used. */
-	if (conf->rx_mirror_enabled && !conf->xdp_enabled) {
+	if (conf->rx_mirror_enabled && conf->socket_type == SOCKET_TYPE_AF_PACKET) {
 		/* Per period the expectation is: NumFramesPerCycle * MAX_FRAME */
 		ctx->mirror_buffer =
 			ring_buffer_allocate(MAX_FRAME_SIZE * conf->num_frames_per_cycle);

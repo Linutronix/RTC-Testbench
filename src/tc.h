@@ -65,7 +65,7 @@ static inline void tc_get_timestamp_metadata(const struct traffic_class_config *
 {
 	*rx_hw_ts = *rx_sw_ts = 0;
 
-	if (config_have_rx_timestamp() && conf->xdp_enabled)
+	if (config_have_rx_timestamp() && conf->socket_type == SOCKET_TYPE_AF_XDP)
 		xdp_get_timestamp_metadata(data, rx_hw_ts, rx_sw_ts);
 	else if (config_have_rx_timestamp())
 		packet_get_timestamp_metadata(data, rx_hw_ts, rx_sw_ts);

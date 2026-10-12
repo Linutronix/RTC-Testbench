@@ -39,6 +39,7 @@ enum config_value_type {
 	CONFIG_TYPE_CPU_LIST,
 	CONFIG_TYPE_CLOCKID,
 	CONFIG_TYPE_PROTOCOL_TYPE,
+	CONFIG_TYPE_SOCKET_TYPE,
 };
 
 #ifndef BIT
@@ -118,6 +119,12 @@ struct config_class_option {
 		    .length_offset = offsetof(struct traffic_class_config, member##_num)},         \
 	 .tcs = mask}
 
+enum socket_type {
+	SOCKET_TYPE_AF_PACKET = 0,
+	SOCKET_TYPE_AF_XDP,
+	SOCKET_TYPE_DPDK,
+};
+
 enum protocol_type {
 	GENERICL2_PROTOCOL_TYPE = 0,
 	ETHERCAT_PROTOCOL_TYPE,
@@ -132,7 +139,7 @@ struct traffic_class_config {
 	size_t name_length;
 
 	/* Network settings */
-	bool xdp_enabled;
+	enum socket_type socket_type;
 	bool xdp_skb_mode;
 	bool xdp_zc_mode;
 	bool xdp_wakeup_mode;
@@ -309,6 +316,20 @@ static inline bool config_have_tx_timestamp(void)
 #else
 	return false;
 #endif
+}
+
+static inline const char *socket_typ_to_string(enum socket_type sock_type)
+{
+	switch (sock_type) {
+	case SOCKET_TYPE_AF_PACKET:
+		return "AF_PACKET";
+	case SOCKET_TYPE_AF_XDP:
+		return "AF_XDP";
+	case SOCKET_TYPE_DPDK:
+		return "DPDK";
+	default:
+		return "Unknown";
+	}
 }
 
 /* RX HW timestamping (AF_XDP or AF_PACKET) is limited to TC_XDP classes. */

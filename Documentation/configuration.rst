@@ -56,8 +56,8 @@ Possible parameters include:
    * - <Class>Enabled (Boolean)
      - Selects whether this traffic is active or not
 
-   * - <Class>XdpEnabled (Boolean)
-     - Use XDP instead of RAW sockets
+   * - <Class>SocketType (String)
+     - ``AF_PACKET`` or ``AF_XDP`` (only valid for XDP traffic classes) or ``DPDK`` (Not supported currently)
 
    * - <Class>XdpSkbMode (Boolean)
      - Use XDP skb mode (for testing XDP code or driver implementation)
