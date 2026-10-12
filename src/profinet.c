@@ -342,7 +342,7 @@ int receive_profinet_frame(void *data, unsigned char *frame_data, size_t len)
 	if (!mirror_enabled)
 		return 0;
 
-	if (class_config->xdp_enabled) {
+	if (class_config->socket_type == SOCKET_TYPE_AF_XDP) {
 		/* Re-add vlan tag */
 		if (vlan_tag_missing)
 			insert_vlan_tag(frame_data, len, ETH_P_PROFINET_RT,

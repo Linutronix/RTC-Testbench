@@ -168,7 +168,7 @@ static int generic_l2_rx_frame(void *data, unsigned char *frame_data, size_t len
 	if (!mirror_enabled)
 		return 0;
 
-	if (l2_config->xdp_enabled) {
+	if (l2_config->socket_type == SOCKET_TYPE_AF_XDP) {
 		/* Re-add vlan tag */
 		if (vlan_tag_missing)
 			insert_vlan_tag(frame_data, len, l2_config->ether_type,
@@ -220,7 +220,7 @@ int generic_l2_threads_create(struct thread_context *ctx)
 		ctx->desc->ops.create_socket = create_generic_l2_socket;
 	}
 
-	if (conf->xdp_enabled) {
+	if (conf->socket_type == SOCKET_TYPE_AF_XDP) {
 		ctx->desc->ops.tx_thread = tc_xdp_tx_thread;
 		ctx->desc->ops.rx_thread = tc_xdp_rx_thread;
 	} else {

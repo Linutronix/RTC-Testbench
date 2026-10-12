@@ -281,6 +281,27 @@ static void test_type_protocol_type(void __unused **state)
 			 ETHERCAT_PROTOCOL_TYPE);
 }
 
+static void test_type_socket_type(void __unused **state)
+{
+	const struct traffic_class_config *conf = &app_config.classes[TSN_HIGH_FRAME_TYPE];
+
+	assert_int_equal(load_config("TsnHighSocketType: AF_PACKET\n"), 0);
+	assert_int_equal(conf->socket_type, SOCKET_TYPE_AF_PACKET);
+
+	assert_int_equal(load_config("TsnHighSocketType: AF_XDP\n"), 0);
+	assert_int_equal(conf->socket_type, SOCKET_TYPE_AF_XDP);
+
+	assert_int_equal(load_config("TsnHighSocketType: DPDK\n"), 0);
+	assert_int_equal(conf->socket_type, SOCKET_TYPE_DPDK);
+}
+
+static void test_type_non_xdp_socket_type(void __unused **state)
+{
+	const struct traffic_class_config *conf = &app_config.classes[DCP_FRAME_TYPE];
+
+	assert_int_equal(load_config("DcpSocketType: AF_PACKET\n"), 0);
+	assert_int_equal(conf->socket_type, SOCKET_TYPE_AF_PACKET);
+}
 /* ------------------------------------------------------------------------- */
 /* Invalid values - one test per data type                                   */
 /* ------------------------------------------------------------------------- */
@@ -349,6 +370,13 @@ static void test_invalid_protocol_type(void __unused **state)
 	assert_int_equal(load_config("GenericL2ProtocolType: bogus\n"), -EINVAL);
 }
 
+static void test_invalid_socket_type(void __unused **state)
+{
+	assert_int_equal(load_config("TsnHighSocketType: bogus\n"), -EINVAL);
+	assert_int_equal(load_config("TsnHighSocketType: DPDK\n"), 0);
+	assert_false(config_sanity_check(false));
+}
+
 /* ------------------------------------------------------------------------- */
 /* Structural / file level errors                                            */
 /* ------------------------------------------------------------------------- */
@@ -367,10 +395,11 @@ static void test_unknown_class_option(void __unused **state)
 static void test_option_on_wrong_traffic_class(void __unused **state)
 {
 	/*
-	 * XdpEnabled is only valid for XDP capable traffic classes. DCP is not
+	 * Xdp is valid for XDP capable traffic classes. DCP is not
 	 * one of them, hence this must be rejected as unknown.
 	 */
-	assert_int_equal(load_config("DcpXdpEnabled: true\n"), -ENOENT);
+	assert_int_equal(load_config("DcpSocketType: AF_XDP\n"), 0);
+	assert_false(config_sanity_check(false));
 }
 
 static void test_malformed_yaml(void __unused **state)
@@ -462,6 +491,8 @@ int main(void)
 		cmocka_unit_test_setup_teardown(test_type_cpu_list, setup, teardown),
 		cmocka_unit_test_setup_teardown(test_type_clockid, setup, teardown),
 		cmocka_unit_test_setup_teardown(test_type_protocol_type, setup, teardown),
+		cmocka_unit_test_setup_teardown(test_type_socket_type, setup, teardown),
+		cmocka_unit_test_setup_teardown(test_type_non_xdp_socket_type, setup, teardown),
 
 		/* Invalid values */
 		cmocka_unit_test_setup_teardown(test_invalid_bool, setup, teardown),
@@ -475,6 +506,7 @@ int main(void)
 		cmocka_unit_test_setup_teardown(test_invalid_cpu_list, setup, teardown),
 		cmocka_unit_test_setup_teardown(test_invalid_clockid, setup, teardown),
 		cmocka_unit_test_setup_teardown(test_invalid_protocol_type, setup, teardown),
+		cmocka_unit_test_setup_teardown(test_invalid_socket_type, setup, teardown),
 
 		/* Structural / file level errors */
 		cmocka_unit_test_setup_teardown(test_unknown_global_option, setup, teardown),

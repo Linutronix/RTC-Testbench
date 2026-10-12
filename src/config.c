@@ -76,9 +76,9 @@ static const struct config_app_option global_options[] = {
 
 static const struct config_class_option class_options[] = {
 	CLASS_OPTION("Enabled", enabled, CONFIG_TYPE_BOOL, TC_ALL),
+	CLASS_OPTION("SocketType", socket_type, CONFIG_TYPE_SOCKET_TYPE, TC_ALL),
 
 	/* XDP options */
-	CLASS_OPTION("XdpEnabled", xdp_enabled, CONFIG_TYPE_BOOL, TC_XDP),
 	CLASS_OPTION("XdpSkbMode", xdp_skb_mode, CONFIG_TYPE_BOOL, TC_XDP),
 	CLASS_OPTION("XdpZcMode", xdp_zc_mode, CONFIG_TYPE_BOOL, TC_XDP),
 	CLASS_OPTION("XdpWakeupMode", xdp_wakeup_mode, CONFIG_TYPE_BOOL, TC_XDP),
@@ -547,6 +547,21 @@ static int config_store_value(const struct config_app_option *opt, void *base, c
 			*proto = ETHERCAT_PROTOCOL_TYPE;
 		break;
 	}
+	case CONFIG_TYPE_SOCKET_TYPE: {
+		enum socket_type *sk_type = (enum socket_type *)(base + opt->offset);
+
+		if (!strcmp(value, "AF_PACKET"))
+			*sk_type = SOCKET_TYPE_AF_PACKET;
+		else if (!strcmp(value, "AF_XDP"))
+			*sk_type = SOCKET_TYPE_AF_XDP;
+		else if (!strcmp(value, "DPDK"))
+			*sk_type = SOCKET_TYPE_DPDK;
+		else {
+			fprintf(stderr, "Invalid socket type specified!\n");
+			return -EINVAL;
+		}
+		break;
+	}
 	default:
 		fprintf(stderr, "BUG: Unknown option detected!\n");
 		return -EINVAL;
@@ -817,6 +832,12 @@ static void config_print_value(const struct config_app_option *opt, const void *
 		printf("%s\n", proto == GENERICL2_PROTOCOL_TYPE ? "L2" : "EtherCAT");
 		break;
 	}
+	case CONFIG_TYPE_SOCKET_TYPE: {
+		enum socket_type sk_type = *(enum socket_type *)(base + opt->offset);
+
+		printf("%s\n", socket_typ_to_string(sk_type));
+		break;
+	}
 	default:
 		fprintf(stderr, "BUG: Unknown option detected!\n");
 	}
@@ -907,7 +928,7 @@ int config_set_defaults(bool mirror_enabled)
 	/* TSN High */
 	conf = &app_config.classes[TSN_HIGH_FRAME_TYPE];
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = true;
+	conf->socket_type = SOCKET_TYPE_AF_XDP;
 	conf->xdp_zc_mode = true;
 	conf->xdp_wakeup_mode = true;
 	conf->vid = TSN_HIGH_VID_VALUE;
@@ -935,7 +956,7 @@ int config_set_defaults(bool mirror_enabled)
 	/* TSN Low */
 	conf = &app_config.classes[TSN_LOW_FRAME_TYPE];
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = true;
+	conf->socket_type = SOCKET_TYPE_AF_XDP;
 	conf->xdp_zc_mode = true;
 	conf->xdp_wakeup_mode = true;
 	conf->vid = TSN_LOW_VID_VALUE;
@@ -962,7 +983,7 @@ int config_set_defaults(bool mirror_enabled)
 	/* Real Time Cyclic (RTC) */
 	conf = &app_config.classes[RTC_FRAME_TYPE];
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = true;
+	conf->socket_type = SOCKET_TYPE_AF_XDP;
 	conf->xdp_zc_mode = true;
 	conf->xdp_wakeup_mode = true;
 	conf->vid = PROFINET_RT_VID_VALUE;
@@ -990,7 +1011,7 @@ int config_set_defaults(bool mirror_enabled)
 	/* Real Time Acyclic (RTA) */
 	conf = &app_config.classes[RTA_FRAME_TYPE];
 	conf->rx_mirror_enabled = mirror_enabled;
-	conf->xdp_enabled = true;
+	conf->socket_type = SOCKET_TYPE_AF_XDP;
 	conf->xdp_wakeup_mode = true;
 	conf->vid = PROFINET_RT_VID_VALUE;
 	conf->pcp = RTA_PCP_VALUE;
@@ -1389,11 +1410,11 @@ bool config_sanity_check(bool mirror_enabled)
 	/* XDP and TxLauchTime combined doesn't work */
 	if (!config_have_xdp_tx_time() &&
 	    ((app_config.classes[GENERICL2_FRAME_TYPE].tx_time_enabled &&
-	      app_config.classes[GENERICL2_FRAME_TYPE].xdp_enabled) ||
+	      app_config.classes[GENERICL2_FRAME_TYPE].socket_type == SOCKET_TYPE_AF_XDP) ||
 	     (app_config.classes[TSN_HIGH_FRAME_TYPE].tx_time_enabled &&
-	      app_config.classes[TSN_HIGH_FRAME_TYPE].xdp_enabled) ||
+	      app_config.classes[TSN_HIGH_FRAME_TYPE].socket_type == SOCKET_TYPE_AF_XDP) ||
 	     (app_config.classes[TSN_LOW_FRAME_TYPE].tx_time_enabled &&
-	      app_config.classes[TSN_LOW_FRAME_TYPE].xdp_enabled))) {
+	      app_config.classes[TSN_LOW_FRAME_TYPE].socket_type == SOCKET_TYPE_AF_XDP))) {
 		fprintf(stderr,
 			"TxTime and XDP cannot be used at the same time on this platform!\n");
 		fprintf(stderr, "Update libxdp to >= v1.5.0 support it.\n");
@@ -1488,6 +1509,20 @@ bool config_sanity_check(bool mirror_enabled)
 		return false;
 	}
 
+	for (int i = 0; i < NUM_FRAME_TYPES; ++i) {
+		enum socket_type sk_type = app_config.classes[i].socket_type;
+		const char *name = stat_frame_type_to_string(i);
+
+		if (sk_type == SOCKET_TYPE_DPDK) {
+			fprintf(stderr, "%sSocketType: DPDK is not supported!\n", name);
+			return false;
+		}
+		if (sk_type == SOCKET_TYPE_AF_XDP && !(BIT(i) & TC_XDP)) {
+			fprintf(stderr, "%sSocketType: AF_XDP is not supported for this class!\n",
+				name);
+			return false;
+		}
+	}
 	return true;
 }
 

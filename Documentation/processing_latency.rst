@@ -160,7 +160,7 @@ Dependencies
 Processing latency metrics require both RX and TX hardware timestamp support. Requirements
 differ depending on the transport used for the traffic class.
 
-**AF_XDP** (``<Class>XdpEnabled: true``):
+**AF_XDP** (``<Class>SocketType: AF_XDP``):
 
 .. list-table:: AF_XDP Hardware Timestamp Dependencies
    :widths: 15 20 20
@@ -187,7 +187,7 @@ differ depending on the transport used for the traffic class.
    timestamping capabilities first became available in the kernel. Real support
    depends on NIC driver implementation.
 
-**AF_PACKET** (``<Class>XdpEnabled: false``):
+**AF_PACKET** (``<Class>SocketType: AF_PACKET``):
 
 Needs only a NIC driver supporting ``SIOCSHWTSTAMP`` and ``SO_TIMESTAMPING``; no particular
 libbpf/libxdp version is required, since this path uses plain socket APIs instead of AF_XDP
@@ -207,14 +207,14 @@ For example, to enable it for TsnHigh over AF_XDP:
 
 .. code-block:: yaml
 
-   TsnHighXdpEnabled: true
+   TsnHighSocketType: AF_XDP
    TsnHighTxTimeStampEnabled: true
 
 Or over AF_PACKET (no libxdp/libbpf version requirements, see Dependencies above):
 
 .. code-block:: yaml
 
-   TsnHighXdpEnabled: false
+   TsnHighSocketType: AF_PACKET
    TsnHighTxTimeStampEnabled: true
 
 .. Note:: Hardware timestamping must be supported by the NIC. If unsupported,

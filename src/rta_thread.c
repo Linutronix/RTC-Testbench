@@ -52,7 +52,7 @@ int rta_threads_create(struct thread_context *ctx)
 	ctx->desc->ops.receive_frame = receive_profinet_frame;
 	ctx->desc->ops.create_socket = create_rta_socket;
 
-	if (conf->xdp_enabled) {
+	if (conf->socket_type == SOCKET_TYPE_AF_XDP) {
 		ctx->desc->ops.tx_thread = tc_xdp_tx_thread;
 		ctx->desc->ops.rx_thread = tc_xdp_rx_thread;
 	} else {
