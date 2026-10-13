@@ -13,7 +13,8 @@ Application:
   # ApplicationBaseStartTimeNS: 0
   ApplicationBaseCycleTimeNS: 1ms
   ApplicationTxBaseOffsetNS: 900us
-  ApplicationRxBaseOffsetNS: 500us
+  ApplicationRxBaseOffsetNS: 400us
+  ApplicationRxWindowNS: 100us
   ApplicationXdpProgram: xdp_kern_profinet_vid100.o
 RTC:
   RtcEnabled: true
