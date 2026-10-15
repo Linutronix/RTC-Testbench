@@ -3,19 +3,20 @@
 
 name: "Label PRs from globs"
 on:
-  schedule:
-    - cron: "0 * * * *"
+  pull_request_target:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 
 jobs:
   execute:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
-      - uses: jpmcb/prow-github-actions@v3.0.1
+      - uses: actions/labeler@v7
         with:
-          jobs: 'pr-labeler'
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/labels.yml

@@ -3,7 +3,9 @@
 
 # Add 'repo' label to any root file changes
 # repo:
-#  - ./*
+#   - changed-files:
+#       - any-glob-to-any-file: '*'
 
 documentation:
-  - Documentation/**/*
+  - changed-files:
+      - any-glob-to-any-file: 'Documentation/**'
