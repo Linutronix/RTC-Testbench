@@ -372,6 +372,9 @@ static void test_invalid_protocol_type(void __unused **state)
 
 static void test_invalid_socket_type(void __unused **state)
 {
+	/* Setup defaults to even reach the socket checks in config_sanity_check() */
+	assert_int_equal(config_set_defaults(false), 0);
+
 	assert_int_equal(load_config("TsnHighSocketType: bogus\n"), -EINVAL);
 	assert_int_equal(load_config("TsnHighSocketType: DPDK\n"), 0);
 	assert_false(config_sanity_check(false));
@@ -394,9 +397,12 @@ static void test_unknown_class_option(void __unused **state)
 
 static void test_option_on_wrong_traffic_class(void __unused **state)
 {
+	/* Setup defaults to even reach the socket checks in config_sanity_check() */
+	assert_int_equal(config_set_defaults(false), 0);
+
 	/*
 	 * Xdp is valid for XDP capable traffic classes. DCP is not
-	 * one of them, hence this must be rejected as unknown.
+	 * one of them, hence this must be rejected.
 	 */
 	assert_int_equal(load_config("DcpSocketType: AF_XDP\n"), 0);
 	assert_false(config_sanity_check(false));
