@@ -836,7 +836,7 @@ static void config_print_value(const struct config_app_option *opt, const void *
 	case CONFIG_TYPE_SOCKET_TYPE: {
 		enum socket_type sk_type = *(enum socket_type *)(base + opt->offset);
 
-		printf("%s\n", socket_typ_to_string(sk_type));
+		printf("%s\n", socket_type_to_string(sk_type));
 		break;
 	}
 	default:

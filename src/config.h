@@ -319,7 +319,7 @@ static inline bool config_have_tx_timestamp(void)
 #endif
 }
 
-static inline const char *socket_typ_to_string(enum socket_type sock_type)
+static inline const char *socket_type_to_string(enum socket_type sock_type)
 {
 	switch (sock_type) {
 	case SOCKET_TYPE_AF_PACKET:
