@@ -288,7 +288,7 @@ time matters.</p>
 <h3>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading"></a></h3>
 <p>Processing latency metrics require both RX and TX hardware timestamp support. Requirements
 differ depending on the transport used for the traffic class.</p>
-<p><strong>AF_XDP</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;XdpEnabled:</span> <span class="pre">true</span></code>):</p>
+<p><strong>AF_XDP</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;SocketType:</span> <span class="pre">AF_XDP</span></code>):</p>
 <table class="docutils align-default" id="id3">
 <caption><span class="caption-text">AF_XDP Hardware Timestamp Dependencies</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
 <colgroup>
@@ -327,7 +327,7 @@ differ depending on the transport used for the traffic class.</p>
 timestamping capabilities first became available in the kernel. Real support
 depends on NIC driver implementation.</p>
 </div>
-<p><strong>AF_PACKET</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;XdpEnabled:</span> <span class="pre">false</span></code>):</p>
+<p><strong>AF_PACKET</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;SocketType:</span> <span class="pre">AF_PACKET</span></code>):</p>
 <p>Needs only a NIC driver supporting <code class="docutils literal notranslate"><span class="pre">SIOCSHWTSTAMP</span></code> and <code class="docutils literal notranslate"><span class="pre">SO_TIMESTAMPING</span></code>; no particular
 libbpf/libxdp version is required, since this path uses plain socket APIs instead of AF_XDP
 metadata. Check driver support with <code class="docutils literal notranslate"><span class="pre">ethtool</span> <span class="pre">-T</span> <span class="pre">&lt;interface&gt;</span></code>.</p>
@@ -340,12 +340,12 @@ metadata. Check driver support with <code class="docutils literal notranslate"><
 </div>
 <p>Enable TX hardware timestamping for your traffic class in the YAML configuration.
 For example, to enable it for TsnHigh over AF_XDP:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">TsnHighXdpEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">TsnHighSocketType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AF_XDP</span>
 <span class="nt">TsnHighTxTimeStampEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
 <p>Or over AF_PACKET (no libxdp/libbpf version requirements, see Dependencies above):</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">TsnHighXdpEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">TsnHighSocketType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AF_PACKET</span>
 <span class="nt">TsnHighTxTimeStampEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
