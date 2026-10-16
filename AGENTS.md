@@ -125,7 +125,7 @@ steering) or modern `AF_XDP` (eBPF/XDP steering) sockets, selected per class by 
   per-class resource (sockets, frame buffers, mirror ring, security contexts, workload threads).
   Per-class behaviour is injected through `struct traffic_class_desc`:
   - `struct traffic_class_ops` — `initialize_frame`, `receive_frame`, `create_socket`, plus the
-    `tx_thread`/`rx_thread` pair chosen by `XdpEnabled`.
+    `tx_thread`/`rx_thread` pair chosen by `<Class>SocketType`.
   - `enum tc_tx_model` — `TC_TX_CYCLIC` (TSN, RTC), `TC_TX_BURST` (RTA, DCP, LLDP, UDP — driven by
     `BurstPeriodNS` via a Tx-gen thread), `TC_TX_STANDALONE` (GenericL2, own `clock_nanosleep()`).
 - **`src/*_thread.c`** — one file per traffic class (`tsn`, `rtc`, `rta`, `dcp`, `lldp`, `layer2`).
