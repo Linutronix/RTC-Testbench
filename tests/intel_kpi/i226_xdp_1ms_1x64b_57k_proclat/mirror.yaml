@@ -11,8 +11,10 @@ Application:
   ApplicationClockId: CLOCK_TAI
   # ApplicationBaseStartTimeNS: 0
   ApplicationBaseCycleTimeNS: 1ms
-  ApplicationTxBaseOffsetNS: 700us
-  ApplicationRxBaseOffsetNS: 300us
+  # ApplicationTxBaseOffsetNS: 700us
+  ApplicationRxBaseOffsetNS: 50us
+  ApplicationRxWindowNS: 100us
+  ApplicationRxTriggeredTx: true
   ApplicationXdpProgram: xdp_kern_profinet_vid100.o
 TsnHigh:
   TsnHighEnabled: true
@@ -30,10 +32,10 @@ TsnHigh:
   TsnHighRxQueue: 1
   TsnHighTxQueue: 1
   TsnHighSocketPriority: 6
-  TsnHighTxThreadPriority: 98
-  TsnHighRxThreadPriority: 98
-  TsnHighTxThreadCpu: 1
-  TsnHighRxThreadCpu: 1
+  TsnHighTxThreadPriority: 82
+  TsnHighRxThreadPriority: 80
+  TsnHighTxThreadCpu: 2
+  TsnHighRxThreadCpu: 2
   TsnHighInterface: enp3s0
   TsnHighDestination: a8:74:1d:9d:36:14
   TsnHighRxWorkloadEnabled: true
@@ -42,9 +44,9 @@ TsnHigh:
   TsnHighRxWorkloadSetupArguments: "0x4A4000 0x129000"
   TsnHighRxWorkloadTeardownFunction: ptr_chase_teardown
   TsnHighRxWorkloadFunction: run_ptr_chasing
-  TsnHighRxWorkloadPrewarm: false
-  TsnHighRxWorkloadSkipCount: 100
-  TsnHighRxWorkloadThreadCpu: 1
+  TsnHighRxWorkloadPrewarm: true
+  TsnHighRxWorkloadSkipCount: 0
+  TsnHighRxWorkloadThreadCpu: 2
   TsnHighRxWorkloadThreadPriority: 80
 Log:
   LogThreadPriority: 1
