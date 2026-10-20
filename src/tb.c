@@ -30,7 +30,7 @@
 #include "utils.h"
 
 static struct option long_options[] = {
-	{"config", optional_argument, NULL, 'c'},
+	{"config", required_argument, NULL, 'c'},
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'V'},
 	{},

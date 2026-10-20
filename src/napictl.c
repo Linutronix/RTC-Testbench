@@ -27,10 +27,10 @@
 #define __unused __attribute__((unused))
 
 static struct option long_options[] = {
-	{"interface", optional_argument, NULL, 'i'},
-	{"queue", optional_argument, NULL, 'q'},
-	{"defer-hard-irqs", optional_argument, NULL, 'd'},
-	{"gro-flush-timeout", optional_argument, NULL, 'g'},
+	{"interface", required_argument, NULL, 'i'},
+	{"queue", required_argument, NULL, 'q'},
+	{"defer-hard-irqs", required_argument, NULL, 'd'},
+	{"gro-flush-timeout", required_argument, NULL, 'g'},
 	{"help", no_argument, NULL, 'h'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"version", no_argument, NULL, 'V'},
