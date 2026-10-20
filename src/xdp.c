@@ -60,9 +60,9 @@ static void xdp_set_prog_bind_flags(struct bpf_object __unused *obj, unsigned in
 #ifdef TX_TIMESTAMP
 static void xdp_process_tx_timestamp(struct xdp_socket *xsk, uint32_t idx_cq)
 {
-	struct round_trip_context *rtt = xsk->tx_hwts.rtt;
 	uint64_t addr = *xsk_ring_cons__comp_addr(&xsk->umem.cq, idx_cq);
 	unsigned char *data = xsk_umem__get_data(xsk->umem.buffer, addr);
+	struct round_trip_context *rtt = xsk->tx_hwts.rtt;
 	struct xsk_tx_metadata *meta =
 		(struct xsk_tx_metadata *)(data - sizeof(struct xsk_tx_metadata));
 
