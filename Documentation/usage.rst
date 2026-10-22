@@ -53,7 +53,7 @@ The ``reference`` and ``mirror`` programs handle the following signals:
      - Description
 
    * - SIGINT/SIGTERM
-     - Application shutdown. All threads and communucation will be stopped. Can take some time.
+     - Application shutdown. All threads and communication will be stopped. Can take some time.
 
    * - SIGUSR1
      - Reset global statistics (e.g. log file). Useful only for testing.

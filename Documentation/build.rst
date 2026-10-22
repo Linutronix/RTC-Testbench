@@ -11,7 +11,7 @@
 Build
 =====
 
-The buildsystem is cmake. The applications can be build and installed by:
+The buildsystem is cmake. The applications can be built and installed by:
 
 .. code:: bash
 
@@ -25,11 +25,23 @@ Setting the build type is important, as it defines the used compiler
 flags. ``Release`` builds the application with optimizations and without debug
 symbols. Other build types include: ``Debug`` or ``RelWithDebInfo``.
 
+The build produces the ``reference`` and ``mirror`` applications, the XDP eBPF programs
+(``xdp_kern_*.o``) and the example workloads (``tests/workloads/<name>/<name>.so``, see
+:ref:`Workload`). If its requirements are met, the ``napictl`` helper is built as well (see
+:ref:`napictl`).
+
+``make install`` installs the applications to ``<prefix>/bin``, the XDP eBPF programs to
+``<prefix>/<libdir>/rtc-testbench/ebpf`` and the test scenarios to
+``<prefix>/share/rtc-testbench/tests``. The applications look up the configured XDP program in
+the current working directory first and fall back to the installed eBPF directory. ``napictl``
+is not installed and can be used from the build directory.
+
 The applications have the following dependencies:
 
-- Run time: libbpf, libyaml, libxdp, libssl
+- Run time: libbpf, libyaml, libxdp, libssl (OpenSSL >= 3.0)
 - Build time: cmake, gcc, clang, llvm, pkg-config
-- Utilities: linuxptp, ethtool, iproute2, rt-tests, iperf3
+- Optional: libmosquitto (MQTT), libnl-3 and libnl-genl-3 (``napictl``), cmocka (unit tests)
+- Utilities: linuxptp, ethtool, iproute2, rt-tests, iperf3, bc
 
 For Debian based systems do:
 
@@ -38,15 +50,17 @@ For Debian based systems do:
    apt update
    apt install -y build-essential clang llvm cmake pkg-config \
       libbpf-dev libyaml-dev libc6-dev rt-tests ethtool iproute2 \
-      iperf3 linuxptp libxdp-dev libssl-dev libmosquitto-dev git bc
+      iperf3 linuxptp libxdp-dev libssl-dev libmosquitto-dev git bc \
+      libnl-3-dev libnl-genl-3-dev libcmocka-dev
 
 For RHEL based systems do:
 
 .. code:: bash
 
    dnf -y upgrade
-   dnf -y install libxdp-devel libyaml-devel clang mosquitto-devel \
-            python3-sphinx python3-sphinx_rtd_theme cmake openssl-devel llvm
+   dnf -y install gcc clang llvm cmake pkgconf-pkg-config libbpf-devel libxdp-devel \
+            libyaml-devel openssl-devel mosquitto-devel libnl3-devel libcmocka-devel \
+            python3-sphinx python3-sphinx_rtd_theme
 
 .. Note:: For RHEL ``libxdp-devel`` is packaged in CodeReadyBuilder repos. More info at
           https://developers.redhat.com/blog/2018/11/15/introducing-codeready-linux-builder. Usually
@@ -68,7 +82,7 @@ Example: No errors should be printed. Warnings can be evaluated on a case by cas
 Additional Options
 ^^^^^^^^^^^^^^^^^^
 
-Some features are added by using additional CMake opitions, the table bellow presents those features
+Some features are added by using additional CMake options, the table below presents those features
 and options.
 
 .. list-table:: Features & CMake options
@@ -81,10 +95,11 @@ and options.
    * - MQTT
      - WITH_MQTT
 
-   * - Show Packet RX Latency
+   * - Rx Hardware Timestamping for latency statistics (requires libbpf >= 1.2)
      - RX_TIMESTAMP
 
-   * - Enable TX Hardware Timestamping
+   * - Tx Hardware Timestamping for latency statistics (requires libxdp >= 1.5.2 and Linux kernel
+       headers providing ``XDP_TXMD_FLAGS_TIMESTAMP``, i.e., >= v6.8)
      - TX_TIMESTAMP
 
    * - Compile with AddressSanitizer for debugging
