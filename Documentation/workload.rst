@@ -6,6 +6,8 @@
 .. Testbench documentation workload file.
 ..
 
+.. _Workload:
+
 Real Time Compute Workloads
 ===========================
 
@@ -32,6 +34,29 @@ To be compatible with RTC-Testbench, a workload must:
 2. Implement a runtime function to be called each cycle after completion of the network RX routine.
 3. (Optional) Implement a setup function to perform initialization tasks, such as memory allocation,
    to avoid doing them in the time critical path.
+4. (Optional) Implement a teardown function to release the resources allocated by the setup
+   function.
+
+The functions are resolved by name via ``dlsym()`` and have to use the following signatures (see
+``src/workload.h``):
+
+.. code:: c
+
+   struct workload_instance {
+           int id;     /* Which workload instance is it? */
+           int cpu;    /* On which CPU does this instance run on? */
+           void *priv; /* Pointer to private data. */
+   };
+
+   int setup(struct workload_instance *instance, int argc, char **argv);
+   int run(struct workload_instance *instance, int argc, char **argv);
+   void teardown(struct workload_instance *instance);
+
+One workload instance is created per configured workload CPU. The setup function is called once
+per instance and may store private data in ``instance->priv``. The argument strings configured via
+``<Class>RxWorkloadSetupArguments`` and ``<Class>RxWorkloadArguments`` are split at spaces and
+passed like command line arguments: ``argv[0]`` is always ``Workload`` and the configured
+arguments start at ``argv[1]``.
 
 Specifying a workload
 ^^^^^^^^^^^^^^^^^^^^^
@@ -72,13 +97,23 @@ The following options are used to configure a RX workload:
    * - <Class>RxWorkloadSkipCount (Integer)
      - Skip min/max statistics and outlier updates for the first N workload iterations
 
-   * - <Class>RxWorkloadThreadCpu (Integer)
-     - Comma separated list of CPU core numbers to pin the workload threads to
+   * - <Class>RxWorkloadThreadCpu (CPU list)
+     - Comma or space separated list of CPU core numbers to pin the workload threads to. One
+       workload thread is created per CPU (maximum 32).
 
    * - <Class>RxWorkloadThreadPriority (Integer)
-     - Real-time thread priority (1-99, higher values = higher priority)
+     - Real-time thread priority (1-99, higher values = higher priority). Default is 80.
 
 The RX workload feature is implemented for ``TsnHigh``, ``Rtc`` and ``GenericL2`` traffic classes.
+
+Each cycle the Rx thread signals all workload threads after it has received frames (or always, if
+``RxWorkloadPrewarm`` is enabled). The workload has to finish before the Tx thread of the traffic
+class runs, i.e., between ``ApplicationRxBaseOffsetNS`` and ``ApplicationTxBaseOffsetNS``. If a
+workload thread is still running at that point in time, the ``RxWorkloadOutliers`` statistic is
+incremented. With ``ApplicationRxTriggeredTx`` (``mirror`` only) the Tx thread waits for the
+workload to finish instead, but at most half a cycle. The execution times are reported as
+``RxWorkload*`` for a single workload CPU and per workload thread as ``RxWorkload<N>*`` for multiple
+workload CPUs. See :ref:`Statistics`.
 
 Pointer Chasing Workload
 ------------------------
@@ -155,11 +190,42 @@ Example RTC-Testbench configuration file for pointer chasing
 
 See ``tests/busypolling_1ms_rtworkload/mirror.yaml``.
 
-Build Instructions
-^^^^^^^^^^^^^^^^^^
+Jacobi 2D Workload
+------------------
 
-From the main project build directory:
+The ``jacobi_2d`` workload performs a configurable number of iterations of a 2D Jacobi stencil
+computation on a small grid (100 x 100 doubles, ~78 KiB). It is a compute bound workload, which
+mostly operates within the CPU caches. The execution time scales with the number of iterations.
+
+- Setup function: ``jacobi_2d_setup``, expects one argument: the number of iterations
+- Run time function: ``jacobi_2d_run``
+- Teardown function: ``jacobi_2d_teardown``
+
+Example configuration snippet:
+
+.. code:: yaml
+
+   RtcRxWorkloadEnabled: true
+   RtcRxWorkloadFile: ../workloads/jacobi_2d/jacobi_2d.so
+   RtcRxWorkloadSetupFunction: jacobi_2d_setup
+   RtcRxWorkloadSetupArguments: "10"
+   RtcRxWorkloadFunction: jacobi_2d_run
+   RtcRxWorkloadTeardownFunction: jacobi_2d_teardown
+   RtcRxWorkloadThreadCpu: 2
+   RtcRxWorkloadThreadPriority: 80
+
+Build Instructions
+------------------
+
+All workloads located in subdirectories of ``tests/workloads/`` are built automatically as part of
+the regular build. Each workload is compiled into a shared library which is placed next to its
+sources, e.g., ``tests/workloads/pointer_chasing/pointer_chasing.so``. A single workload can be
+built from the main project build directory by its name:
 
 .. code:: bash
 
    make pointer_chasing                   # Build shared library
+   make jacobi_2d                         # Build shared library
+
+New workloads can be added by creating a new subdirectory in ``tests/workloads/`` containing the C
+sources.
