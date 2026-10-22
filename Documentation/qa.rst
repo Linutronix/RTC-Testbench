@@ -68,8 +68,9 @@ fixed inplace) by running ``clang-tidy``:
 Unit Tests
 ----------
 
-Some code parts like the ring buffer have dedicated unit tests. These tests require ``cmocka``
-library. The tests can be invoked like this:
+Some code parts like the ring buffer and the configuration parsing have dedicated unit tests
+located in ``tests/unit/``. These tests require the ``cmocka`` library. The tests can be invoked
+like this:
 
 .. code:: bash
 
@@ -78,3 +79,5 @@ library. The tests can be invoked like this:
    % cmake -DWITH_TESTS=ON ..
    % make -j`nproc`
    % make test
+
+A single test can be executed with e.g., ``ctest -R config_test --output-on-failure``.
