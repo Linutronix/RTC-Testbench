@@ -37,13 +37,13 @@ for the time synchronization via PTP.
 Linux
 ^^^^^
 
-The recommend Linux distribution is Debian Stable (Bookworm). It includes all necessary libraries
+The recommended Linux distribution is Debian Stable (Trixie). It includes all necessary libraries
 and tools to run the Linux RealTime Communication Testbench. Debian can be installed on any PC by using the Debian
 installer:
 
 - https://www.debian.org/distrib/
 
-Once Debian is and up and running the Linux RealTime Communication Testbench and its dependencies can be installed:
+Once Debian is up and running the Linux RealTime Communication Testbench and its dependencies can be installed:
 
 .. code:: bash
 
@@ -71,7 +71,8 @@ simply installed via the package management:
    apt install -y linux-image-rt-amd64
 
 Alternatively the `ELBE <https://www.elbe-rfs.org>`_ build environment can be used to build a ready
-to go Debian based image. The necessary XML file is included in the repository. Follow the steps on this website to install ELBE:
+to go Debian (Trixie) based image. The necessary XML file ``elbe/x86_64.xml`` is included in the
+repository. Follow the steps on this website to install ELBE:
 
 - https://elbe-rfs.org/docs/sphinx/v15.5/article-quickstart.html#installing-elbe
 
@@ -79,7 +80,7 @@ Afterwards the image can be build with:
 
 .. code:: bash
 
-   # Generates testbench.img with 440 GiB size for SSD/HDD
+   # Generates testbench.img with 400 GiB size for SSD/HDD
    elbe initvm -v hdd submit elbe/x86_64.xml
    # Or generates testbench.img with 14 GiB size for SD cards/USB sticks
    elbe initvm -v sd submit elbe/x86_64.xml
