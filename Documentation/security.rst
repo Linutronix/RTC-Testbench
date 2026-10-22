@@ -6,6 +6,8 @@
 .. Testbench documentation security file.
 ..
 
+.. _Security:
+
 Security
 ========
 
@@ -41,13 +43,17 @@ The parameters which allow to configure frame authentication or encryption are s
    * - SecurityAlgorithm (String)
      - One of ``AES256-GCM``, ``AES128-GCM``, ``CHACHA20-POLY1305``
 
-   * - SecurityKey (String|Hex)
-     - Key to be used for crypto functions either 16 or 32 bytes depending on selected algorithm
+   * - SecurityKey (String)
+     - Key to be used for crypto functions. The characters of the string are used as raw key
+       bytes, i.e., there is no hex decoding. It has to be 16 bytes (``AES128-GCM``) or 32 bytes
+       (``AES256-GCM``, ``CHACHA20-POLY1305``) long.
 
-   * - SecurityIvPrefix (String|Hex)
-     - Prefix of the IV which is 6 bytes in size
+   * - SecurityIvPrefix (String)
+     - Prefix of the IV which is 6 bytes (characters) in size
 
-These options are valid for classes TSNHigh, TSNLow, RTC and RTA.
+These options have to be prefixed with the traffic class name (e.g., ``TsnHighSecurityMode``) and
+are valid for the classes TsnHigh, TsnLow, Rtc and Rta. The key and IV prefix lengths are verified
+at startup.
 
 Implementation
 --------------
