@@ -6,6 +6,8 @@
 .. Testbench documentation histogram file.
 ..
 
+.. _Histograms:
+
 Histograms
 ==========
 

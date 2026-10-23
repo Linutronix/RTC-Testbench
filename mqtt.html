@@ -135,9 +135,9 @@
 <span id="mqtt"></span><h1>MQTT and Grafana Integration<a class="headerlink" href="#mqtt-and-grafana-integration" title="Permalink to this heading"></a></h1>
 <section id="motivation">
 <h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading"></a></h2>
-<p>With the introduction of MQTT logging the visualization if the statistics is fostered by usage of
+<p>With the introduction of MQTT logging the visualization of the statistics is fostered by usage of
 Grafana. The full chain from MQTT log to Grafana is provided with this extension.  This extension
-provides a visualization of data in grafical format, which is desired for some use cases, e.g. long
+provides a visualization of data in graphical format, which is desired for some use cases, e.g. long
 term analysis, several instances of the Linux RealTime Communication Testbench running, and
 showcases.  The combination MQTT/Grafana is chosen as it is the most recognized and used application
 for data visualization, but requires additional services for the visualization. Those services are
@@ -149,7 +149,7 @@ that allows that can be generated via a bash script provided.</p>
 <section id="enabling-the-build">
 <h2>Enabling the build<a class="headerlink" href="#enabling-the-build" title="Permalink to this heading"></a></h2>
 <p>MQTT support is integrated in the build system as an option to enable it add the flag:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DWITH_MQTT<span class="o">=</span>True..
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DWITH_MQTT<span class="o">=</span>TRUE<span class="w"> </span>..
 </pre></div>
 </div>
 </section>
@@ -181,24 +181,30 @@ that allows that can be generated via a bash script provided.</p>
 <td><p>Thread CPU affinity</p></td>
 </tr>
 <tr class="row-even"><td><p>LogMqttBrokerIP</p></td>
-<td><p>IP address where MQTT broker is running</p></td>
+<td><p>IP address where MQTT broker is running, default value is 127.0.0.1</p></td>
 </tr>
 <tr class="row-odd"><td><p>LogMqttBrokerPort</p></td>
-<td><p>Port used by the MQTT Broker, default value is</p></td>
+<td><p>Port used by the MQTT Broker, default value is 1883</p></td>
 </tr>
 <tr class="row-even"><td><p>LogMqttKeepAliveSecs</p></td>
 <td><p>Keep alive time for the connection, default value 60s</p></td>
 </tr>
 <tr class="row-odd"><td><p>LogMqttMeasurementName</p></td>
-<td><p>Used to distinguish measurements coming from different machines.</p></td>
+<td><p>Used to distinguish measurements coming from different machines. Default value is
+<code class="docutils literal notranslate"><span class="pre">reference</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
 </section>
 <section id="docker-composer">
 <h2>Docker Composer<a class="headerlink" href="#docker-composer" title="Permalink to this heading"></a></h2>
-<p>The first step is to create the docker-composer.yml file. As there is an uncertanty about the licensing on those docker-composer files and not much to be copyrighted on those,
-an indirect approach to deliver the file was taken. In the docker/mqtt-composer directory the file “create_docker_composer.sh” is provided. by running that file, i.e.:</p>
+<p>The first step is to create the docker-compose.yml file. As there is an uncertainty about the
+licensing on those docker-composer files and not much to be copyrighted on those, an indirect
+approach to deliver the file was taken. In the docker/mqtt-composer directory the file
+<code class="docutils literal notranslate"><span class="pre">create_docker_compose.sh</span></code> is provided. It clones an upstream docker-compose project, applies the
+local changes from <code class="docutils literal notranslate"><span class="pre">docker_composer.diff</span></code> and places the resulting <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> into the
+directory. Afterwards, <code class="docutils literal notranslate"><span class="pre">set_permissions.sh</span></code> prepares the data directories. Run both scripts like
+this:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docker/mqtt-composer
 ./create_docker_compose.sh
 ./set_permissions.sh
@@ -206,10 +212,11 @@ an indirect approach to deliver the file was taken. In the docker/mqtt-composer 
 </div>
 <section id="creating-the-services">
 <h3>Creating the services<a class="headerlink" href="#creating-the-services" title="Permalink to this heading"></a></h3>
-<p>The docker-composer.sh makes the integration into Grafana simple.
-A simplistic way to have the Grafana running is it can be used, is to instantiate the docker-compose in the machine where reference is running, by doing that all parameters concerning the MQTT broker are default.
-To instantiate the docker-composer you need docker and docker-compose installed.
-Start the services by issuing the commands below from the rtc-testbench directory.</p>
+<p>The generated <code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code> makes the integration into Grafana simple.  A simplistic way to
+have the Grafana running is it can be used, is to instantiate the docker-compose in the machine
+where reference is running, by doing that all parameters concerning the MQTT broker are default.  To
+instantiate the docker-composer you need docker and docker-compose installed.  Start the services by
+issuing the commands below from the rtc-testbench directory.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docker/mqtt-composer
 docker-compose<span class="w"> </span>--compatibility<span class="w"> </span>up<span class="w"> </span>-d
 </pre></div>
@@ -220,11 +227,12 @@ The verification of data availability can be done in two steps: first at InfluxD
 </section>
 <section id="influx-access">
 <h3>Influx Access<a class="headerlink" href="#influx-access" title="Permalink to this heading"></a></h3>
-<p>Used database for the provided configuration is “testbench” and is defined in the telegraf.conf file.
-The measurement name is the “LogMqttMeasurementName” provided in the configuration.
-The Timestamp provided is the time taken in the application side when the last frame in the recording period “StatsCollectionIntervalNS”
-is received, and the traffic class name is one of the columns of the measurment.
-This way one can investigate the data base by providing the following code when running influx:</p>
+<p>Used database for the provided configuration is “testbench” and is defined in the telegraf.conf
+file.  The measurement name is the “LogMqttMeasurementName” provided in the configuration.  The
+Timestamp provided is the time taken in the application side when the last frame in the recording
+period “StatsCollectionIntervalNS” is received, and the traffic class name is one of the columns of
+the measurement.  This way one can investigate the data base by providing the following code when
+running influx:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>use<span class="w"> </span>testbench
 SELECT<span class="w"> </span>*<span class="w"> </span>from<span class="w"> </span><span class="si">${</span><span class="nv">LogMqttMeasurementName</span><span class="si">}</span>
 </pre></div>
@@ -233,15 +241,16 @@ SELECT<span class="w"> </span>*<span class="w"> </span>from<span class="w"> </sp
 </section>
 <section id="grafana-access">
 <h3>Grafana Access<a class="headerlink" href="#grafana-access" title="Permalink to this heading"></a></h3>
-<p>Grafana can be accessed by the IP of the machine that the docker-copose was started and port defined on
-the docker-compose.yml file.
-In Grafana a new data source for InfluxDB can be created and querries added to create dashboards.</p>
+<p>Grafana can be accessed by the IP of the machine that the docker-compose was started and port
+defined on the docker-compose.yml file.  In Grafana a new data source for InfluxDB can be created
+and queries added to create dashboards.</p>
 </section>
 <section id="grafana-password">
 <h3>Grafana Password<a class="headerlink" href="#grafana-password" title="Permalink to this heading"></a></h3>
-<p>Grafana password has to be reset for the first usage.
-In some cases Grafana might also consider the password as expired refusing to allow the admin to login, e.g. extreme clock changes.
-To do so execute the “change_grafana_password.sh” script, with the containers running, providing the new password as parameter as below:</p>
+<p>Grafana password has to be reset for the first usage.  In some cases Grafana might also consider the
+password as expired refusing to allow the admin to login, e.g. extreme clock changes.  To do so
+execute the “change_grafana_password.sh” script, with the containers running, providing the new
+password as parameter as below:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>docker/mqtt-composer
 ./change_grafana_password.sh<span class="w"> </span><span class="nv">$NEW_PASSWORD</span>
 </pre></div>
@@ -249,10 +258,11 @@ To do so execute the “change_grafana_password.sh” script, with the container
 </section>
 <section id="grafana-example">
 <h3>Grafana Example<a class="headerlink" href="#grafana-example" title="Permalink to this heading"></a></h3>
-<p>The example provided for Grafana has the time display of the 3 Profinet real-time traffic classes, TSN-High, TSN-Low and RTC.
-Dials are provided to show the current maximum visualized within the visible time range.
-Colored bars are provided for representing the number of errors and outliers found.</p>
-<a class="reference internal image-reference" href="_images/grafana_example.png"><img alt="Grafana sample with a cicle time of 250us." src="_images/grafana_example.png" style="width: 600px;" /></a>
+<p>The example provided for Grafana has the time display of the 3 Profinet real-time traffic classes,
+TSN-High, TSN-Low and RTC.  Dials are provided to show the current maximum visualized within the
+visible time range.  Colored bars are provided for representing the number of errors and outliers
+found.</p>
+<a class="reference internal image-reference" href="_images/grafana_example.png"><img alt="Grafana sample with a cycle time of 250us." src="_images/grafana_example.png" style="width: 600px;" /></a>
 </section>
 </section>
 </section>

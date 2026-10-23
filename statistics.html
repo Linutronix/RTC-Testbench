@@ -189,10 +189,11 @@ real time issue (e.g., kernel, driver, hardware, …). Should be zero.</p></td>
 <tr class="row-odd"><td><p>RoundTrip[Min,Max,Av] [us]</p></td>
 <td><p>Round trip delay measures the time from reference to mirror and back. The delay is calculated
 based on software timestamps. Also the mirror sends back the frame not immediately, but
-rather in next cycle. Therefore, the round trip time should be less than 2 * cycle time.</p></td>
+rather in next cycle. Therefore, the round trip time should be less than 2 * cycle time.
+Note: In the JSON/MQTT output the minimum is named <code class="docutils literal notranslate"><span class="pre">RoundTripTimeMin</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p>RoundTripOutliers [us]</p></td>
-<td><p>Is increment if a round trip time is greater than 2 * cycle time. This usually indicates some
+<tr class="row-even"><td><p>RoundTripOutliers</p></td>
+<td><p>Is incremented if a round trip time is greater than 2 * cycle time. This usually indicates some
 real time issue (e.g., kernel, driver, hardware, …). Should be zero.</p></td>
 </tr>
 <tr class="row-odd"><td><p>Rx[Min,Max,Av] [us]</p></td>
@@ -205,7 +206,16 @@ for AF_XDP, or the kernel’s software RX timestamp for AF_PACKET) based on hard
 timestamps. See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a> for detailed information.</p></td>
 </tr>
 <tr class="row-odd"><td><p>RxWorkload[Min,Max,Av] [us]</p></td>
-<td><p>Duration of workload execution.</p></td>
+<td><p>Duration of workload execution. Reported if one workload CPU is configured. See
+<a class="reference internal" href="workload.html#workload"><span class="std std-ref">Real Time Compute Workloads</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p>RxWorkloadOutliers</p></td>
+<td><p>Is incremented if a workload did not finish before the Tx thread of the traffic class runs.
+Should be zero.</p></td>
+</tr>
+<tr class="row-odd"><td><p>RxWorkload&lt;N&gt;[Min,Max,Av,Outliers]</p></td>
+<td><p>Same as above, but per workload thread <code class="docutils literal notranslate"><span class="pre">N</span></code>. Reported instead of the ones above if multiple
+workload CPUs are configured.</p></td>
 </tr>
 <tr class="row-even"><td><p>RxSw2App[Min,Max,Av] [us]</p></td>
 <td><p>Latency from the earliest available software timestamp (the XDP program for AF_XDP, or
@@ -224,8 +234,11 @@ See <a class="reference internal" href="processing_latency.html#processinglatenc
 </table>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Some statistics (e.g., ones based on hardware timestamps) are only available in
-combination with XDP. For detailed information about hardware timestamping,
+<p>Some statistics are only available under certain conditions: The hardware timestamp
+based ones require the <code class="docutils literal notranslate"><span class="pre">RX_TIMESTAMP</span></code> and/or <code class="docutils literal notranslate"><span class="pre">TX_TIMESTAMP</span></code> build options, are
+limited to the traffic classes TsnHigh, TsnLow, Rtc, Rta and GenericL2 and work with
+both <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> and <code class="docutils literal notranslate"><span class="pre">AF_PACKET</span></code>. The workload statistics are only available, if a
+workload is configured. For detailed information about hardware timestamping,
 configuration requirements, and troubleshooting, see <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a>.</p>
 </div>
 </section>
@@ -278,10 +291,11 @@ UDP once per collection interval. This is useful to get the statistics into othe
 </tr>
 </tbody>
 </table>
-<p>The code base contains a script to collect and print the statistics data. The user has to provide
-the measurement name and the statistics of interest.</p>
+<p>The code base contains a script (<code class="docutils literal notranslate"><span class="pre">scripts/stat.pl</span></code>) to collect and print the statistics data. The
+user has to provide the UDP port (<code class="docutils literal notranslate"><span class="pre">-p</span></code>), the measurement name (<code class="docutils literal notranslate"><span class="pre">-m</span></code>), the traffic class
+(<code class="docutils literal notranslate"><span class="pre">-t</span></code>) and the statistics of interest (<code class="docutils literal notranslate"><span class="pre">-s</span></code>, wildcards are supported).</p>
 <p>Example:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/stat.pl<span class="w"> </span>-p<span class="w"> </span><span class="m">8888</span><span class="w"> </span>-m<span class="w"> </span>testbench1<span class="w"> </span>-t<span class="w"> </span>TsnHigh<span class="w"> </span>-s<span class="w"> </span>FramesSent<span class="w"> </span>-s<span class="w"> </span>FramesReceived<span class="w"> </span>-s<span class="w"> </span>Workload*
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/stat.pl<span class="w"> </span>-p<span class="w"> </span><span class="m">8888</span><span class="w"> </span>-m<span class="w"> </span>testbench1<span class="w"> </span>-t<span class="w"> </span>TsnHigh<span class="w"> </span>-s<span class="w"> </span>FramesSent<span class="w"> </span>-s<span class="w"> </span>FramesReceived<span class="w"> </span>-s<span class="w"> </span>RxWorkload*
 Measurement:<span class="w"> </span>testbench1<span class="w"> </span>--<span class="w"> </span>TC:<span class="w"> </span>TsnHigh
 <span class="w">  </span>FramesReceived:<span class="w"> </span><span class="m">0</span>
 <span class="w">  </span>FramesSent:<span class="w"> </span><span class="m">24016</span>

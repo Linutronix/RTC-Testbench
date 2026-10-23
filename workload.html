@@ -96,9 +96,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#assembly-implementation">Assembly Implementation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ptr-chase-setup-parameters">ptr_chase_setup parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#example-rtc-testbench-configuration-file-for-pointer-chasing">Example RTC-Testbench configuration file for pointer chasing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#build-instructions">Build Instructions</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#jacobi-2d-workload">Jacobi 2D Workload</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-instructions">Build Instructions</a></li>
 </ul>
 </li>
 </ul>
@@ -137,7 +138,7 @@
            <div itemprop="articleBody">
              
   <section id="real-time-compute-workloads">
-<h1>Real Time Compute Workloads<a class="headerlink" href="#real-time-compute-workloads" title="Permalink to this heading"></a></h1>
+<span id="workload"></span><h1>Real Time Compute Workloads<a class="headerlink" href="#real-time-compute-workloads" title="Permalink to this heading"></a></h1>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
 <p>The RTC-Testbench simulates a PLC by periodically sending and receiving Ethernet frames. The
@@ -157,7 +158,27 @@ flag).</p></li>
 <li><p>Implement a runtime function to be called each cycle after completion of the network RX routine.</p></li>
 <li><p>(Optional) Implement a setup function to perform initialization tasks, such as memory allocation,
 to avoid doing them in the time critical path.</p></li>
+<li><p>(Optional) Implement a teardown function to release the resources allocated by the setup
+function.</p></li>
 </ol>
+<p>The functions are resolved by name via <code class="docutils literal notranslate"><span class="pre">dlsym()</span></code> and have to use the following signatures (see
+<code class="docutils literal notranslate"><span class="pre">src/workload.h</span></code>):</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">workload_instance</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">;</span><span class="w">     </span><span class="cm">/* Which workload instance is it? */</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">cpu</span><span class="p">;</span><span class="w">    </span><span class="cm">/* On which CPU does this instance run on? */</span>
+<span class="w">        </span><span class="kt">void</span><span class="w"> </span><span class="o">*</span><span class="n">priv</span><span class="p">;</span><span class="w"> </span><span class="cm">/* Pointer to private data. */</span>
+<span class="p">};</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">workload_instance</span><span class="w"> </span><span class="o">*</span><span class="n">instance</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">argv</span><span class="p">);</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">workload_instance</span><span class="w"> </span><span class="o">*</span><span class="n">instance</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">argv</span><span class="p">);</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">teardown</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">workload_instance</span><span class="w"> </span><span class="o">*</span><span class="n">instance</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>One workload instance is created per configured workload CPU. The setup function is called once
+per instance and may store private data in <code class="docutils literal notranslate"><span class="pre">instance-&gt;priv</span></code>. The argument strings configured via
+<code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;RxWorkloadSetupArguments</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;RxWorkloadArguments</span></code> are split at spaces and
+passed like command line arguments: <code class="docutils literal notranslate"><span class="pre">argv[0]</span></code> is always <code class="docutils literal notranslate"><span class="pre">Workload</span></code> and the configured
+arguments start at <code class="docutils literal notranslate"><span class="pre">argv[1]</span></code>.</p>
 </section>
 <section id="specifying-a-workload">
 <h3>Specifying a workload<a class="headerlink" href="#specifying-a-workload" title="Permalink to this heading"></a></h3>
@@ -201,15 +222,24 @@ to avoid doing them in the time critical path.</p></li>
 <tr class="row-even"><td><p>&lt;Class&gt;RxWorkloadSkipCount (Integer)</p></td>
 <td><p>Skip min/max statistics and outlier updates for the first N workload iterations</p></td>
 </tr>
-<tr class="row-odd"><td><p>&lt;Class&gt;RxWorkloadThreadCpu (Integer)</p></td>
-<td><p>Comma separated list of CPU core numbers to pin the workload threads to</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;RxWorkloadThreadCpu (CPU list)</p></td>
+<td><p>Comma or space separated list of CPU core numbers to pin the workload threads to. One
+workload thread is created per CPU (maximum 32).</p></td>
 </tr>
 <tr class="row-even"><td><p>&lt;Class&gt;RxWorkloadThreadPriority (Integer)</p></td>
-<td><p>Real-time thread priority (1-99, higher values = higher priority)</p></td>
+<td><p>Real-time thread priority (1-99, higher values = higher priority). Default is 80.</p></td>
 </tr>
 </tbody>
 </table>
 <p>The RX workload feature is implemented for <code class="docutils literal notranslate"><span class="pre">TsnHigh</span></code>, <code class="docutils literal notranslate"><span class="pre">Rtc</span></code> and <code class="docutils literal notranslate"><span class="pre">GenericL2</span></code> traffic classes.</p>
+<p>Each cycle the Rx thread signals all workload threads after it has received frames (or always, if
+<code class="docutils literal notranslate"><span class="pre">RxWorkloadPrewarm</span></code> is enabled). The workload has to finish before the Tx thread of the traffic
+class runs, i.e., between <code class="docutils literal notranslate"><span class="pre">ApplicationRxBaseOffsetNS</span></code> and <code class="docutils literal notranslate"><span class="pre">ApplicationTxBaseOffsetNS</span></code>. If a
+workload thread is still running at that point in time, the <code class="docutils literal notranslate"><span class="pre">RxWorkloadOutliers</span></code> statistic is
+incremented. With <code class="docutils literal notranslate"><span class="pre">ApplicationRxTriggeredTx</span></code> (<code class="docutils literal notranslate"><span class="pre">mirror</span></code> only) the Tx thread waits for the
+workload to finish instead, but at most half a cycle. The execution times are reported as
+<code class="docutils literal notranslate"><span class="pre">RxWorkload*</span></code> for a single workload CPU and per workload thread as <code class="docutils literal notranslate"><span class="pre">RxWorkload&lt;N&gt;*</span></code> for multiple
+workload CPUs. See <a class="reference internal" href="statistics.html#statistics"><span class="std std-ref">Statistics</span></a>.</p>
 </section>
 </section>
 <section id="pointer-chasing-workload">
@@ -285,13 +315,41 @@ LinkedList. Recommended to keep buffer size slightly larger than span size.</p><
 <h3>Example RTC-Testbench configuration file for pointer chasing<a class="headerlink" href="#example-rtc-testbench-configuration-file-for-pointer-chasing" title="Permalink to this heading"></a></h3>
 <p>See <code class="docutils literal notranslate"><span class="pre">tests/busypolling_1ms_rtworkload/mirror.yaml</span></code>.</p>
 </section>
-<section id="build-instructions">
-<h3>Build Instructions<a class="headerlink" href="#build-instructions" title="Permalink to this heading"></a></h3>
-<p>From the main project build directory:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>pointer_chasing<span class="w">                   </span><span class="c1"># Build shared library</span>
+</section>
+<section id="jacobi-2d-workload">
+<h2>Jacobi 2D Workload<a class="headerlink" href="#jacobi-2d-workload" title="Permalink to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">jacobi_2d</span></code> workload performs a configurable number of iterations of a 2D Jacobi stencil
+computation on a small grid (100 x 100 doubles, ~78 KiB). It is a compute bound workload, which
+mostly operates within the CPU caches. The execution time scales with the number of iterations.</p>
+<ul class="simple">
+<li><p>Setup function: <code class="docutils literal notranslate"><span class="pre">jacobi_2d_setup</span></code>, expects one argument: the number of iterations</p></li>
+<li><p>Run time function: <code class="docutils literal notranslate"><span class="pre">jacobi_2d_run</span></code></p></li>
+<li><p>Teardown function: <code class="docutils literal notranslate"><span class="pre">jacobi_2d_teardown</span></code></p></li>
+</ul>
+<p>Example configuration snippet:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">RtcRxWorkloadEnabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">RtcRxWorkloadFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../workloads/jacobi_2d/jacobi_2d.so</span>
+<span class="nt">RtcRxWorkloadSetupFunction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jacobi_2d_setup</span>
+<span class="nt">RtcRxWorkloadSetupArguments</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10&quot;</span>
+<span class="nt">RtcRxWorkloadFunction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jacobi_2d_run</span>
+<span class="nt">RtcRxWorkloadTeardownFunction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jacobi_2d_teardown</span>
+<span class="nt">RtcRxWorkloadThreadCpu</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">RtcRxWorkloadThreadPriority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
 </pre></div>
 </div>
 </section>
+<section id="build-instructions">
+<h2>Build Instructions<a class="headerlink" href="#build-instructions" title="Permalink to this heading"></a></h2>
+<p>All workloads located in subdirectories of <code class="docutils literal notranslate"><span class="pre">tests/workloads/</span></code> are built automatically as part of
+the regular build. Each workload is compiled into a shared library which is placed next to its
+sources, e.g., <code class="docutils literal notranslate"><span class="pre">tests/workloads/pointer_chasing/pointer_chasing.so</span></code>. A single workload can be
+built from the main project build directory by its name:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>pointer_chasing<span class="w">                   </span><span class="c1"># Build shared library</span>
+make<span class="w"> </span>jacobi_2d<span class="w">                         </span><span class="c1"># Build shared library</span>
+</pre></div>
+</div>
+<p>New workloads can be added by creating a new subdirectory in <code class="docutils literal notranslate"><span class="pre">tests/workloads/</span></code> containing the C
+sources.</p>
 </section>
 </section>
 

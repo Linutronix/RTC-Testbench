@@ -122,7 +122,7 @@
            <div itemprop="articleBody">
              
   <section id="debug">
-<h1>Debug<a class="headerlink" href="#debug" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1>Debug<a class="headerlink" href="#debug" title="Permalink to this heading"></a></h1>
 <section id="debugging-of-real-time-outliers">
 <h2>Debugging of real time outliers<a class="headerlink" href="#debugging-of-real-time-outliers" title="Permalink to this heading"></a></h2>
 <p>In case test runs indicate outliers or unusual round-trip times in the statistics, Linux <code class="docutils literal notranslate"><span class="pre">ftrace</span></code>
@@ -134,11 +134,11 @@ trace-cmd<span class="w"> </span>start<span class="w"> </span>-e<span class="w">
 
 <span class="c1"># Start reference and mirror as usual</span>
 
-<span class="c1"># The reference application will stop after a round-trip time outlier is hit and will output an</span>
-<span class="c1"># information message about it</span>
+<span class="c1"># The reference application stops tracing and terminates after a round-trip time outlier is</span>
+<span class="c1"># hit. It writes an information message about it to stderr and to the trace via trace_marker</span>
 
-<span class="c1"># The mirror application will stop after a oneway time outlier is hit and will output an</span>
-<span class="c1"># information message about it</span>
+<span class="c1"># The mirror application stops tracing and terminates after a oneway time outlier is hit. It</span>
+<span class="c1"># writes an information message about it to stderr and to the trace via trace_marker</span>
 
 <span class="c1"># Get the trace</span>
 trace-cmd<span class="w"> </span>extract<span class="w"> </span>-a
@@ -147,6 +147,13 @@ trace-cmd<span class="w"> </span>extract<span class="w"> </span>-a
 
 <span class="c1"># Analyze trace.dat with kernelshark or tracecompass to find the issue</span>
 </pre></div>
+</div>
+<p>Furthermore, <code class="docutils literal notranslate"><span class="pre">DebugStopTraceOnError</span></code> can be set to <code class="docutils literal notranslate"><span class="pre">True</span></code> to stop the tracing as soon as an
+error is logged by the applications, e.g., a transmission failure. In contrast to
+<code class="docutils literal notranslate"><span class="pre">DebugStopTraceOnOutlier</span></code> the applications keep running.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Both options require <code class="docutils literal notranslate"><span class="pre">tracefs</span></code> to be mounted at <code class="docutils literal notranslate"><span class="pre">/sys/kernel/tracing</span></code>.</p>
 </div>
 </section>
 </section>

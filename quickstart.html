@@ -148,13 +148,13 @@ for the time synchronization via PTP.</p>
 </section>
 <section id="linux">
 <h2>Linux<a class="headerlink" href="#linux" title="Permalink to this heading"></a></h2>
-<p>The recommend Linux distribution is Debian Stable (Bookworm). It includes all necessary libraries
+<p>The recommended Linux distribution is Debian Stable (Trixie). It includes all necessary libraries
 and tools to run the Linux RealTime Communication Testbench. Debian can be installed on any PC by using the Debian
 installer:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://www.debian.org/distrib/">https://www.debian.org/distrib/</a></p></li>
 </ul>
-<p>Once Debian is and up and running the Linux RealTime Communication Testbench and its dependencies can be installed:</p>
+<p>Once Debian is up and running the Linux RealTime Communication Testbench and its dependencies can be installed:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install dependencies</span>
 apt<span class="w"> </span>update
 apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>build-essential<span class="w"> </span>clang<span class="w"> </span>llvm<span class="w"> </span>cmake<span class="w"> </span>pkg-config<span class="w"> </span><span class="se">\</span>
@@ -178,12 +178,13 @@ apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </s
 </pre></div>
 </div>
 <p>Alternatively the <a class="reference external" href="https://www.elbe-rfs.org">ELBE</a> build environment can be used to build a ready
-to go Debian based image. The necessary XML file is included in the repository. Follow the steps on this website to install ELBE:</p>
+to go Debian (Trixie) based image. The necessary XML file <code class="docutils literal notranslate"><span class="pre">elbe/x86_64.xml</span></code> is included in the
+repository. Follow the steps on this website to install ELBE:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://elbe-rfs.org/docs/sphinx/v15.5/article-quickstart.html#installing-elbe">https://elbe-rfs.org/docs/sphinx/v15.5/article-quickstart.html#installing-elbe</a></p></li>
 </ul>
 <p>Afterwards the image can be build with:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generates testbench.img with 440 GiB size for SSD/HDD</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generates testbench.img with 400 GiB size for SSD/HDD</span>
 elbe<span class="w"> </span>initvm<span class="w"> </span>-v<span class="w"> </span>hdd<span class="w"> </span>submit<span class="w"> </span>elbe/x86_64.xml
 <span class="c1"># Or generates testbench.img with 14 GiB size for SD cards/USB sticks</span>
 elbe<span class="w"> </span>initvm<span class="w"> </span>-v<span class="w"> </span>sd<span class="w"> </span>submit<span class="w"> </span>elbe/x86_64.xml

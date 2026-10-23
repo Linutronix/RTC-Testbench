@@ -123,7 +123,7 @@
              
   <section id="build">
 <span id="id1"></span><h1>Build<a class="headerlink" href="#build" title="Permalink to this heading"></a></h1>
-<p>The buildsystem is cmake. The applications can be build and installed by:</p>
+<p>The buildsystem is cmake. The applications can be built and installed by:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build
 <span class="nb">cd</span><span class="w"> </span>build
 cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DWITH_MQTT<span class="o">=</span>TRUE<span class="w"> </span>-DRX_TIMESTAMP<span class="o">=</span>TRUE<span class="w"> </span>-DTX_TIMESTAMP<span class="o">=</span>TRUE<span class="w"> </span>..
@@ -134,23 +134,35 @@ sudo<span class="w"> </span>make<span class="w"> </span>install
 <p>Setting the build type is important, as it defines the used compiler
 flags. <code class="docutils literal notranslate"><span class="pre">Release</span></code> builds the application with optimizations and without debug
 symbols. Other build types include: <code class="docutils literal notranslate"><span class="pre">Debug</span></code> or <code class="docutils literal notranslate"><span class="pre">RelWithDebInfo</span></code>.</p>
+<p>The build produces the <code class="docutils literal notranslate"><span class="pre">reference</span></code> and <code class="docutils literal notranslate"><span class="pre">mirror</span></code> applications, the XDP eBPF programs
+(<code class="docutils literal notranslate"><span class="pre">xdp_kern_*.o</span></code>) and the example workloads (<code class="docutils literal notranslate"><span class="pre">tests/workloads/&lt;name&gt;/&lt;name&gt;.so</span></code>, see
+<a class="reference internal" href="workload.html#workload"><span class="std std-ref">Real Time Compute Workloads</span></a>). If its requirements are met, the <code class="docutils literal notranslate"><span class="pre">napictl</span></code> helper is built as well (see
+<a class="reference internal" href="napictl.html#napictl"><span class="std std-ref">NAPI Configuration (napictl)</span></a>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code> installs the applications to <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;/bin</span></code>, the XDP eBPF programs to
+<code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;/&lt;libdir&gt;/rtc-testbench/ebpf</span></code> and the test scenarios to
+<code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;/share/rtc-testbench/tests</span></code>. The applications look up the configured XDP program in
+the current working directory first and fall back to the installed eBPF directory. <code class="docutils literal notranslate"><span class="pre">napictl</span></code>
+is not installed and can be used from the build directory.</p>
 <p>The applications have the following dependencies:</p>
 <ul class="simple">
-<li><p>Run time: libbpf, libyaml, libxdp, libssl</p></li>
+<li><p>Run time: libbpf, libyaml, libxdp, libssl (OpenSSL &gt;= 3.0)</p></li>
 <li><p>Build time: cmake, gcc, clang, llvm, pkg-config</p></li>
-<li><p>Utilities: linuxptp, ethtool, iproute2, rt-tests, iperf3</p></li>
+<li><p>Optional: libmosquitto (MQTT), libnl-3 and libnl-genl-3 (<code class="docutils literal notranslate"><span class="pre">napictl</span></code>), cmocka (unit tests)</p></li>
+<li><p>Utilities: linuxptp, ethtool, iproute2, rt-tests, iperf3, bc</p></li>
 </ul>
 <p>For Debian based systems do:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>apt<span class="w"> </span>update
 apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>build-essential<span class="w"> </span>clang<span class="w"> </span>llvm<span class="w"> </span>cmake<span class="w"> </span>pkg-config<span class="w"> </span><span class="se">\</span>
 <span class="w">   </span>libbpf-dev<span class="w"> </span>libyaml-dev<span class="w"> </span>libc6-dev<span class="w"> </span>rt-tests<span class="w"> </span>ethtool<span class="w"> </span>iproute2<span class="w"> </span><span class="se">\</span>
-<span class="w">   </span>iperf3<span class="w"> </span>linuxptp<span class="w"> </span>libxdp-dev<span class="w"> </span>libssl-dev<span class="w"> </span>libmosquitto-dev<span class="w"> </span>git<span class="w"> </span>bc
+<span class="w">   </span>iperf3<span class="w"> </span>linuxptp<span class="w"> </span>libxdp-dev<span class="w"> </span>libssl-dev<span class="w"> </span>libmosquitto-dev<span class="w"> </span>git<span class="w"> </span>bc<span class="w"> </span><span class="se">\</span>
+<span class="w">   </span>libnl-3-dev<span class="w"> </span>libnl-genl-3-dev<span class="w"> </span>libcmocka-dev
 </pre></div>
 </div>
 <p>For RHEL based systems do:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dnf<span class="w"> </span>-y<span class="w"> </span>upgrade
-dnf<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </span>libxdp-devel<span class="w"> </span>libyaml-devel<span class="w"> </span>clang<span class="w"> </span>mosquitto-devel<span class="w"> </span><span class="se">\</span>
-<span class="w">         </span>python3-sphinx<span class="w"> </span>python3-sphinx_rtd_theme<span class="w"> </span>cmake<span class="w"> </span>openssl-devel<span class="w"> </span>llvm
+dnf<span class="w"> </span>-y<span class="w"> </span>install<span class="w"> </span>gcc<span class="w"> </span>clang<span class="w"> </span>llvm<span class="w"> </span>cmake<span class="w"> </span>pkgconf-pkg-config<span class="w"> </span>libbpf-devel<span class="w"> </span>libxdp-devel<span class="w"> </span><span class="se">\</span>
+<span class="w">         </span>libyaml-devel<span class="w"> </span>openssl-devel<span class="w"> </span>mosquitto-devel<span class="w"> </span>libnl3-devel<span class="w"> </span>libcmocka-devel<span class="w"> </span><span class="se">\</span>
+<span class="w">         </span>python3-sphinx<span class="w"> </span>python3-sphinx_rtd_theme
 </pre></div>
 </div>
 <div class="admonition note">
@@ -171,7 +183,7 @@ Checking<span class="w"> </span>config<span class="w"> </span>file<span class="w
 </div>
 <section id="additional-options">
 <h2>Additional Options<a class="headerlink" href="#additional-options" title="Permalink to this heading"></a></h2>
-<p>Some features are added by using additional CMake opitions, the table bellow presents those features
+<p>Some features are added by using additional CMake options, the table below presents those features
 and options.</p>
 <table class="docutils align-default" id="id2">
 <caption><span class="caption-text">Features &amp; CMake options</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
@@ -188,10 +200,11 @@ and options.</p>
 <tr class="row-even"><td><p>MQTT</p></td>
 <td><p>WITH_MQTT</p></td>
 </tr>
-<tr class="row-odd"><td><p>Show Packet RX Latency</p></td>
+<tr class="row-odd"><td><p>Rx Hardware Timestamping for latency statistics (requires libbpf &gt;= 1.2)</p></td>
 <td><p>RX_TIMESTAMP</p></td>
 </tr>
-<tr class="row-even"><td><p>Enable TX Hardware Timestamping</p></td>
+<tr class="row-even"><td><p>Tx Hardware Timestamping for latency statistics (requires libxdp &gt;= 1.5.2 and Linux kernel
+headers providing <code class="docutils literal notranslate"><span class="pre">XDP_TXMD_FLAGS_TIMESTAMP</span></code>, i.e., &gt;= v6.8)</p></td>
 <td><p>TX_TIMESTAMP</p></td>
 </tr>
 <tr class="row-odd"><td><p>Compile with AddressSanitizer for debugging</p></td>

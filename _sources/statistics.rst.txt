@@ -72,9 +72,10 @@ The following table shows all gathered statistics. All statistics are collected 
      - Round trip delay measures the time from reference to mirror and back. The delay is calculated
        based on software timestamps. Also the mirror sends back the frame not immediately, but
        rather in next cycle. Therefore, the round trip time should be less than 2 * cycle time.
+       Note: In the JSON/MQTT output the minimum is named ``RoundTripTimeMin``.
 
-   * - RoundTripOutliers [us]
-     - Is increment if a round trip time is greater than 2 * cycle time. This usually indicates some
+   * - RoundTripOutliers
+     - Is incremented if a round trip time is greater than 2 * cycle time. This usually indicates some
        real time issue (e.g., kernel, driver, hardware, ...). Should be zero.
 
    * - Rx[Min,Max,Av] [us]
@@ -87,7 +88,16 @@ The following table shows all gathered statistics. All statistics are collected 
        timestamps. See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
    * - RxWorkload[Min,Max,Av] [us]
-     - Duration of workload execution.
+     - Duration of workload execution. Reported if one workload CPU is configured. See
+       :ref:`Workload`.
+
+   * - RxWorkloadOutliers
+     - Is incremented if a workload did not finish before the Tx thread of the traffic class runs.
+       Should be zero.
+
+   * - RxWorkload<N>[Min,Max,Av,Outliers]
+     - Same as above, but per workload thread ``N``. Reported instead of the ones above if multiple
+       workload CPUs are configured.
 
    * - RxSw2App[Min,Max,Av] [us]
      - Latency from the earliest available software timestamp (the XDP program for AF_XDP, or
@@ -102,8 +112,11 @@ The following table shows all gathered statistics. All statistics are collected 
      - Is incremented if hardware timestamp requested, but only software timestamp available.
        See :ref:`Processing Latency <ProcessingLatency>` for detailed information.
 
-.. Note:: Some statistics (e.g., ones based on hardware timestamps) are only available in
-          combination with XDP. For detailed information about hardware timestamping,
+.. Note:: Some statistics are only available under certain conditions: The hardware timestamp
+          based ones require the ``RX_TIMESTAMP`` and/or ``TX_TIMESTAMP`` build options, are
+          limited to the traffic classes TsnHigh, TsnLow, Rtc, Rta and GenericL2 and work with
+          both ``AF_XDP`` and ``AF_PACKET``. The workload statistics are only available, if a
+          workload is configured. For detailed information about hardware timestamping,
           configuration requirements, and troubleshooting, see :ref:`Processing Latency <ProcessingLatency>`.
 
 File log
@@ -154,14 +167,15 @@ In order to use the JSON/UDP logging, the following configuration parameters can
    * - LogJsonMeasurementName
      - Used to distinguish measurements coming from different machines
 
-The code base contains a script to collect and print the statistics data. The user has to provide
-the measurement name and the statistics of interest.
+The code base contains a script (``scripts/stat.pl``) to collect and print the statistics data. The
+user has to provide the UDP port (``-p``), the measurement name (``-m``), the traffic class
+(``-t``) and the statistics of interest (``-s``, wildcards are supported).
 
 Example:
 
 .. code:: bash
 
-   ./scripts/stat.pl -p 8888 -m testbench1 -t TsnHigh -s FramesSent -s FramesReceived -s Workload*
+   ./scripts/stat.pl -p 8888 -m testbench1 -t TsnHigh -s FramesSent -s FramesReceived -s RxWorkload*
    Measurement: testbench1 -- TC: TsnHigh
      FramesReceived: 0
      FramesSent: 24016

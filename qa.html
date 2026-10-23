@@ -174,8 +174,9 @@ fixed inplace) by running <code class="docutils literal notranslate"><span class
 </section>
 <section id="unit-tests">
 <h2>Unit Tests<a class="headerlink" href="#unit-tests" title="Permalink to this heading"></a></h2>
-<p>Some code parts like the ring buffer have dedicated unit tests. These tests require <code class="docutils literal notranslate"><span class="pre">cmocka</span></code>
-library. The tests can be invoked like this:</p>
+<p>Some code parts like the ring buffer and the configuration parsing have dedicated unit tests
+located in <code class="docutils literal notranslate"><span class="pre">tests/unit/</span></code>. These tests require the <code class="docutils literal notranslate"><span class="pre">cmocka</span></code> library. The tests can be invoked
+like this:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>%<span class="w"> </span>mkdir<span class="w"> </span>build
 %<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>build
 %<span class="w"> </span>cmake<span class="w"> </span>-DWITH_TESTS<span class="o">=</span>ON<span class="w"> </span>..
@@ -183,6 +184,7 @@ library. The tests can be invoked like this:</p>
 %<span class="w"> </span>make<span class="w"> </span><span class="nb">test</span>
 </pre></div>
 </div>
+<p>A single test can be executed with e.g., <code class="docutils literal notranslate"><span class="pre">ctest</span> <span class="pre">-R</span> <span class="pre">config_test</span> <span class="pre">--output-on-failure</span></code>.</p>
 </section>
 </section>
 

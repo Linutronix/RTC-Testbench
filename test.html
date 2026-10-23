@@ -91,6 +91,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#busypolling">Busypolling</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ethercat">EtherCAT</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#working-clock">Working Clock</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#further-test-scenarios">Further Test Scenarios</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#tested-hardware">Tested Hardware</a></li>
@@ -209,15 +210,20 @@ host1:<span class="w"> </span>tail<span class="w"> </span>-f<span class="w"> </s
 </pre></div>
 </div>
 </div>
+<p>Copying the XDP programs (<code class="docutils literal notranslate"><span class="pre">xdp_kern_*.o</span></code>) into the test directory is only required when running
+the applications from the build directory. After <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code> the applications fall back to
+the installed eBPF directory. Most test directories also provide <code class="docutils literal notranslate"><span class="pre">ref.sh</span></code> and <code class="docutils literal notranslate"><span class="pre">mirror.sh</span></code>
+wrapper scripts which perform all four steps at once. Note that these scripts contain hard coded
+network interface names, which have to be adjusted.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">reference</span></code> and <code class="docutils literal notranslate"><span class="pre">mirror</span></code> applications can be stopped with Ctrl-C and started again e.g. for
 testing changes in the YAML configurations. However, the <code class="docutils literal notranslate"><span class="pre">mirror</span></code> has to be always started before
 the <code class="docutils literal notranslate"><span class="pre">reference</span></code>. This is due to the internal sequence counting mechanism.</p>
 <p>For use of the integrated TSN NICs on Intel Elkhart Lake a different configuration is required:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host1:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/multi_middleware/stmmac/xdp
-host1:<span class="w"> </span>./mirror.sh
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host2:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/multi_middleware/stmmac/xdp
+host2:<span class="w"> </span>./mirror.sh
 
-host2:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/multi_middleware/stmmac/xdp
-host2:<span class="w"> </span>./ref.sh
+host1:<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>tests/multi_middleware/stmmac/xdp
+host1:<span class="w"> </span>./ref.sh
 </pre></div>
 </div>
 </section>
@@ -386,8 +392,9 @@ interface on real time Linux.</p>
 </tr>
 </tbody>
 </table>
-<p>All required configuration files and scripts are located in <code class="docutils literal notranslate"><span class="pre">tests/multi_middlware/</span></code>.</p>
-<p>Hardware: Intel Elkhart Lake with stmmac</p>
+<p>All required configuration files and scripts are located in <code class="docutils literal notranslate"><span class="pre">tests/multi_middleware/</span></code>. There
+are variants for <code class="docutils literal notranslate"><span class="pre">stmmac</span></code> and <code class="docutils literal notranslate"><span class="pre">i226</span></code> each using either <code class="docutils literal notranslate"><span class="pre">xdp</span></code> or <code class="docutils literal notranslate"><span class="pre">packet</span></code> sockets.</p>
+<p>Hardware: Intel Elkhart Lake with stmmac or Intel CPU with Intel i226</p>
 </section>
 <section id="precision-time-measurement">
 <h3>Precision Time Measurement<a class="headerlink" href="#precision-time-measurement" title="Permalink to this heading"></a></h3>
@@ -696,8 +703,9 @@ released, but in the master branch of <code class="docutils literal notranslate"
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The Linux kernel does not support <code class="docutils literal notranslate"><span class="pre">clock_nanosleep(2)</span></code> for <code class="docutils literal notranslate"><span class="pre">CLOCK_AUX</span></code> yet. To run
-this test case successfully we have to wait for Linux &gt;= v7.2.</p>
+<p>The mainline Linux kernel does not support <code class="docutils literal notranslate"><span class="pre">clock_nanosleep(2)</span></code> for <code class="docutils literal notranslate"><span class="pre">CLOCK_AUX</span></code> yet
+(as of v7.3). Running this test case requires a kernel with additional patches providing
+that support.</p>
 </div>
 <p>All required configuration files and scripts are located in <code class="docutils literal notranslate"><span class="pre">tests/working_clock/</span></code>,
 <code class="docutils literal notranslate"><span class="pre">tests/working_clock_2/</span></code> and <code class="docutils literal notranslate"><span class="pre">tests/working_clock_3/</span></code>.</p>
@@ -712,6 +720,83 @@ a separate physical PHC. This allows to combine multi domain with EST.</p></li>
 </ul>
 <p>Hardware: Intel CPU with Intel i225/i226.</p>
 </section>
+<section id="further-test-scenarios">
+<h3>Further Test Scenarios<a class="headerlink" href="#further-test-scenarios" title="Permalink to this heading"></a></h3>
+<p>In addition to the scenarios described above, the <code class="docutils literal notranslate"><span class="pre">tests/</span></code> folder contains the following
+configurations:</p>
+<table class="docutils align-default" id="id13">
+<caption><span class="caption-text">Further test scenarios</span><a class="headerlink" href="#id13" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Directory</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">opcua</span></code>, <code class="docutils literal notranslate"><span class="pre">opcua_packet</span></code></p></td>
+<td><p>OPC/UA PubSub simulation via the <code class="docutils literal notranslate"><span class="pre">GenericL2</span></code> traffic class using <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> or
+<code class="docutils literal notranslate"><span class="pre">AF_PACKET</span></code> sockets. Starting point for non-PROFINET middlewares.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">opcua_txtime</span></code></p></td>
+<td><p>OPC/UA PubSub with Tx Launch Time in combination with <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">opcua_fpe</span></code></p></td>
+<td><p>OPC/UA PubSub with Frame Preemption (FPE) on Intel i225/i226.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">profinet_txtime</span></code></p></td>
+<td><p>PROFINET TSN with Tx Launch Time for TsnHigh and TsnLow in combination with <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">profinet_sriov</span></code></p></td>
+<td><p>PROFINET on SR-IOV virtual functions of an Intel X550 (10G) with four instances (VID 100 to
+400) using <code class="docutils literal notranslate"><span class="pre">ApplicationBaseStartOffsetNS</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">profinet_veth</span></code>, <code class="docutils literal notranslate"><span class="pre">profinet_veth_xdp</span></code></p></td>
+<td><p>PROFINET over virtual Ethernet interfaces, which are moved into containers (network
+namespaces) and bridged together. Uses <code class="docutils literal notranslate"><span class="pre">AF_PACKET</span></code> or <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> sockets.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">busypolling_125us</span></code>, <code class="docutils literal notranslate"><span class="pre">busypolling_250us</span></code>, <code class="docutils literal notranslate"><span class="pre">busypolling_8ms</span></code></p></td>
+<td><p>Busy polling scenario (see <a class="reference internal" href="#busypolling"><span class="std std-ref">Busypolling</span></a>) with different cycle times.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">busypolling_sp</span></code></p></td>
+<td><p>Busy polling scenario using strict priority instead of Qbv.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">busypolling_i210</span></code>, <code class="docutils literal notranslate"><span class="pre">i210</span></code>, <code class="docutils literal notranslate"><span class="pre">i210-i225</span></code></p></td>
+<td><p>Scenarios for Intel i210 NICs and for mixed i210/i225 setups.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">busypolling_napiconf</span></code></p></td>
+<td><p>Busy polling scenario using <code class="docutils literal notranslate"><span class="pre">napictl</span></code> for the per-queue NAPI configuration.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">busypolling_1ms_rtworkload</span></code>, <code class="docutils literal notranslate"><span class="pre">busypolling_1ms_rtworkload_multi</span></code></p></td>
+<td><p>Busy polling scenario with a real time compute workload (pointer chasing) on one or
+multiple CPUs. See <a class="reference internal" href="workload.html#workload"><span class="std std-ref">Real Time Compute Workloads</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">busypolling_1ms_rxtriggertx</span></code></p></td>
+<td><p>Busy polling scenario with workload, <code class="docutils literal notranslate"><span class="pre">ApplicationRxTriggeredTx</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ApplicationRxWindowNS</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">intel_kpi</span></code></p></td>
+<td><p>Intel i226 KPI measurements with different cycle times and frame counts, partly including
+processing latency measurements (see <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">imx93</span></code>, <code class="docutils literal notranslate"><span class="pre">stm32mp2</span></code></p></td>
+<td><p>Scenarios for the NXP i.MX93 and ST STM32MP2 platforms using stmmac. <code class="docutils literal notranslate"><span class="pre">stm32mp2</span></code> also
+includes CBS, FPE and Tx Launch Time configurations.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ew23</span></code>, <code class="docutils literal notranslate"><span class="pre">ew25</span></code>, <code class="docutils literal notranslate"><span class="pre">er26</span></code></p></td>
+<td><p>Demonstration setups for Embedded World 2023, Embedded World 2025 and Embedded Recipes 2026.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">workloads</span></code></p></td>
+<td><p>Example workloads <code class="docutils literal notranslate"><span class="pre">pointer_chasing</span></code> and <code class="docutils literal notranslate"><span class="pre">jacobi_2d</span></code>. See <a class="reference internal" href="workload.html#workload"><span class="std std-ref">Real Time Compute Workloads</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">unit</span></code></p></td>
+<td><p>Unit tests. See the Quality Assurance section.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 </section>
 <section id="tested-hardware">
 <h2>Tested Hardware<a class="headerlink" href="#tested-hardware" title="Permalink to this heading"></a></h2>
@@ -722,7 +807,8 @@ hardware platforms and TSN NIC(s).</p>
 <li><p>Intel Elkhart Lake</p></li>
 <li><p>Intel Comet Lake</p></li>
 <li><p>Intel Apollo Lake</p></li>
-<li><p>NXP imx93</p></li>
+<li><p>NXP i.MX93</p></li>
+<li><p>ST STM32MP2</p></li>
 </ul>
 <p>TSN NIC(s):</p>
 <ul class="simple">
@@ -737,11 +823,12 @@ hardware platforms and TSN NIC(s).</p>
 <p>The Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> relies on precise time synchronization between all
 involved nodes. Therefore, the PTP is leveraged. As a consequence it is recommended to use Ethernet
 switches which do support PTP based on 802.1AS.</p>
-<p>Furthermore, when using Ethernet switches, disable the LLDP traffic class by setting
-<code class="docutils literal notranslate"><span class="pre">LldpNumFramesPerCycle</span></code> to 0. The Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> simulates LLDP
-traffic with its own special crafted Ethernet frames, which are not valid LLDP messages in terms of
-the 802.1AB protocol.  As LLDP is link local traffic and interpreted by Ethernet switches, that will
-confuse the applications and the switches. Still LLDP can be enabled in the whole network.</p>
+<p>Furthermore, when using Ethernet switches, disable the LLDP traffic class by setting <code class="docutils literal notranslate"><span class="pre">LldpEnabled</span></code>
+to <code class="docutils literal notranslate"><span class="pre">False</span></code> (or <code class="docutils literal notranslate"><span class="pre">LldpNumFramesPerCycle</span></code> to 0). The Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code>
+simulates LLDP traffic with its own special crafted Ethernet frames, which are not valid LLDP
+messages in terms of the 802.1AB protocol.  As LLDP is link local traffic and interpreted by
+Ethernet switches, that will confuse the applications and the switches. Still LLDP can be enabled in
+the whole network.</p>
 </section>
 </section>
 

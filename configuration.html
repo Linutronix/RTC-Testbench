@@ -131,7 +131,10 @@
 how many frames are transmitted per cycle, which traffic classes are active, the cycle time, clock
 and many more.</p>
 <p>The configuration is based on YAML files and parsed at startup. Valid configurations have to be
-created before starting the simulation.</p>
+created before starting the simulation. Options which are not specified in the YAML file keep
+their built-in default values. Unknown options are rejected.</p>
+<p>All options with the suffix <code class="docutils literal notranslate"><span class="pre">NS</span></code> are time values in nanoseconds. Alternatively, the units <code class="docutils literal notranslate"><span class="pre">s</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ms</span></code> and <code class="docutils literal notranslate"><span class="pre">us</span></code> can be appended to the value, e.g., <code class="docutils literal notranslate"><span class="pre">ApplicationBaseCycleTimeNS:</span> <span class="pre">1ms</span></code>.</p>
 <p>Possible parameters include:</p>
 <table class="docutils align-default" id="id2">
 <caption><span class="caption-text">Configuration options</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
@@ -146,21 +149,29 @@ created before starting the simulation.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p>ApplicationClockId (String)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">CLOCK_TAI</span></code> or <code class="docutils literal notranslate"><span class="pre">CLOCK_MONOTONIC</span></code> or <code class="docutils literal notranslate"><span class="pre">CLOCK_REALTIME</span></code> or <code class="docutils literal notranslate"><span class="pre">CLOCK_AUX[0-7]</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CLOCK_TAI</span></code> or <code class="docutils literal notranslate"><span class="pre">CLOCK_MONOTONIC</span></code> or <code class="docutils literal notranslate"><span class="pre">CLOCK_REALTIME</span></code> or <code class="docutils literal notranslate"><span class="pre">CLOCK_AUX[0-7]</span></code>. Default
+is <code class="docutils literal notranslate"><span class="pre">CLOCK_TAI</span></code>. Rx and Tx hardware timestamping require <code class="docutils literal notranslate"><span class="pre">CLOCK_TAI</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p>ApplicationBaseStartTimeNS (Integer)</p></td>
-<td><p>Absolute start time of simulation (or nothing for default value now + 30s)</p></td>
+<td><p>Absolute start time of simulation based on <code class="docutils literal notranslate"><span class="pre">ApplicationClockId</span></code>. If not specified, the
+default is the current time rounded down to full seconds plus 30s. If set to <code class="docutils literal notranslate"><span class="pre">0</span></code>, the
+threads start immediately without a common base time.</p></td>
 </tr>
-<tr class="row-even"><td><p>ApplicationBaseCycleTimeNS (Integer)</p></td>
-<td><p>Application cycle time</p></td>
+<tr class="row-even"><td><p>ApplicationBaseStartOffsetNS (Integer)</p></td>
+<td><p>Optional offset added to <code class="docutils literal notranslate"><span class="pre">ApplicationBaseStartTimeNS</span></code>. Useful for shifting the schedule of
+multiple instances (e.g., several middlewares) running on the same base time. Default is
+<code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p>ApplicationTxBaseOffsetNS (Integer)</p></td>
+<tr class="row-odd"><td><p>ApplicationBaseCycleTimeNS (Integer)</p></td>
+<td><p>Application cycle time. Default is <code class="docutils literal notranslate"><span class="pre">1ms</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>ApplicationTxBaseOffsetNS (Integer)</p></td>
 <td><p>Execution offset of Tx threads within Application cycle time</p></td>
 </tr>
-<tr class="row-even"><td><p>ApplicationRxBaseOffsetNS (Integer)</p></td>
+<tr class="row-odd"><td><p>ApplicationRxBaseOffsetNS (Integer)</p></td>
 <td><p>Execution offset of Rx threads within Application cycle time</p></td>
 </tr>
-<tr class="row-odd"><td><p>ApplicationRxWindowNS (Integer)</p></td>
+<tr class="row-even"><td><p>ApplicationRxWindowNS (Integer)</p></td>
 <td><p>Optional receive window for AF_XDP and AF_PACKET, starting at <code class="docutils literal notranslate"><span class="pre">ApplicationRxBaseOffsetNS</span></code>.
 The Rx thread repeatedly checks for packets until it collects the configured number of frames
 for the cycle or the window expires. Use this option when packets may arrive shortly after
@@ -175,54 +186,70 @@ window and can delay other real-time work. Burst traffic classes (RTA, DCP, LLDP
 the window and always make a single receive attempt, because they only receive frames once
 per burst period.</p></td>
 </tr>
-<tr class="row-even"><td><p>ApplicationRxTriggeredTx (Boolean)</p></td>
+<tr class="row-odd"><td><p>ApplicationRxTriggeredTx (Boolean)</p></td>
 <td><p>Mirror only: trigger Tx threads after Rx threads and any enabled Rx workload finish.
 When enabled, <code class="docutils literal notranslate"><span class="pre">ApplicationTxBaseOffsetNS</span></code> does not schedule Tx threads. Not supported
 in combination with UDP traffic classes.</p></td>
 </tr>
-<tr class="row-odd"><td><p>ApplicationXdpProgram (String)</p></td>
-<td><p>Application specific XDP program</p></td>
+<tr class="row-even"><td><p>ApplicationXdpProgram (String)</p></td>
+<td><p>Application specific XDP program (eBPF object file), e.g., <code class="docutils literal notranslate"><span class="pre">xdp_kern_profinet_vid100.o</span></code>.
+The file is first looked up relative to the current working directory and then in the
+installation directory <code class="docutils literal notranslate"><span class="pre">&lt;prefix&gt;/&lt;libdir&gt;/rtc-testbench/ebpf</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p>&lt;Class&gt;Enabled (Boolean)</p></td>
-<td><p>Selects whether this traffic is active or not</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;Enabled (Boolean)</p></td>
+<td><p>Selects whether this traffic is active or not. A traffic class is only active, if it is
+enabled and <code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;NumFramesPerCycle</span></code> is greater than zero. Default is <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p>&lt;Class&gt;SocketType (String)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">AF_PACKET</span></code> or <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> (only valid for XDP traffic classes) or <code class="docutils literal notranslate"><span class="pre">DPDK</span></code> (Not supported currently)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;SocketType (String)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">AF_PACKET</span></code> or <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> (only valid for XDP traffic classes) or <code class="docutils literal notranslate"><span class="pre">DPDK</span></code> (Not supported
+currently). Default is <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> for TsnHigh, TsnLow, Rtc and Rta and <code class="docutils literal notranslate"><span class="pre">AF_PACKET</span></code> for
+all others.</p></td>
 </tr>
-<tr class="row-even"><td><p>&lt;Class&gt;XdpSkbMode (Boolean)</p></td>
-<td><p>Use XDP skb mode (for testing XDP code or driver implementation)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;XdpSkbMode (Boolean)</p></td>
+<td><p>Use XDP skb mode (for testing XDP code or driver implementation). Only XDP traffic classes.</p></td>
 </tr>
-<tr class="row-odd"><td><p>&lt;Class&gt;XdpZcMode (Boolean)</p></td>
-<td><p>Use XDP zero copy mode</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;XdpZcMode (Boolean)</p></td>
+<td><p>Use XDP zero copy mode. Only XDP traffic classes.</p></td>
 </tr>
-<tr class="row-even"><td><p>&lt;Class&gt;XdpWakeupMode (Boolean)</p></td>
-<td><p>Use XDP wakeup mode</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;XdpWakeupMode (Boolean)</p></td>
+<td><p>Use XDP wakeup mode. Only XDP traffic classes.</p></td>
 </tr>
-<tr class="row-odd"><td><p>&lt;Class&gt;XdpBusyPollMode (Boolean)</p></td>
-<td><p>Drive XDP socket in busy poll mode</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;XdpBusyPollMode (Boolean)</p></td>
+<td><p>Drive XDP socket in busy poll mode. Only XDP traffic classes.</p></td>
 </tr>
-<tr class="row-even"><td><p>&lt;Class&gt;TxTimeEnabled (Boolean)</p></td>
-<td><p>Use Tx Launch Time for all transmitted frames (requires ETF Qdisc)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;TxTimeEnabled (Boolean)</p></td>
+<td><p>Use Tx Launch Time for all transmitted frames (requires ETF Qdisc). Only valid for TsnHigh,
+TsnLow and GenericL2. In combination with <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> it requires libxdp &gt;= v1.5.0 and Linux
+kernel &gt;= v6.15 at build time.</p></td>
 </tr>
-<tr class="row-odd"><td><p>&lt;Class&gt;TxTimeOffsetNS (Integer)</p></td>
-<td><p>Optional Tx Launch Time offset relative to Qbv schedule and cycle time</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;TxTimeOffsetNS (Integer)</p></td>
+<td><p>Optional Tx Launch Time offset relative to Qbv schedule and cycle time. Only valid for
+TsnHigh, TsnLow and GenericL2.</p></td>
 </tr>
-<tr class="row-even"><td><p>&lt;Class&gt;TxTimeStampEnabled (Boolean)</p></td>
-<td><p>Enable TX hardware timestamping for latency measurement (requires TX_TIMESTAMP build option)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;TxTimeStampEnabled (Boolean)</p></td>
+<td><p>Enable TX hardware timestamping for latency measurement (requires TX_TIMESTAMP build option
+and <code class="docutils literal notranslate"><span class="pre">ApplicationClockId:</span> <span class="pre">CLOCK_TAI</span></code>). Only XDP traffic classes, but works with both
+<code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> and <code class="docutils literal notranslate"><span class="pre">AF_PACKET</span></code> sockets. See <a class="reference internal" href="processing_latency.html#processinglatency"><span class="std std-ref">Processing Latency</span></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p>&lt;Class&gt;IgnoreRxErrors (Boolean)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;IgnoreRxErrors (Boolean)</p></td>
 <td><p>By default, the applications perform consistency checks for all received frames. This option
 disables these checks. Do not enable this. This is only useful for testing e.g., overload
 scenarios.</p></td>
 </tr>
-<tr class="row-even"><td><p>&lt;Class&gt;Vid (Integer)</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;Vid (Integer)</p></td>
 <td><p>VLAN ID used for traffic generation</p></td>
 </tr>
-<tr class="row-odd"><td><p>&lt;Class&gt;Pcp (Integer)</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;Pcp (Integer)</p></td>
 <td><p>VLAN PCP used for traffic generation</p></td>
 </tr>
-<tr class="row-even"><td><p>&lt;Class&gt;NumFramesPerCycle (Integer)</p></td>
-<td><p>Number of frames transmitted per cycle</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;NumFramesPerCycle (Integer)</p></td>
+<td><p>Number of frames transmitted per cycle. For the burst traffic classes (Rta, Dcp, Lldp,
+UdpHigh, UdpLow) this is the number of frames transmitted per <code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;BurstPeriodNS</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>&lt;Class&gt;BurstPeriodNS (Integer)</p></td>
+<td><p>Period in which <code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;NumFramesPerCycle</span></code> frames are generated. Only valid for the burst
+traffic classes Rta, Dcp, Lldp, UdpHigh and UdpLow. Defaults: Rta 200ms, Dcp 2s, Lldp 5s,
+UdpHigh/UdpLow 1s.</p></td>
 </tr>
 <tr class="row-odd"><td><p>&lt;Class&gt;PayloadPattern (String)</p></td>
 <td><p>Payload pattern for frame content. The payload is a sequence of bytes. If the payload pattern
@@ -232,16 +259,19 @@ is smaller than the frame size, zero padding is added.</p></td>
 <td><p>Length of frames excluding four bytes of FCS</p></td>
 </tr>
 <tr class="row-odd"><td><p>&lt;Class&gt;SecurityMode (String)</p></td>
-<td><p>One of <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">AO</span></code> (Authentication only), <code class="docutils literal notranslate"><span class="pre">AE</span></code> (Authentication and Encryption)</p></td>
+<td><p>One of <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">AO</span></code> (Authentication only), <code class="docutils literal notranslate"><span class="pre">AE</span></code> (Authentication and Encryption).
+Only valid for TsnHigh, TsnLow, Rtc and Rta. See <a class="reference internal" href="security.html#security"><span class="std std-ref">Security</span></a>.</p></td>
 </tr>
 <tr class="row-even"><td><p>&lt;Class&gt;SecurityAlgorithm (String)</p></td>
 <td><p>One of <code class="docutils literal notranslate"><span class="pre">AES256-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">AES128-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">CHACHA20-POLY1305</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>&lt;Class&gt;SecurityKey (String)</p></td>
-<td><p>Key to be used for crypto functions either 16 or 32 bytes depending on selected algorithm</p></td>
+<td><p>Key to be used for crypto functions. The characters of the string are used as raw key
+bytes. It has to be 16 bytes (<code class="docutils literal notranslate"><span class="pre">AES128-GCM</span></code>) or 32 bytes (<code class="docutils literal notranslate"><span class="pre">AES256-GCM</span></code>,
+<code class="docutils literal notranslate"><span class="pre">CHACHA20-POLY1305</span></code>) long.</p></td>
 </tr>
 <tr class="row-even"><td><p>&lt;Class&gt;SecurityIvPrefix (String)</p></td>
-<td><p>Prefix of the IV which is 6 bytes in size</p></td>
+<td><p>Prefix of the IV which is 6 bytes (characters) in size</p></td>
 </tr>
 <tr class="row-odd"><td><p>&lt;Class&gt;RxQueue (Integer)</p></td>
 <td><p>Receive queue</p></td>
@@ -250,8 +280,8 @@ is smaller than the frame size, zero padding is added.</p></td>
 <td><p>Transmit queue. This is not used at the moment. Tx queue is determined via
 <code class="docutils literal notranslate"><span class="pre">SocketPriority</span></code>. For XDP the socket is bound to <code class="docutils literal notranslate"><span class="pre">RxQueue</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p>&lt;Class&gt;SocketPriority (Integer): Socket priority</p></td>
-<td><p>Socket priority. It used for QoS of the operating system.</p></td>
+<tr class="row-odd"><td><p>&lt;Class&gt;SocketPriority (Integer)</p></td>
+<td><p>Socket priority. It is used for QoS of the operating system.</p></td>
 </tr>
 <tr class="row-even"><td><p>&lt;Class&gt;TxThreadPriority (Integer)</p></td>
 <td><p>Tx thread priority based on SCHED_FIFO</p></td>
@@ -269,9 +299,30 @@ is smaller than the frame size, zero padding is added.</p></td>
 <td><p>Network interface to be used</p></td>
 </tr>
 <tr class="row-odd"><td><p>&lt;Class&gt;Destination (MAC/IP Address)</p></td>
-<td><p>Destination MAC/IP address</p></td>
+<td><p>Destination MAC address for Layer 2 traffic classes. Destination IP address or host name
+for UdpHigh and UdpLow.</p></td>
 </tr>
-<tr class="row-even"><td><p>LogThreadPriority (Integer):</p></td>
+<tr class="row-even"><td><p>&lt;Class&gt;Source (IP Address)</p></td>
+<td><p>Source IP address. Only valid for UdpHigh and UdpLow.</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;Port (String)</p></td>
+<td><p>UDP port. Only valid for UdpHigh and UdpLow.</p></td>
+</tr>
+<tr class="row-even"><td><p>GenericL2Name (String)</p></td>
+<td><p>Name of the simulated protocol, e.g., <code class="docutils literal notranslate"><span class="pre">OpcUa</span></code>. It is used as prefix in the log files and
+statistics instead of <code class="docutils literal notranslate"><span class="pre">GenericL2</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>GenericL2EtherType (Hex)</p></td>
+<td><p>EtherType used for the GenericL2 traffic class, e.g., <code class="docutils literal notranslate"><span class="pre">0xb62c</span></code> for OPC/UA PubSub.</p></td>
+</tr>
+<tr class="row-even"><td><p>GenericL2ProtocolType (String)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">L2</span></code> (default) for generic Layer 2 frames or <code class="docutils literal notranslate"><span class="pre">EtherCAT</span></code> for EtherCAT frames.</p></td>
+</tr>
+<tr class="row-odd"><td><p>&lt;Class&gt;RxWorkload* (various)</p></td>
+<td><p>Real time compute workload executed after the Rx processing. Only valid for TsnHigh, Rtc and
+GenericL2. See <a class="reference internal" href="workload.html#workload"><span class="std std-ref">Real Time Compute Workloads</span></a> for all options.</p></td>
+</tr>
+<tr class="row-even"><td><p>LogThreadPriority (Integer)</p></td>
 <td><p>Log thread priority based on SCHED_FIFO</p></td>
 </tr>
 <tr class="row-odd"><td><p>LogThreadCpu (Integer)</p></td>
@@ -287,7 +338,8 @@ is smaller than the frame size, zero padding is added.</p></td>
 <td><p>Interval in which a summary of the data is generated, typically 1s, i.e. 1000000000Ns</p></td>
 </tr>
 <tr class="row-odd"><td><p>StatsHistogramEnabled (Boolean)</p></td>
-<td><p>Decides whether a histogram is written after successful run or not</p></td>
+<td><p>Decides whether a histogram is written after successful run or not. Only used by
+<code class="docutils literal notranslate"><span class="pre">reference</span></code>. See <a class="reference internal" href="histogram.html#histograms"><span class="std std-ref">Histograms</span></a>.</p></td>
 </tr>
 <tr class="row-even"><td><p>StatsHistogramMinimumNS (Integer)</p></td>
 <td><p>Lower boundary of RTT which is recorded in histogram e.g., 1ms</p></td>
@@ -332,19 +384,20 @@ is smaller than the frame size, zero padding is added.</p></td>
 <td><p>IP address or host name where JSON/UDP messages should be sent to</p></td>
 </tr>
 <tr class="row-even"><td><p>LogJsonPort (Integer)</p></td>
-<td><p>Port used for JSON/UDP messages</p></td>
+<td><p>Port used for JSON/UDP messages, default value is 58415</p></td>
 </tr>
 <tr class="row-odd"><td><p>LogJsonMeasurementName (String)</p></td>
 <td><p>Used to distinguish measurements coming from different machines</p></td>
 </tr>
-<tr class="row-even"><td><p>DebugStopTraceOnOutlier (Integer)</p></td>
-<td><p>Stop Linux kernel tracing if round trip or oneway time exceeds expected value</p></td>
+<tr class="row-even"><td><p>DebugStopTraceOnOutlier (Boolean)</p></td>
+<td><p>Stop Linux kernel tracing and terminate the application if round trip or oneway time
+exceeds expected value. See <a class="reference internal" href="debug.html#debug"><span class="std std-ref">Debug</span></a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p>DebugStopTraceOnError (Boolean)</p></td>
-<td><p>Stop Linux kernel tracing if error happened (e.g. transmission failure)</p></td>
+<td><p>Stop Linux kernel tracing if an error is logged (e.g. transmission failure)</p></td>
 </tr>
 <tr class="row-even"><td><p>DebugMonitorMode (Boolean)</p></td>
-<td><p>Monitor mode for Fraunhofer FPGA measurement</p></td>
+<td><p>Monitor mode for Fraunhofer FPGA measurement. Only supported with <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p>DebugMonitorDestination (MAC Address)</p></td>
 <td><p>Destination address of first frame per burst</p></td>
@@ -365,15 +418,64 @@ is smaller than the frame size, zero padding is added.</p></td>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Not all traffic class have all options available. For instance, only real time traffic classes such as TSN or
-RT make use of XDP sockets. When the XDP option is enabled the traffic classes utilize <code class="docutils literal notranslate"><span class="pre">AF_XDP</span></code> instead of
-<code class="docutils literal notranslate"><span class="pre">AF_PACKET</span></code> sockets for Ethernet communication.</p>
+<p>Not all traffic classes have all options available. Specifying an option for a traffic
+class which does not support it results in an <code class="docutils literal notranslate"><span class="pre">Unknown</span> <span class="pre">option</span></code> error. The
+following table shows which option groups are valid for which traffic classes:</p>
+</div>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Option groups per traffic class</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 40.0%" />
+<col style="width: 60.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option group</p></th>
+<th class="head"><p>Traffic classes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Generic options (Enabled, SocketType, Vid, Pcp, NumFramesPerCycle, PayloadPattern,
+FrameLength, Queues, Priorities, CPUs, Interface, IgnoreRxErrors)</p></td>
+<td><p>All</p></td>
+</tr>
+<tr class="row-odd"><td><p>XDP options (Xdp*, TxTimeStampEnabled) and <code class="docutils literal notranslate"><span class="pre">SocketType:</span> <span class="pre">AF_XDP</span></code></p></td>
+<td><p>TsnHigh, TsnLow, Rtc, Rta, GenericL2</p></td>
+</tr>
+<tr class="row-even"><td><p>Tx Launch Time (TxTimeEnabled, TxTimeOffsetNS)</p></td>
+<td><p>TsnHigh, TsnLow, GenericL2</p></td>
+</tr>
+<tr class="row-odd"><td><p>Security (Security*)</p></td>
+<td><p>TsnHigh, TsnLow, Rtc, Rta</p></td>
+</tr>
+<tr class="row-even"><td><p>Workload (RxWorkload*)</p></td>
+<td><p>TsnHigh, Rtc, GenericL2</p></td>
+</tr>
+<tr class="row-odd"><td><p>BurstPeriodNS</p></td>
+<td><p>Rta, Dcp, Lldp, UdpHigh, UdpLow</p></td>
+</tr>
+<tr class="row-even"><td><p>Destination (MAC)</p></td>
+<td><p>TsnHigh, TsnLow, Rtc, Rta, Dcp, Lldp, GenericL2</p></td>
+</tr>
+<tr class="row-odd"><td><p>Destination (IP), Source, Port</p></td>
+<td><p>UdpHigh, UdpLow</p></td>
+</tr>
+<tr class="row-even"><td><p>Name, EtherType, ProtocolType</p></td>
+<td><p>GenericL2</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">GenericL2</span></code> traffic class cannot be combined with any of the PROFINET traffic
+classes (TsnHigh, TsnLow, Rtc, Rta, Dcp, Lldp, UdpHigh, UdpLow) within one
+instance. For simulating PROFINET and other middlewares in parallel start multiple
+instances of <code class="docutils literal notranslate"><span class="pre">reference</span></code> and <code class="docutils literal notranslate"><span class="pre">mirror</span></code> with different configurations.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">GenericL2</span></code> traffic class is not PROFINET specific, but rather used to simulate general purpose Ethernet
-(Layer 2) based protocols such as OPC/UA PubSub. In addition, to the other traffic classes the EtherType is
-configurable.</p>
+(Layer 2) based protocols such as OPC/UA PubSub, AVTP or EtherCAT. In addition to the other traffic classes,
+the EtherType is configurable.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -383,13 +485,14 @@ this feature with <code class="docutils literal notranslate"><span class="pre">P
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The <strong>security settings</strong> are only valid for the PROFINET real time traffic
-classes. Furthermore, the Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> demonstrates only one
+classes TsnHigh, TsnLow, Rtc and Rta. Furthermore, the Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> demonstrates only one
 exemplary implementation. The PROFINET security specification is still under
 development. This implementation is to be used only for performance measurements. For
 instance, what impact does real time frame encryption and decryption has on quantity
 structures? Key updates and other mechanisms are not covered.</p>
 </div>
-<p>Sample configuration files are provided for Intel i210, i225/i226 and stmmac.</p>
+<p>Sample configuration files are provided for Intel i210, i225/i226 and stmmac (e.g., Intel Elkhart
+Lake, NXP i.MX93 and ST STM32MP2).</p>
 <p>Starting point for PROFINET TSN:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/Linutronix/RTC-Testbench/tree/main/tests/profinet">https://github.com/Linutronix/RTC-Testbench/tree/main/tests/profinet</a></p></li>

@@ -125,7 +125,7 @@
            <div itemprop="articleBody">
              
   <section id="security">
-<h1>Security<a class="headerlink" href="#security" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1>Security<a class="headerlink" href="#security" title="Permalink to this heading"></a></h1>
 <section id="motivation">
 <h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading"></a></h2>
 <p>Driven by legal requirements like EU Cyber Resilience Act (CRA), security for industrial
@@ -141,8 +141,8 @@ covered.</p>
 <section id="configuration-parameters">
 <h2>Configuration parameters<a class="headerlink" href="#configuration-parameters" title="Permalink to this heading"></a></h2>
 <p>The parameters which allow to configure frame authentication or encryption are shown below:</p>
-<table class="docutils align-default" id="id1">
-<caption><span class="caption-text">Features &amp; configure options</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Features &amp; configure options</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
 <colgroup>
 <col style="width: 33.3%" />
 <col style="width: 66.7%" />
@@ -159,15 +159,19 @@ covered.</p>
 <tr class="row-odd"><td><p>SecurityAlgorithm (String)</p></td>
 <td><p>One of <code class="docutils literal notranslate"><span class="pre">AES256-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">AES128-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">CHACHA20-POLY1305</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p>SecurityKey (String|Hex)</p></td>
-<td><p>Key to be used for crypto functions either 16 or 32 bytes depending on selected algorithm</p></td>
+<tr class="row-even"><td><p>SecurityKey (String)</p></td>
+<td><p>Key to be used for crypto functions. The characters of the string are used as raw key
+bytes, i.e., there is no hex decoding. It has to be 16 bytes (<code class="docutils literal notranslate"><span class="pre">AES128-GCM</span></code>) or 32 bytes
+(<code class="docutils literal notranslate"><span class="pre">AES256-GCM</span></code>, <code class="docutils literal notranslate"><span class="pre">CHACHA20-POLY1305</span></code>) long.</p></td>
 </tr>
-<tr class="row-odd"><td><p>SecurityIvPrefix (String|Hex)</p></td>
-<td><p>Prefix of the IV which is 6 bytes in size</p></td>
+<tr class="row-odd"><td><p>SecurityIvPrefix (String)</p></td>
+<td><p>Prefix of the IV which is 6 bytes (characters) in size</p></td>
 </tr>
 </tbody>
 </table>
-<p>These options are valid for classes TSNHigh, TSNLow, RTC and RTA.</p>
+<p>These options have to be prefixed with the traffic class name (e.g., <code class="docutils literal notranslate"><span class="pre">TsnHighSecurityMode</span></code>) and
+are valid for the classes TsnHigh, TsnLow, Rtc and Rta. The key and IV prefix lengths are verified
+at startup.</p>
 </section>
 <section id="implementation">
 <h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading"></a></h2>

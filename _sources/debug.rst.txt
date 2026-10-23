@@ -6,6 +6,8 @@
 .. Testbench documentation debug file.
 ..
 
+.. _Debug:
+
 Debug
 =====
 
@@ -24,11 +26,11 @@ can be used to find the root cause. This can be done like this:
 
    # Start reference and mirror as usual
 
-   # The reference application will stop after a round-trip time outlier is hit and will output an
-   # information message about it
+   # The reference application stops tracing and terminates after a round-trip time outlier is
+   # hit. It writes an information message about it to stderr and to the trace via trace_marker
 
-   # The mirror application will stop after a oneway time outlier is hit and will output an
-   # information message about it
+   # The mirror application stops tracing and terminates after a oneway time outlier is hit. It
+   # writes an information message about it to stderr and to the trace via trace_marker
 
    # Get the trace
    trace-cmd extract -a
@@ -36,3 +38,9 @@ can be used to find the root cause. This can be done like this:
    # Copy trace.dat to development machine
 
    # Analyze trace.dat with kernelshark or tracecompass to find the issue
+
+Furthermore, ``DebugStopTraceOnError`` can be set to ``True`` to stop the tracing as soon as an
+error is logged by the applications, e.g., a transmission failure. In contrast to
+``DebugStopTraceOnOutlier`` the applications keep running.
+
+.. Note:: Both options require ``tracefs`` to be mounted at ``/sys/kernel/tracing``.

@@ -80,6 +80,12 @@ This step has to be done only once.
    host1: ../../build/reference -c reference.yaml
    host1: tail -f /var/log/reference_vid100.log              # Check statistics
 
+Copying the XDP programs (``xdp_kern_*.o``) into the test directory is only required when running
+the applications from the build directory. After ``make install`` the applications fall back to
+the installed eBPF directory. Most test directories also provide ``ref.sh`` and ``mirror.sh``
+wrapper scripts which perform all four steps at once. Note that these scripts contain hard coded
+network interface names, which have to be adjusted.
+
 The ``reference`` and ``mirror`` applications can be stopped with Ctrl-C and started again e.g. for
 testing changes in the YAML configurations. However, the ``mirror`` has to be always started before
 the ``reference``. This is due to the internal sequence counting mechanism.
@@ -88,11 +94,11 @@ For use of the integrated TSN NICs on Intel Elkhart Lake a different configurati
 
 .. code:: bash
 
-   host1: cd tests/multi_middleware/stmmac/xdp
-   host1: ./mirror.sh
-
    host2: cd tests/multi_middleware/stmmac/xdp
-   host2: ./ref.sh
+   host2: ./mirror.sh
+
+   host1: cd tests/multi_middleware/stmmac/xdp
+   host1: ./ref.sh
 
 Interpretation of results
 -------------------------
@@ -253,9 +259,10 @@ The second one is:
      - None
      - None
 
-All required configuration files and scripts are located in ``tests/multi_middlware/``.
+All required configuration files and scripts are located in ``tests/multi_middleware/``. There
+are variants for ``stmmac`` and ``i226`` each using either ``xdp`` or ``packet`` sockets.
 
-Hardware: Intel Elkhart Lake with stmmac
+Hardware: Intel Elkhart Lake with stmmac or Intel CPU with Intel i226
 
 Precision Time Measurement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -525,8 +532,9 @@ Both clocks are completely independent from each other. The Testbench applicatio
 .. Note:: ``phc2sys`` requires additional patches to use ``CLOCK_AUX``. The patches are not yet
 	  released, but in the master branch of ``linuxptp``.
 
-.. Note:: The Linux kernel does not support ``clock_nanosleep(2)`` for ``CLOCK_AUX`` yet. To run
-          this test case successfully we have to wait for Linux >= v7.2.
+.. Note:: The mainline Linux kernel does not support ``clock_nanosleep(2)`` for ``CLOCK_AUX`` yet
+          (as of v7.3). Running this test case requires a kernel with additional patches providing
+          that support.
 
 All required configuration files and scripts are located in ``tests/working_clock/``,
 ``tests/working_clock_2/`` and ``tests/working_clock_3/``.
@@ -542,6 +550,77 @@ Difference between these three test cases:
 
 Hardware: Intel CPU with Intel i225/i226.
 
+Further Test Scenarios
+^^^^^^^^^^^^^^^^^^^^^^
+
+In addition to the scenarios described above, the ``tests/`` folder contains the following
+configurations:
+
+.. list-table:: Further test scenarios
+   :widths: 35 65
+   :header-rows: 1
+
+   * - Directory
+     - Description
+
+   * - ``opcua``, ``opcua_packet``
+     - OPC/UA PubSub simulation via the ``GenericL2`` traffic class using ``AF_XDP`` or
+       ``AF_PACKET`` sockets. Starting point for non-PROFINET middlewares.
+
+   * - ``opcua_txtime``
+     - OPC/UA PubSub with Tx Launch Time in combination with ``AF_XDP``.
+
+   * - ``opcua_fpe``
+     - OPC/UA PubSub with Frame Preemption (FPE) on Intel i225/i226.
+
+   * - ``profinet_txtime``
+     - PROFINET TSN with Tx Launch Time for TsnHigh and TsnLow in combination with ``AF_XDP``.
+
+   * - ``profinet_sriov``
+     - PROFINET on SR-IOV virtual functions of an Intel X550 (10G) with four instances (VID 100 to
+       400) using ``ApplicationBaseStartOffsetNS``.
+
+   * - ``profinet_veth``, ``profinet_veth_xdp``
+     - PROFINET over virtual Ethernet interfaces, which are moved into containers (network
+       namespaces) and bridged together. Uses ``AF_PACKET`` or ``AF_XDP`` sockets.
+
+   * - ``busypolling_125us``, ``busypolling_250us``, ``busypolling_8ms``
+     - Busy polling scenario (see :ref:`Busypolling`) with different cycle times.
+
+   * - ``busypolling_sp``
+     - Busy polling scenario using strict priority instead of Qbv.
+
+   * - ``busypolling_i210``, ``i210``, ``i210-i225``
+     - Scenarios for Intel i210 NICs and for mixed i210/i225 setups.
+
+   * - ``busypolling_napiconf``
+     - Busy polling scenario using ``napictl`` for the per-queue NAPI configuration.
+
+   * - ``busypolling_1ms_rtworkload``, ``busypolling_1ms_rtworkload_multi``
+     - Busy polling scenario with a real time compute workload (pointer chasing) on one or
+       multiple CPUs. See :ref:`Workload`.
+
+   * - ``busypolling_1ms_rxtriggertx``
+     - Busy polling scenario with workload, ``ApplicationRxTriggeredTx`` and
+       ``ApplicationRxWindowNS``.
+
+   * - ``intel_kpi``
+     - Intel i226 KPI measurements with different cycle times and frame counts, partly including
+       processing latency measurements (see :ref:`Processing Latency <ProcessingLatency>`).
+
+   * - ``imx93``, ``stm32mp2``
+     - Scenarios for the NXP i.MX93 and ST STM32MP2 platforms using stmmac. ``stm32mp2`` also
+       includes CBS, FPE and Tx Launch Time configurations.
+
+   * - ``ew23``, ``ew25``, ``er26``
+     - Demonstration setups for Embedded World 2023, Embedded World 2025 and Embedded Recipes 2026.
+
+   * - ``workloads``
+     - Example workloads ``pointer_chasing`` and ``jacobi_2d``. See :ref:`Workload`.
+
+   * - ``unit``
+     - Unit tests. See the Quality Assurance section.
+
 Tested Hardware
 ---------------
 
@@ -553,7 +632,8 @@ Hardware platforms:
 - Intel Elkhart Lake
 - Intel Comet Lake
 - Intel Apollo Lake
-- NXP imx93
+- NXP i.MX93
+- ST STM32MP2
 
 TSN NIC(s):
 
@@ -569,8 +649,9 @@ The Linux RealTime Communication ``Testbench`` relies on precise time synchroniz
 involved nodes. Therefore, the PTP is leveraged. As a consequence it is recommended to use Ethernet
 switches which do support PTP based on 802.1AS.
 
-Furthermore, when using Ethernet switches, disable the LLDP traffic class by setting
-``LldpNumFramesPerCycle`` to 0. The Linux RealTime Communication ``Testbench`` simulates LLDP
-traffic with its own special crafted Ethernet frames, which are not valid LLDP messages in terms of
-the 802.1AB protocol.  As LLDP is link local traffic and interpreted by Ethernet switches, that will
-confuse the applications and the switches. Still LLDP can be enabled in the whole network.
+Furthermore, when using Ethernet switches, disable the LLDP traffic class by setting ``LldpEnabled``
+to ``False`` (or ``LldpNumFramesPerCycle`` to 0). The Linux RealTime Communication ``Testbench``
+simulates LLDP traffic with its own special crafted Ethernet frames, which are not valid LLDP
+messages in terms of the 802.1AB protocol.  As LLDP is link local traffic and interpreted by
+Ethernet switches, that will confuse the applications and the switches. Still LLDP can be enabled in
+the whole network.

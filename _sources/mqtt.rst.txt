@@ -14,9 +14,9 @@ MQTT and Grafana Integration
 Motivation
 ----------
 
-With the introduction of MQTT logging the visualization if the statistics is fostered by usage of
+With the introduction of MQTT logging the visualization of the statistics is fostered by usage of
 Grafana. The full chain from MQTT log to Grafana is provided with this extension.  This extension
-provides a visualization of data in grafical format, which is desired for some use cases, e.g. long
+provides a visualization of data in graphical format, which is desired for some use cases, e.g. long
 term analysis, several instances of the Linux RealTime Communication Testbench running, and
 showcases.  The combination MQTT/Grafana is chosen as it is the most recognized and used application
 for data visualization, but requires additional services for the visualization. Those services are
@@ -33,7 +33,7 @@ MQTT support is integrated in the build system as an option to enable it add the
 
 .. code:: bash
 
-   cmake -DCMAKE_BUILD_TYPE=Release -DWITH_MQTT=True..
+   cmake -DCMAKE_BUILD_TYPE=Release -DWITH_MQTT=TRUE ..
 
 
 
@@ -62,24 +62,30 @@ The parameters which affect the MQTT integration are presented in the table belo
      - Thread CPU affinity
 
    * - LogMqttBrokerIP
-     - IP address where MQTT broker is running
+     - IP address where MQTT broker is running, default value is 127.0.0.1
 
    * - LogMqttBrokerPort
-     - Port used by the MQTT Broker, default value is
+     - Port used by the MQTT Broker, default value is 1883
 
    * - LogMqttKeepAliveSecs
      - Keep alive time for the connection, default value 60s
 
    * - LogMqttMeasurementName
-     - Used to distinguish measurements coming from different machines.
+     - Used to distinguish measurements coming from different machines. Default value is
+       ``reference``.
 
 
 
 Docker Composer
 ---------------
 
-The first step is to create the docker-composer.yml file. As there is an uncertanty about the licensing on those docker-composer files and not much to be copyrighted on those,
-an indirect approach to deliver the file was taken. In the docker/mqtt-composer directory the file "create_docker_composer.sh" is provided. by running that file, i.e.:
+The first step is to create the docker-compose.yml file. As there is an uncertainty about the
+licensing on those docker-composer files and not much to be copyrighted on those, an indirect
+approach to deliver the file was taken. In the docker/mqtt-composer directory the file
+``create_docker_compose.sh`` is provided. It clones an upstream docker-compose project, applies the
+local changes from ``docker_composer.diff`` and places the resulting ``docker-compose.yml`` into the
+directory. Afterwards, ``set_permissions.sh`` prepares the data directories. Run both scripts like
+this:
 
 .. code:: bash
 
@@ -90,10 +96,11 @@ an indirect approach to deliver the file was taken. In the docker/mqtt-composer 
 Creating the services
 ^^^^^^^^^^^^^^^^^^^^^
 
-The docker-composer.sh makes the integration into Grafana simple.
-A simplistic way to have the Grafana running is it can be used, is to instantiate the docker-compose in the machine where reference is running, by doing that all parameters concerning the MQTT broker are default.
-To instantiate the docker-composer you need docker and docker-compose installed.
-Start the services by issuing the commands below from the rtc-testbench directory.
+The generated ``docker-compose.yml`` makes the integration into Grafana simple.  A simplistic way to
+have the Grafana running is it can be used, is to instantiate the docker-compose in the machine
+where reference is running, by doing that all parameters concerning the MQTT broker are default.  To
+instantiate the docker-composer you need docker and docker-compose installed.  Start the services by
+issuing the commands below from the rtc-testbench directory.
 
 .. code:: bash
 
@@ -109,11 +116,12 @@ The verification of data availability can be done in two steps: first at InfluxD
 Influx Access
 ^^^^^^^^^^^^^^
 
-Used database for the provided configuration is "testbench" and is defined in the telegraf.conf file.
-The measurement name is the "LogMqttMeasurementName" provided in the configuration.
-The Timestamp provided is the time taken in the application side when the last frame in the recording period "StatsCollectionIntervalNS"
-is received, and the traffic class name is one of the columns of the measurment.
-This way one can investigate the data base by providing the following code when running influx:
+Used database for the provided configuration is "testbench" and is defined in the telegraf.conf
+file.  The measurement name is the "LogMqttMeasurementName" provided in the configuration.  The
+Timestamp provided is the time taken in the application side when the last frame in the recording
+period "StatsCollectionIntervalNS" is received, and the traffic class name is one of the columns of
+the measurement.  This way one can investigate the data base by providing the following code when
+running influx:
 
 .. code:: bash
 
@@ -126,16 +134,17 @@ where ${LogMqttMeasurementName} is a placeholder for the real name used.
 Grafana Access
 ^^^^^^^^^^^^^^
 
-Grafana can be accessed by the IP of the machine that the docker-copose was started and port defined on
-the docker-compose.yml file.
-In Grafana a new data source for InfluxDB can be created and querries added to create dashboards.
+Grafana can be accessed by the IP of the machine that the docker-compose was started and port
+defined on the docker-compose.yml file.  In Grafana a new data source for InfluxDB can be created
+and queries added to create dashboards.
 
 Grafana Password
 ^^^^^^^^^^^^^^^^
 
-Grafana password has to be reset for the first usage.
-In some cases Grafana might also consider the password as expired refusing to allow the admin to login, e.g. extreme clock changes.
-To do so execute the "change_grafana_password.sh" script, with the containers running, providing the new password as parameter as below:
+Grafana password has to be reset for the first usage.  In some cases Grafana might also consider the
+password as expired refusing to allow the admin to login, e.g. extreme clock changes.  To do so
+execute the "change_grafana_password.sh" script, with the containers running, providing the new
+password as parameter as below:
 
 .. code:: bash
 
@@ -145,10 +154,11 @@ To do so execute the "change_grafana_password.sh" script, with the containers ru
 Grafana Example
 ^^^^^^^^^^^^^^^^
 
-The example provided for Grafana has the time display of the 3 Profinet real-time traffic classes, TSN-High, TSN-Low and RTC.
-Dials are provided to show the current maximum visualized within the visible time range.
-Colored bars are provided for representing the number of errors and outliers found.
+The example provided for Grafana has the time display of the 3 Profinet real-time traffic classes,
+TSN-High, TSN-Low and RTC.  Dials are provided to show the current maximum visualized within the
+visible time range.  Colored bars are provided for representing the number of errors and outliers
+found.
 
 .. image:: images/grafana_example.png
   :width: 600
-  :alt: Grafana sample with a cicle time of 250us.
+  :alt: Grafana sample with a cycle time of 250us.
