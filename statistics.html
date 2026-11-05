@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -13,9 +13,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=dd8df913"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=a54d08a5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -125,15 +125,15 @@
            <div itemprop="articleBody">
              
   <section id="statistics">
-<span id="id1"></span><h1>Statistics<a class="headerlink" href="#statistics" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1>Statistics<a class="headerlink" href="#statistics" title="Link to this heading"></a></h1>
 <p>While running the RTC <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> it collects statistics about various aspects including round
 trip and one way times, errors, processing and workload execution. This sections explains what
 statistics are collected and how they can be obtained and visualized.</p>
 <section id="id2">
-<h2>Statistics<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
+<h2>Statistics<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
 <p>The following table shows all gathered statistics. All statistics are collected per traffic class.</p>
 <table class="docutils align-default" id="id3">
-<caption><span class="caption-text">Statistics</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Statistics</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 33.3%" />
 <col style="width: 66.7%" />
@@ -243,21 +243,21 @@ configuration requirements, and troubleshooting, see <a class="reference interna
 </div>
 </section>
 <section id="file-log">
-<h2>File log<a class="headerlink" href="#file-log" title="Permalink to this heading"></a></h2>
+<h2>File log<a class="headerlink" href="#file-log" title="Link to this heading"></a></h2>
 <p>All statistics are logged once per collection interval into a file log in text form.</p>
 </section>
 <section id="mqtt-grafana">
-<h2>MQTT / Grafana<a class="headerlink" href="#mqtt-grafana" title="Permalink to this heading"></a></h2>
+<h2>MQTT / Grafana<a class="headerlink" href="#mqtt-grafana" title="Link to this heading"></a></h2>
 <p>Furthermore, the statistics can be submitted with MQTT and visualized with Grafana.</p>
 <p>See <a class="reference internal" href="mqtt.html#mqtt"><span class="std std-ref">MQTT and Grafana Integration</span></a> for more information.</p>
 </section>
 <section id="json-udp">
-<h2>JSON/UDP<a class="headerlink" href="#json-udp" title="Permalink to this heading"></a></h2>
+<h2>JSON/UDP<a class="headerlink" href="#json-udp" title="Link to this heading"></a></h2>
 <p>In addition, there is a JSON/UDP logger. This one submits the statistics in JSON representation per
 UDP once per collection interval. This is useful to get the statistics into other tools.</p>
 <p>In order to use the JSON/UDP logging, the following configuration parameters can be used:</p>
 <table class="docutils align-default" id="id4">
-<caption><span class="caption-text">JSON/UDP configuration options</span><a class="headerlink" href="#id4" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">JSON/UDP configuration options</span><a class="headerlink" href="#id4" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 33.3%" />
 <col style="width: 66.7%" />

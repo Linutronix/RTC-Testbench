@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -13,9 +13,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=dd8df913"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=a54d08a5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -124,9 +124,9 @@
            <div itemprop="articleBody">
              
   <section id="configuration">
-<span id="id1"></span><h1>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h1>
+<span id="id1"></span><h1>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h1>
 <section id="traffic-configuration">
-<h2>Traffic configuration<a class="headerlink" href="#traffic-configuration" title="Permalink to this heading"></a></h2>
+<h2>Traffic configuration<a class="headerlink" href="#traffic-configuration" title="Link to this heading"></a></h2>
 <p>The applications itself are configurable. The configuration defines all required parameters such as
 how many frames are transmitted per cycle, which traffic classes are active, the cycle time, clock
 and many more.</p>
@@ -137,7 +137,7 @@ their built-in default values. Unknown options are rejected.</p>
 <code class="docutils literal notranslate"><span class="pre">ms</span></code> and <code class="docutils literal notranslate"><span class="pre">us</span></code> can be appended to the value, e.g., <code class="docutils literal notranslate"><span class="pre">ApplicationBaseCycleTimeNS:</span> <span class="pre">1ms</span></code>.</p>
 <p>Possible parameters include:</p>
 <table class="docutils align-default" id="id2">
-<caption><span class="caption-text">Configuration options</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Configuration options</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 33.3%" />
 <col style="width: 66.7%" />
@@ -423,7 +423,7 @@ class which does not support it results in an <code class="docutils literal notr
 following table shows which option groups are valid for which traffic classes:</p>
 </div>
 <table class="docutils align-default" id="id3">
-<caption><span class="caption-text">Option groups per traffic class</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Option groups per traffic class</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 40.0%" />
 <col style="width: 60.0%" />
@@ -504,7 +504,7 @@ Lake, NXP i.MX93 and ST STM32MP2).</p>
 <p>At minimum MAC and IP addresses as well as network interface names have to be adjusted.</p>
 </section>
 <section id="network-interface-configuration">
-<h2>Network interface configuration<a class="headerlink" href="#network-interface-configuration" title="Permalink to this heading"></a></h2>
+<h2>Network interface configuration<a class="headerlink" href="#network-interface-configuration" title="Link to this heading"></a></h2>
 <p>The configuration of network interfaces is crucial. Different NICs have
 different capabilities such as queue configuration, routing, Qbv, …  For instance,
 the PROFINET specification specifies which traffic class is transmitted and
@@ -525,7 +525,7 @@ depends on the Linux driver implementation.</p>
 <p>All of these settings are required for the PROFINET simulation to work properly.</p>
 </section>
 <section id="udp-communication">
-<h2>UDP communication<a class="headerlink" href="#udp-communication" title="Permalink to this heading"></a></h2>
+<h2>UDP communication<a class="headerlink" href="#udp-communication" title="Link to this heading"></a></h2>
 <p>The UDP communication relies on standard sockets. It assumes that corresponding VLAN interfaces have
 been setup on the system. VLAN interfaces can be created by multiple ways: NetworkManager, Linux
 Distribution mechanisms or manually.</p>

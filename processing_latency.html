@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -13,9 +13,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=dd8df913"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=a54d08a5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -131,7 +131,7 @@
            <div itemprop="articleBody">
              
   <section id="processing-latency">
-<span id="processinglatency"></span><h1>Processing Latency<a class="headerlink" href="#processing-latency" title="Permalink to this heading"></a></h1>
+<span id="processinglatency"></span><h1>Processing Latency<a class="headerlink" href="#processing-latency" title="Link to this heading"></a></h1>
 <p>Processing latency metrics quantify how long the Mirror DUT takes to process a full cycle
 of packets. It is measured from the hardware RX timestamp of the first packet in the cycle
 to the hardware TX timestamp of the response packet(s). These measurements work only in
@@ -143,7 +143,7 @@ are enabled.</p>
 <li><p>Sense-compute-actuate scenarios (once-per-cycle workload execution)</p></li>
 </ul>
 <section id="timestamp-flow">
-<h2>Timestamp Flow<a class="headerlink" href="#timestamp-flow" title="Permalink to this heading"></a></h2>
+<h2>Timestamp Flow<a class="headerlink" href="#timestamp-flow" title="Link to this heading"></a></h2>
 <p>The following diagram shows where timestamps are captured and what the processing
 latency metrics measure:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>RX Path                     Processing                   TX Path
@@ -172,10 +172,10 @@ identical for both transports.</p>
 </div>
 </section>
 <section id="timestamp-details">
-<h2>Timestamp Details<a class="headerlink" href="#timestamp-details" title="Permalink to this heading"></a></h2>
+<h2>Timestamp Details<a class="headerlink" href="#timestamp-details" title="Link to this heading"></a></h2>
 <p>The table below provides precise details for each timestamp capture point:</p>
 <table class="docutils align-default" id="id1">
-<caption><span class="caption-text">Timestamp Capture Points</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Timestamp Capture Points</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 12.0%" />
 <col style="width: 18.0%" />
@@ -239,11 +239,11 @@ choice to keep both transports’ Tx latency model identical.</p>
 </div>
 </section>
 <section id="processing-latency-metrics">
-<h2>Processing Latency Metrics<a class="headerlink" href="#processing-latency-metrics" title="Permalink to this heading"></a></h2>
+<h2>Processing Latency Metrics<a class="headerlink" href="#processing-latency-metrics" title="Link to this heading"></a></h2>
 <p>The following metrics are available in Mirror mode with AF_XDP or AF_PACKET when both RX and TX
 hardware timestamping are enabled:</p>
 <table class="docutils align-default" id="id2">
-<caption><span class="caption-text">Primary Processing Latency Metrics</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Primary Processing Latency Metrics</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 20.0%" />
 <col style="width: 30.0%" />
@@ -283,14 +283,14 @@ time matters.</p>
 </div>
 </section>
 <section id="configuration">
-<h2>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading"></a></h2>
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
 <section id="dependencies">
-<h3>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading"></a></h3>
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h3>
 <p>Processing latency metrics require both RX and TX hardware timestamp support. Requirements
 differ depending on the transport used for the traffic class.</p>
 <p><strong>AF_XDP</strong> (<code class="docutils literal notranslate"><span class="pre">&lt;Class&gt;SocketType:</span> <span class="pre">AF_XDP</span></code>):</p>
 <table class="docutils align-default" id="id3">
-<caption><span class="caption-text">AF_XDP Hardware Timestamp Dependencies</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">AF_XDP Hardware Timestamp Dependencies</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 27.3%" />
 <col style="width: 36.4%" />
@@ -333,7 +333,7 @@ libbpf/libxdp version is required, since this path uses plain socket APIs instea
 metadata. Check driver support with <code class="docutils literal notranslate"><span class="pre">ethtool</span> <span class="pre">-T</span> <span class="pre">&lt;interface&gt;</span></code>.</p>
 </section>
 <section id="build-configuration">
-<h3>Build Configuration<a class="headerlink" href="#build-configuration" title="Permalink to this heading"></a></h3>
+<h3>Build Configuration<a class="headerlink" href="#build-configuration" title="Link to this heading"></a></h3>
 <p>To enable processing latency metrics, build with both RX and TX timestamp support:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cmake<span class="w"> </span>-DCMAKE_BUILD_TYPE<span class="o">=</span>Release<span class="w"> </span>-DRX_TIMESTAMP<span class="o">=</span>TRUE<span class="w"> </span>-DTX_TIMESTAMP<span class="o">=</span>TRUE<span class="w"> </span>..
 </pre></div>
@@ -358,7 +358,7 @@ to verify hardware timestamping capabilities.</p>
 </section>
 </section>
 <section id="example-output">
-<h2>Example Output<a class="headerlink" href="#example-output" title="Permalink to this heading"></a></h2>
+<h2>Example Output<a class="headerlink" href="#example-output" title="Link to this heading"></a></h2>
 <p>Example Mirror-mode log output with processing latency metrics (3 TsnHigh packets
 per cycle):</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span># Processing Latency Metrics
@@ -375,12 +375,12 @@ TsnHighProcBatchOutliers=739
 </div>
 </section>
 <section id="additional-monitoring-points">
-<h2>Additional Monitoring Points<a class="headerlink" href="#additional-monitoring-points" title="Permalink to this heading"></a></h2>
+<h2>Additional Monitoring Points<a class="headerlink" href="#additional-monitoring-points" title="Link to this heading"></a></h2>
 <p>For advanced debugging and system optimization, additional timestamp metrics are
 available. These metrics are derived from the timestamp capture points detailed in
 the Timestamp Details table above:</p>
 <table class="docutils align-default" id="id4">
-<caption><span class="caption-text">Debugging and Optimization Metrics</span><a class="headerlink" href="#id4" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Debugging and Optimization Metrics</span><a class="headerlink" href="#id4" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 25.7%" />
 <col style="width: 31.4%" />

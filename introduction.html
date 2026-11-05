@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -13,9 +13,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=dd8df913"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=a54d08a5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -123,7 +123,7 @@
            <div itemprop="articleBody">
              
   <section id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h1>
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
 <p>The Linux RealTime Communication <code class="docutils literal notranslate"><span class="pre">Testbench</span></code> is a real-time and non-real time traffic validation
 tool for converged Ethernet networks with and without utilization of TSN mechanisms. PROFINET as
 well as OPC/UA PubSub and other configurable protocols are supported. Furthermore, the performance
@@ -136,7 +136,8 @@ checks. The Linux RealTime Communication <code class="docutils literal notransla
 application</p></li>
 </ul>
 <p>The concept is shown below.</p>
-<a class="reference internal image-reference" href="_images/overview.png"><img alt="Linux RealTime Communication Testbench" src="_images/overview.png" style="width: 600px;" /></a>
+<a class="reference internal image-reference" href="_images/overview.png"><img alt="Linux RealTime Communication Testbench" src="_images/overview.png" width="600" />
+</a>
 <p>The traffic generation and reception are based on standard Linux interfaces. RAW
 sockets and BPF filters are utilized. The interface is configured into
 promiscuous mode. Sending and receiving packets are implemented via system
@@ -162,7 +163,7 @@ is the Linux kernel one.</p>
 <li><p>v5.5: July 2026, Workload enhancements, auxiliary clock support and napictl</p></li>
 </ul>
 <section id="motivation">
-<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this heading"></a></h2>
+<h2>Motivation<a class="headerlink" href="#motivation" title="Link to this heading"></a></h2>
 <p>Over the last years the Linux kernel and open source ecosystem is more and more optimized for
 hard-realtime applications with the resulting Ethernet communication capabilities. Time
 synchronization with PTP via 802.1AS and various traffic shapers defined by IEEE enable
@@ -187,7 +188,7 @@ used to measure and optimize the performance of a particular security implementa
 authentication and/or encryption of each processed frame.</p>
 </section>
 <section id="architecture">
-<h2>Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading"></a></h2>
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
 <p>The application itself performs cyclic Ethernet communication. There are
 different traffic classes ranging from real time Layer 2 up to UDP
 communication. The cyclic receivers and transmitters utilize either traditional
@@ -197,7 +198,8 @@ configuration, or profiles, the Linux RealTime Communication <code class="docuti
 traffic types such as PROFINET or OPC/UA PubSub. The image below shows an
 example of three different middlewares in combination with non-real time
 applications utilizing XDP.</p>
-<a class="reference internal image-reference" href="_images/ref_test_app_architecture_xdp.png"><img alt="Linux RealTime Communication Testbench XDP Architecture" src="_images/ref_test_app_architecture_xdp.png" style="width: 600px;" /></a>
+<a class="reference internal image-reference" href="_images/ref_test_app_architecture_xdp.png"><img alt="Linux RealTime Communication Testbench XDP Architecture" src="_images/ref_test_app_architecture_xdp.png" width="600" />
+</a>
 </section>
 </section>
 

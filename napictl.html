@@ -1,7 +1,7 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -13,9 +13,9 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=dd8df913"></script>
-      <script src="_static/doctools.js?v=888ff710"></script>
-      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/documentation_options.js?v=a54d08a5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -127,9 +127,9 @@
            <div itemprop="articleBody">
              
   <section id="napi-configuration-napictl">
-<span id="napictl"></span><h1>NAPI Configuration (napictl)<a class="headerlink" href="#napi-configuration-napictl" title="Permalink to this heading"></a></h1>
+<span id="napictl"></span><h1>NAPI Configuration (napictl)<a class="headerlink" href="#napi-configuration-napictl" title="Link to this heading"></a></h1>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">napictl</span></code> is a small standalone helper that configures the NAPI parameters
 <code class="docutils literal notranslate"><span class="pre">defer-hard-irqs</span></code> and <code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code> for an individual queue of a network
 interface. It is primarily used to enable kernel side busy polling for the queue that
@@ -137,7 +137,7 @@ carries the real time traffic, which reduces the jitter introduced by hardware a
 interrupts. See the <a class="reference internal" href="test.html#busypolling"><span class="std std-ref">Busypolling</span></a> test for the corresponding use case.</p>
 </section>
 <section id="background">
-<h2>Background<a class="headerlink" href="#background" title="Permalink to this heading"></a></h2>
+<h2>Background<a class="headerlink" href="#background" title="Link to this heading"></a></h2>
 <p>The Linux kernel exposes two NAPI parameters relevant for busy polling:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">defer-hard-irqs</span></code>: How often the NAPI processing is deferred, i.e. how many times the
@@ -158,7 +158,7 @@ interface cannot express this per-queue granularity. <code class="docutils liter
 both parameters only for that queue.</p>
 </section>
 <section id="requirements">
-<h2>Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading"></a></h2>
+<h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">napictl</span></code> is only built when its build and runtime requirements are met:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">libnl-3</span></code> and <code class="docutils literal notranslate"><span class="pre">libnl-genl-3</span></code> development packages at build time.</p></li>
@@ -176,7 +176,7 @@ Intel <code class="docutils literal notranslate"><span class="pre">igc</span></c
 on Debian and RHEL based systems.</p>
 </section>
 <section id="command-line-usage">
-<h2>Command Line Usage<a class="headerlink" href="#command-line-usage" title="Permalink to this heading"></a></h2>
+<h2>Command Line Usage<a class="headerlink" href="#command-line-usage" title="Link to this heading"></a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>host:<span class="w"> </span>./napictl<span class="w"> </span>-h
 usage:<span class="w"> </span>napictl<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
 <span class="w">  </span>options:
@@ -190,7 +190,7 @@ usage:<span class="w"> </span>napictl<span class="w"> </span><span class="o">[</
 </pre></div>
 </div>
 <table class="docutils align-default" id="id1">
-<caption><span class="caption-text">Options</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
+<caption><span class="caption-text">Options</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 30.0%" />
 <col style="width: 70.0%" />
@@ -231,7 +231,7 @@ usage:<span class="w"> </span>napictl<span class="w"> </span><span class="o">[</
 </div>
 </section>
 <section id="how-it-works">
-<h2>How It Works<a class="headerlink" href="#how-it-works" title="Permalink to this heading"></a></h2>
+<h2>How It Works<a class="headerlink" href="#how-it-works" title="Link to this heading"></a></h2>
 <p>For the requested queue <code class="docutils literal notranslate"><span class="pre">napictl</span></code>:</p>
 <ol class="arabic simple">
 <li><p>Resolves the interface index from the interface name.</p></li>
@@ -244,7 +244,7 @@ its receive and transmit NAPI instances.</p></li>
 debugging the queue to NAPI mapping.</p>
 </section>
 <section id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h2>
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
 <p>Configure <code class="docutils literal notranslate"><span class="pre">defer-hard-irqs</span></code> and a <code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code> of 2 ms (2000000 ns) for queue 0 of
 <code class="docutils literal notranslate"><span class="pre">enp3s0</span></code>:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>napictl<span class="w"> </span>-i<span class="w"> </span>enp3s0<span class="w"> </span>-q<span class="w"> </span><span class="m">0</span><span class="w"> </span>-d<span class="w"> </span><span class="m">10</span><span class="w"> </span>-g<span class="w"> </span><span class="m">2000000</span>
@@ -258,7 +258,7 @@ debugging the queue to NAPI mapping.</p>
 <code class="docutils literal notranslate"><span class="pre">tests/lib/common.sh</span></code>, which derives <code class="docutils literal notranslate"><span class="pre">gro-flush-timeout</span></code> from the cycle time and applies the
 settings per queue:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># napi_defer_hard_irqs_queue($napictl, $interface, $cycle_time_ns, $queue)</span>
-napi_defer_hard_irqs_queue<span class="w"> </span><span class="s2">&quot;../../build/napictl&quot;</span><span class="w"> </span><span class="s2">&quot;enp3s0&quot;</span><span class="w"> </span><span class="s2">&quot;1000000&quot;</span><span class="w"> </span><span class="m">0</span>
+napi_defer_hard_irqs_queue<span class="w"> </span><span class="s2">"../../build/napictl"</span><span class="w"> </span><span class="s2">"enp3s0"</span><span class="w"> </span><span class="s2">"1000000"</span><span class="w"> </span><span class="m">0</span>
 </pre></div>
 </div>
 <p>See <code class="docutils literal notranslate"><span class="pre">tests/busypolling_napiconf/</span></code> and <code class="docutils literal notranslate"><span class="pre">tests/er26/</span></code> for complete examples.</p>

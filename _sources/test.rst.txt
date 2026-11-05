@@ -629,18 +629,20 @@ hardware platforms and TSN NIC(s).
 
 Hardware platforms:
 
-- Intel Elkhart Lake
-- Intel Comet Lake
-- Intel Apollo Lake
-- NXP i.MX93
-- ST STM32MP2
+- Intel x86_64
+
+- NXP i.MX 8MP, i.MX 93, i.MX 943, and i.MX 95 (arm64)
+
+  * NXP published application note ``AN14581`` for benchmarking TSN/RTC capabilities on these
+    processors
+
+- ST STM32MP2 (arm64)
 
 TSN NIC(s):
 
-- Intel i210
-- Intel i225
-- Intel i226
-- stmmac
+- Intel i210 and i225/i226
+- Intel/ST/NXP stmmac
+- NXP NETC/ENETC
 
 Switches
 --------
