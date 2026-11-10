@@ -8,7 +8,7 @@ Release: 1%{?dist}
 Summary: Time-Sensitive Networks Testbench is a set of tools for validating the networks with different protocols
 License: BSD-2
 %undefine _disable_source_fetch
-URL: https://github.com/Linutronix/RTC-Testbench
+URL: https://www.rtc-testbench.de
 Source0: https://github.com/%{myrepo}/archive/refs/tags/%{version}.tar.gz
 
 

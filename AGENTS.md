@@ -207,6 +207,6 @@ black/isort/flake8 (Python scripts), shfmt (shell), and yamlfmt. CI workflows li
 ## Documentation
 
 Source docs are reStructuredText under `Documentation/` (Sphinx; published at
-https://linutronix.github.io/RTC-Testbench). `build.rst`, `test.rst`, `configuration.rst`,
+https://docs.rtc-testbench.de). `build.rst`, `test.rst`, `configuration.rst`,
 `security.rst`, `workload.rst`, and `mqtt.rst` are the most useful references. Update them when
 behavior or config options change.

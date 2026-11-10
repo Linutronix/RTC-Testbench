@@ -114,4 +114,4 @@ Starting point for OPC/UA:
 As soon as the configuration files are created, the ``reference`` and ``mirror`` application can be
 started on two different nodes in the network. The ``reference`` logs the statistics for
 analysis. For a graphical visualization with Grafana, see:
-https://linutronix.github.io/RTC-Testbench/mqtt.html
+https://docs.rtc-testbench.de/mqtt.html

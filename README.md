@@ -61,9 +61,9 @@ applications utilizing XDP.
 
 ## Resources
 
-Project home: https://github.com/Linutronix/RTC-Testbench
+Project home: https://www.rtc-testbench.de
 
-Project documentation: https://linutronix.github.io/RTC-Testbench
+Project documentation: https://docs.rtc-testbench.de
 
 Contribution: See [CONTRIBUTING](https://github.com/Linutronix/RTC-Testbench/blob/main/CONTRIBUTING.md)
 
@@ -96,7 +96,7 @@ The following list contains ideas for further development:
 
 The documentation includes information on how to build, use and run the Linux
 RealTime Communication `Testbench`. The documentation is available at
-https://linutronix.github.io/RTC-Testbench
+https://docs.rtc-testbench.de
 
 ## Credits
 
